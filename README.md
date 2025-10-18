@@ -184,7 +184,30 @@ const asyncChunkGenerator = await this.engine.chat.completions.create({
 - Make sure hardware acceleration is enabled in browser settings
 - Try a smaller quantized model
 
-## 📚 Ressources / Resources
+## 📚 Documentation
+
+### Guides Complets / Complete Guides
+
+- 🚀 **[Quick Start](docs/QUICKSTART.md)** - Démarrage rapide / Quick start guide
+- 🏗️ **[Architecture](docs/ARCHITECTURE.md)** - Architecture du projet / Project architecture
+- 🌐 **[Déploiement](docs/DEPLOYMENT.md)** - Guide de déploiement complet / Complete deployment guide
+- ⚡ **[Cloudflare Quick Deploy](docs/CLOUDFLARE_QUICKSTART.md)** - Déploiement Cloudflare / Cloudflare deployment
+- 📱 **[PWA Guide](docs/PWA_GUIDE.md)** - Progressive Web App / PWA features
+- 💾 **[Vérification RAM](docs/RAM_CHECK.md)** - Détection de RAM / RAM detection
+
+### Fonctionnalités / Features
+
+- 🤖 **[Modèles](docs/MODELES.md)** - Liste des modèles disponibles / Available models
+- ➕ **[Modèles Personnalisés](docs/CUSTOM_MODELS.md)** - Ajouter vos modèles / Add custom models
+- 💬 **[Historique](docs/CONVERSATION_HISTORY.md)** - Gestion des conversations / Conversation management
+- 🗄️ **[Migration Dexie](docs/DEXIE_MIGRATION.md)** - Migration de la base de données / Database migration
+
+### Développement / Development
+
+- 🤝 **[Contributing](docs/CONTRIBUTING.md)** - Guide de contribution / Contribution guide
+- 📊 **[Project Summary](docs/PROJECT_SUMMARY.md)** - Résumé du projet / Project summary
+
+## 📚 Ressources Externes / External Resources
 
 - [Documentation WebLLM](https://github.com/mlc-ai/web-llm)
 - [Documentation SvelteKit](https://kit.svelte.dev/)

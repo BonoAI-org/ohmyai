@@ -23,6 +23,36 @@
 	// Prompt d'installation PWA / PWA install prompt
 	let deferredInstallPrompt = $state(null);
 	let showInstallButton = $state(false);
+	let hasEnoughRAM = $state(true);
+	
+	// RAM minimum requise en Go / Minimum required RAM in GB
+	const MIN_RAM_GB = 4;
+
+	/**
+	 * Vérifie si l'appareil a suffisamment de RAM
+	 * Check if device has enough RAM
+	 */
+	function checkRAM() {
+		// API Device Memory (Chrome, Edge)
+		// Returns RAM en Go / Returns RAM in GB
+		if ('deviceMemory' in navigator) {
+			const deviceMemory = navigator.deviceMemory;
+			console.log(`💾 RAM détectée: ${deviceMemory} GB`);
+			
+			if (deviceMemory < MIN_RAM_GB) {
+				hasEnoughRAM = false;
+				console.warn(`⚠️ RAM insuffisante: ${deviceMemory} GB (minimum ${MIN_RAM_GB} GB requis)`);
+				return false;
+			}
+		} else {
+			// API non disponible, on assume que c'est OK
+			// API not available, assume it's OK
+			console.log('ℹ️ Device Memory API non disponible, installation autorisée');
+		}
+		
+		hasEnoughRAM = true;
+		return true;
+	}
 
 	/**
 	 * Initialise le moteur LLM au montage du composant
@@ -38,12 +68,22 @@
 		// Initialise le moteur / Initialize engine
 		llmStore.initEngine();
 		
+		// Vérifie la RAM disponible / Check available RAM
+		checkRAM();
+		
 		// Écoute l'événement d'installation PWA / Listen for PWA install event
 		window.addEventListener('beforeinstallprompt', (event) => {
 			event.preventDefault();
 			deferredInstallPrompt = event;
-			showInstallButton = true;
-			console.log('📱 PWA installable, bouton activé');
+			
+			// N'affiche le bouton que si la RAM est suffisante
+			// Only show button if RAM is sufficient
+			if (hasEnoughRAM) {
+				showInstallButton = true;
+				console.log('📱 PWA installable, bouton activé');
+			} else {
+				console.log('⚠️ PWA installable mais RAM insuffisante, bouton masqué');
+			}
 		});
 		
 		// Cache le bouton si l'app est installée / Hide button if app is installed
@@ -256,6 +296,16 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
 							</svg>
 						</button>
+					{:else if !hasEnoughRAM && deferredInstallPrompt}
+						<!-- Message RAM insuffisante / Insufficient RAM message -->
+						<div 
+							class="flex items-center justify-center w-10 h-10 bg-orange-600/20 border border-orange-600/50 text-orange-400 rounded-lg"
+							title="RAM insuffisante pour l'installation (minimum {MIN_RAM_GB} GB requis) / Insufficient RAM for installation (minimum {MIN_RAM_GB} GB required)"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+							</svg>
+						</div>
 					{/if}
 					
 					<!-- Sélecteur de modèle / Model selector -->
@@ -398,6 +448,27 @@
 
 	<!-- Zone principale / Main area -->
 	<main class="flex-1 container mx-auto p-4 flex flex-col max-w-4xl">
+		
+		<!-- Avertissement RAM insuffisante / Insufficient RAM warning -->
+		{#if !hasEnoughRAM}
+			<div class="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4 mb-4 flex items-start gap-3">
+				<svg class="w-6 h-6 text-orange-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+				</svg>
+				<div class="text-orange-200">
+					<p class="font-semibold mb-1">⚠️ RAM insuffisante détectée / Insufficient RAM detected</p>
+					<p class="text-sm text-orange-300">
+						Votre appareil dispose de moins de {MIN_RAM_GB} GB de RAM. Les modèles d'IA peuvent ne pas fonctionner correctement ou être très lents.
+					</p>
+					<p class="text-sm text-orange-300 mt-1">
+						Your device has less than {MIN_RAM_GB} GB of RAM. AI models may not work properly or be very slow.
+					</p>
+					<p class="text-xs text-orange-400 mt-2">
+						💡 Conseil : Utilisez un modèle léger comme Phi-3.5 ou Llama-3.2-1B pour de meilleures performances.
+					</p>
+				</div>
+			</div>
+		{/if}
 		
 		<!-- Statut du chargement / Loading status -->
 		{#if llmStore.isLoading}
