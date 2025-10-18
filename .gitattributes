@@ -1,0 +1,36 @@
+# Auto detect text files and normalize line endings
+# Détection automatique des fichiers texte et normalisation des fins de ligne
+* text=auto
+
+# Source code / Code source
+*.js text eol=lf
+*.ts text eol=lf
+*.svelte text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Config files / Fichiers de configuration
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Binary files / Fichiers binaires
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.wasm binary
+*.db binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary

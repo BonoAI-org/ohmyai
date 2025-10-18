@@ -1,0 +1,32 @@
+# Headers de sécurité et de configuration pour le déploiement
+# Security and configuration headers for deployment
+# Ce fichier est utilisé par des plateformes comme Netlify
+# This file is used by platforms like Netlify
+
+/*
+  # En-têtes CORS nécessaires pour WebAssembly / CORS headers required for WebAssembly
+  Access-Control-Allow-Origin: *
+  
+  # En-têtes de sécurité Cross-Origin pour SharedArrayBuffer (requis pour WebLLM)
+  # Cross-Origin headers for SharedArrayBuffer (required for WebLLM)
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Opener-Policy: same-origin
+  
+  # En-têtes de sécurité généraux / General security headers
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  
+  # Cache pour les assets statiques / Cache for static assets
+  Cache-Control: public, max-age=31536000, immutable
+
+# Pas de cache pour les fichiers HTML / No cache for HTML files
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Cache moyen pour les fichiers JS/CSS / Medium cache for JS/CSS files
+/*.js
+  Cache-Control: public, max-age=604800
+
+/*.css
+  Cache-Control: public, max-age=604800

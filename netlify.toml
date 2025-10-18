@@ -1,0 +1,45 @@
+# Configuration de déploiement pour Netlify
+# Deployment configuration for Netlify
+
+[build]
+  # Commande de build / Build command
+  command = "bun run build"
+  
+  # Dossier de publication / Publish folder
+  publish = "build"
+
+# En-têtes de sécurité pour WebAssembly et WebLLM
+# Security headers for WebAssembly and WebLLM
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Requis pour SharedArrayBuffer et WASM / Required for SharedArrayBuffer and WASM
+    Cross-Origin-Embedder-Policy = "require-corp"
+    Cross-Origin-Opener-Policy = "same-origin"
+    
+    # En-têtes de sécurité / Security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # Permissions / Permissions
+    Permissions-Policy = "interest-cohort=()"
+
+# Configuration de redirection pour SPA
+# Redirect configuration for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Configuration de build / Build configuration
+[build.environment]
+  # Variables d'environnement si nécessaire
+  # Environment variables if needed
+  NODE_VERSION = "20"
+
+# Plugin pour adapter à Netlify
+# Plugin to adapt to Netlify
+[[plugins]]
+  package = "@sveltejs/adapter-netlify"

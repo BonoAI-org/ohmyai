@@ -1,0 +1,43 @@
+{
+	"name": "ho-my-ai",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"deploy": "bun run build && wrangler pages deploy .svelte-kit/cloudflare",
+		"deploy:prod": "bun run build && wrangler pages deploy .svelte-kit/cloudflare --branch=main",
+		"cf:dev": "wrangler pages dev .svelte-kit/cloudflare",
+		"db:push": "drizzle-kit push",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio"
+	},
+	"devDependencies": {
+		"@libsql/client": "^0.15.15",
+		"@sveltejs/adapter-auto": "^6.1.0",
+		"@sveltejs/adapter-cloudflare": "^7.2.4",
+		"@sveltejs/kit": "^2.43.2",
+		"@sveltejs/vite-plugin-svelte": "^6.2.0",
+		"@tailwindcss/forms": "^0.5.10",
+		"@tailwindcss/typography": "^0.5.18",
+		"@tailwindcss/vite": "^4.1.13",
+		"@types/node": "^22",
+		"@vite-pwa/sveltekit": "^1.0.1",
+		"drizzle-kit": "^0.31.4",
+		"drizzle-orm": "^0.44.5",
+		"sharp": "^0.34.4",
+		"svelte": "^5.39.5",
+		"tailwindcss": "^4.1.13",
+		"vite": "^7.1.7",
+		"vite-plugin-pwa": "^1.1.0",
+		"workbox-window": "^7.3.0"
+	},
+	"dependencies": {
+		"@mlc-ai/web-llm": "^0.2.79",
+		"dexie": "^4.2.1"
+	}
+}

@@ -1,0 +1,57 @@
+# Configuration Wrangler pour Cloudflare Pages
+# Wrangler configuration for Cloudflare Pages
+
+# Nom du projet / Project name
+name = "ohmyai-app"
+
+# Type de déploiement / Deployment type
+compatibility_date = "2024-01-01"
+
+# Pages configuration
+pages_build_output_dir = ".svelte-kit/cloudflare"
+
+# Variables d'environnement / Environment variables
+[vars]
+# Ajoutez vos variables d'environnement ici / Add your environment variables here
+
+# Configuration du build / Build configuration
+[build]
+command = "bun run build"
+cwd = "."
+
+# En-têtes personnalisés pour supporter WebAssembly et SharedArrayBuffer
+# Custom headers to support WebAssembly and SharedArrayBuffer
+[[headers]]
+path = "/*"
+
+[headers.values]
+Cross-Origin-Embedder-Policy = "require-corp"
+Cross-Origin-Opener-Policy = "same-origin"
+# Cache control pour les assets statiques / Cache control for static assets
+Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+path = "/_app/*"
+
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+path = "/icon-*"
+
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+# Règles de redirection / Redirect rules
+[[redirects]]
+from = "/index.html"
+to = "/"
+status = 301
+
+# Configuration pour les routes / Route configuration
+[routes]
+# Toutes les routes sont gérées par SvelteKit
+# All routes are handled by SvelteKit
+
+# Compatibilité / Compatibility
+compatibility_flags = ["nodejs_compat"]

@@ -1,0 +1,27 @@
+# Fichiers à ignorer lors du déploiement Cloudflare
+# Files to ignore during Cloudflare deployment
+
+node_modules/
+.git/
+.env
+.env.*
+!.env.example
+
+# Dev files
+*.log
+*.md
+!DEPLOYMENT.md
+
+# Tests
+tests/
+*.test.js
+*.spec.js
+
+# Source non-build
+src/
+scripts/
+
+# Config dev
+vite.config.js.timestamp-*
+.vscode/
+.idea/
