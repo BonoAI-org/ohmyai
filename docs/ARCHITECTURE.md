@@ -1,8 +1,8 @@
 # 🏗️ Architecture Technique / Technical Architecture
 
-Ce document explique l'architecture de l'application **Ho my AI!**.
+Ce document explique l'architecture de l'application **Oh my AI!**.
 
-This document explains the architecture of the **Ho my AI!** application.
+This document explains the architecture of the **Oh my AI!** application.
 
 ## 📊 Vue d'Ensemble / Overview
 

@@ -2,9 +2,9 @@
 
 ## Description
 
-**Ho my AI!** vérifie automatiquement la RAM disponible avant d'installer l'application PWA et affiche des avertissements si la RAM est insuffisante.
+**Oh my AI!** vérifie automatiquement la RAM disponible avant d'installer l'application PWA et affiche des avertissements si la RAM est insuffisante.
 
-**Ho my AI!** automatically checks available RAM before installing the PWA app and displays warnings if RAM is insufficient.
+**Oh my AI!** automatically checks available RAM before installing the PWA app and displays warnings if RAM is insufficient.
 
 ---
 

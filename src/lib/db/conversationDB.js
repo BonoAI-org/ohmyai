@@ -209,7 +209,7 @@ export class ConversationDB extends Dexie {
 			}, {}),
 			exportDate: new Date().toISOString(),
 			version: 1,
-			source: 'Ho my AI!'
+			source: 'Oh my AI!'
 		};
 	}
 	

@@ -1,7 +1,7 @@
 # 🚀 Guide de Déploiement / Deployment Guide
 
-Ce guide explique comment déployer **Ho my AI!** sur Cloudflare Pages.
-This guide explains how to deploy **Ho my AI!** on Cloudflare Pages.
+Ce guide explique comment déployer **Oh my AI!** sur Cloudflare Pages.
+This guide explains how to deploy **Oh my AI!** on Cloudflare Pages.
 
 ---
 

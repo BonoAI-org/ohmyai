@@ -1,6 +1,6 @@
 # 🎉 Résumé du Projet / Project Summary
 
-## ✅ Application Ho my AI! - COMPLÈTE !
+## ✅ Application Oh my AI! - COMPLÈTE !
 
 Votre application web est maintenant entièrement fonctionnelle et prête à être utilisée !
 

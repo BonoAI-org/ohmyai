@@ -134,7 +134,7 @@ class LLMStore {
 			const asyncChunkGenerator = await this.engine.chat.completions.create({
 				messages: chatMessages,
 				temperature: 0.7,
-				max_tokens: 512,
+				max_tokens: 2048, // Limite de tokens pour la réponse / Token limit for response
 				stream: true,
 			});
 

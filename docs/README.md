@@ -1,8 +1,8 @@
-# 📚 Documentation Ho my AI!
+# 📚 Documentation Oh my AI!
 
-Bienvenue dans la documentation complète de **Ho my AI!** - Une application web qui exécute des modèles d'IA entièrement dans votre navigateur.
+Bienvenue dans la documentation complète de **Oh my AI!** - Une application web qui exécute des modèles d'IA entièrement dans votre navigateur.
 
-Welcome to the complete documentation for **Ho my AI!** - A web app that runs AI models entirely in your browser.
+Welcome to the complete documentation for **Oh my AI!** - A web app that runs AI models entirely in your browser.
 
 ---
 

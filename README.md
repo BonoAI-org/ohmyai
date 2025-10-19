@@ -1,4 +1,4 @@
-# 🤖 Ho my AI!
+# 🤖 Oh my AI!
 
 Une application web moderne qui exécute un Large Language Model (LLM) entièrement dans votre navigateur grâce à WebAssembly.
 

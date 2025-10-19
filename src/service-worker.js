@@ -1,6 +1,6 @@
 /**
- * Service Worker pour Ho my AI!
- * Service Worker for Ho my AI!
+ * Service Worker pour Oh my AI!
+ * Service Worker for Oh my AI!
  * 
  * Gère le cache offline et les mises à jour
  * Handles offline cache and updates
@@ -165,7 +165,7 @@ self.addEventListener('push', (event) => {
 	};
 	
 	event.waitUntil(
-		self.registration.showNotification('Ho my AI!', options)
+		self.registration.showNotification('Oh my AI!', options)
 	);
 });
 

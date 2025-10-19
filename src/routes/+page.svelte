@@ -8,9 +8,6 @@
 	// Référence pour l'input du message / Reference for message input
 	let messageInput = $state('');
 	
-	// Référence pour auto-scroll / Reference for auto-scroll
-	let messagesContainer;
-	
 	// État du menu de sélection de modèle / Model selection menu state
 	let isModelSelectorOpen = $state(false);
 	
@@ -129,12 +126,9 @@
 		// Sauvegarde automatiquement la conversation / Auto-save conversation
 		llmStore.saveCurrentConversation();
 		
-		// Auto-scroll vers le bas / Auto-scroll to bottom
-		setTimeout(() => {
-			if (messagesContainer) {
-				messagesContainer.scrollTop = messagesContainer.scrollHeight;
-			}
-		}, 100);
+		// Réactive l'auto-scroll quand l'utilisateur envoie un message
+		// Reactivate auto-scroll when user sends a message
+		isUserScrolling = false;
 	}
 
 	/**
@@ -173,10 +167,64 @@
 		await llmStore.changeModel(modelId);
 	}
 
+	// Référence pour le main scrollable / Reference for scrollable main
+	let mainElement;
+	
+	// Variable pour suivre si l'utilisateur a scrollé manuellement
+	// Variable to track if user manually scrolled
+	let isUserScrolling = $state(false);
+	
+	/**
+	 * Vérifie si l'utilisateur est en bas de la page
+	 * Check if user is at bottom of page
+	 */
+	function isNearBottom() {
+		if (!mainElement) return false;
+		const threshold = 150; // Seuil en pixels / Threshold in pixels
+		const position = mainElement.scrollTop + mainElement.clientHeight;
+		const height = mainElement.scrollHeight;
+		return position > height - threshold;
+	}
+	
+	/**
+	 * Scroll vers le bas de manière fluide
+	 * Scroll to bottom smoothly
+	 */
+	function scrollToBottom() {
+		if (mainElement) {
+			mainElement.scrollTo({
+				top: mainElement.scrollHeight,
+				behavior: 'smooth'
+			});
+		}
+	}
+	
+	/**
+	 * Gère le scroll manuel de l'utilisateur
+	 * Handle user manual scroll
+	 */
+	function handleScroll() {
+		if (mainElement) {
+			// Si l'utilisateur scroll et n'est pas en bas, on désactive l'auto-scroll
+			// If user scrolls and is not at bottom, disable auto-scroll
+			isUserScrolling = !isNearBottom();
+		}
+	}
+	
 	// Auto-scroll quand de nouveaux messages arrivent / Auto-scroll when new messages arrive
 	$effect(() => {
-		if (llmStore.messages.length > 0 && messagesContainer) {
-			messagesContainer.scrollTop = messagesContainer.scrollHeight;
+		if (llmStore.messages.length > 0 && mainElement) {
+			// N'auto-scroll que si l'utilisateur n'a pas scrollé manuellement vers le haut
+			// Only auto-scroll if user hasn't manually scrolled up
+			if (!isUserScrolling) {
+				// Scroll vers le bas avec un délai pour laisser le temps au DOM de se mettre à jour
+				// Scroll to bottom with a delay to allow DOM to update
+				setTimeout(() => {
+					if (mainElement) {
+						mainElement.scrollTop = mainElement.scrollHeight;
+					}
+				}, 10);
+			}
 		}
 	});
 
@@ -211,9 +259,9 @@
 <!-- Gestionnaire de clic global / Global click handler -->
 <svelte:window onclick={handleClickOutside} />
 
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-	<!-- En-tête / Header -->
-	<header class="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700 p-4">
+<div class="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden">
+	<!-- En-tête / Header - Fixé en haut / Fixed at top -->
+	<header class="flex-shrink-0 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700 p-4">
 		<div class="container mx-auto">
 			<div class="flex items-center justify-between flex-wrap gap-4">
 				<div class="flex items-center gap-3">
@@ -244,7 +292,7 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
 									d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
 							</svg>
-							Ho my AI!
+							Oh my AI!
 						</h1>
 						<p class="text-slate-300 mt-1">
 							IA locale dans votre navigateur • Local AI in your browser
@@ -290,7 +338,7 @@
 							onclick={handleInstallClick}
 							class="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all shadow-lg hover:shadow-green-500/50"
 							aria-label="Installer l'app / Install app"
-							title="Installer Ho my AI! sur votre appareil / Install Ho my AI! on your device"
+							title="Installer Oh my AI! sur votre appareil / Install Oh my AI! on your device"
 						>
 							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -446,57 +494,54 @@
 		</div>
 	</header>
 
-	<!-- Zone principale / Main area -->
-	<main class="flex-1 container mx-auto p-4 flex flex-col max-w-4xl">
-		
-		<!-- Avertissement RAM insuffisante / Insufficient RAM warning -->
-		{#if !hasEnoughRAM}
-			<div class="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4 mb-4 flex items-start gap-3">
-				<svg class="w-6 h-6 text-orange-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-				</svg>
-				<div class="text-orange-200">
-					<p class="font-semibold mb-1">⚠️ RAM insuffisante détectée / Insufficient RAM detected</p>
-					<p class="text-sm text-orange-300">
-						Votre appareil dispose de moins de {MIN_RAM_GB} GB de RAM. Les modèles d'IA peuvent ne pas fonctionner correctement ou être très lents.
-					</p>
-					<p class="text-sm text-orange-300 mt-1">
-						Your device has less than {MIN_RAM_GB} GB of RAM. AI models may not work properly or be very slow.
-					</p>
-					<p class="text-xs text-orange-400 mt-2">
-						💡 Conseil : Utilisez un modèle léger comme Phi-3.5 ou Llama-3.2-1B pour de meilleures performances.
-					</p>
-				</div>
-			</div>
-		{/if}
-		
-		<!-- Statut du chargement / Loading status -->
-		{#if llmStore.isLoading}
-			<div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 text-center mb-4">
-				<div class="flex flex-col items-center gap-4">
-					<div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
-					<div class="text-white">
-						<p class="font-semibold">Chargement du modèle... / Loading model...</p>
-						<p class="text-sm text-slate-300 mt-2">{llmStore.loadingProgress}</p>
+	<!-- Zone principale / Main area - Scrollable -->
+	<main bind:this={mainElement} onscroll={handleScroll} class="flex-1 overflow-y-auto">
+		<div class="container mx-auto p-4 max-w-4xl">
+			<!-- Avertissement RAM insuffisante / Insufficient RAM warning -->
+			{#if !hasEnoughRAM}
+				<div class="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4 mb-4 flex items-start gap-3">
+					<svg class="w-6 h-6 text-orange-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+					</svg>
+					<div class="text-orange-200">
+						<p class="font-semibold mb-1">⚠️ RAM insuffisante détectée / Insufficient RAM detected</p>
+						<p class="text-sm text-orange-300">
+							Votre appareil dispose de moins de {MIN_RAM_GB} GB de RAM. Les modèles d'IA peuvent ne pas fonctionner correctement ou être très lents.
+						</p>
+						<p class="text-sm text-orange-300 mt-1">
+							Your device has less than {MIN_RAM_GB} GB of RAM. AI models may not work properly or be very slow.
+						</p>
+						<p class="text-xs text-orange-400 mt-2">
+							💡 Conseil : Utilisez un modèle léger comme Phi-3.5 ou Llama-3.2-1B pour de meilleures performances.
+						</p>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
+			
+			<!-- Statut du chargement / Loading status -->
+			{#if llmStore.isLoading}
+				<div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 text-center mb-4">
+					<div class="flex flex-col items-center gap-4">
+						<div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+						<div class="text-white">
+							<p class="font-semibold">Chargement du modèle... / Loading model...</p>
+							<p class="text-sm text-slate-300 mt-2">{llmStore.loadingProgress}</p>
+						</div>
+					</div>
+				</div>
+			{/if}
 
-		<!-- Erreur / Error -->
-		{#if llmStore.error}
-			<div class="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
-				<p class="text-red-200">
-					<strong>Erreur / Error:</strong> {llmStore.error}
-				</p>
-			</div>
-		{/if}
+			<!-- Erreur / Error -->
+			{#if llmStore.error}
+				<div class="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
+					<p class="text-red-200">
+						<strong>Erreur / Error:</strong> {llmStore.error}
+					</p>
+				</div>
+			{/if}
 
-		<!-- Messages de chat / Chat messages -->
-		<div 
-			bind:this={messagesContainer}
-			class="flex-1 overflow-y-auto mb-4 space-y-4 scroll-smooth"
-		>
+			<!-- Messages de chat / Chat messages -->
+			<div class="space-y-4 pb-4">
 			{#if llmStore.messages.length === 0 && !llmStore.isLoading}
 				<div class="text-center text-slate-400 py-12">
 					<svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -523,44 +568,67 @@
 					<span class="text-sm">Génération en cours... / Generating...</span>
 				</div>
 			{/if}
-		</div>
-
-		<!-- Zone d'input / Input area -->
-		<div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-slate-700">
-			<div class="flex gap-2">
-				<textarea
-					bind:value={messageInput}
-					onkeydown={handleKeydown}
-					disabled={llmStore.isLoading || llmStore.isGenerating}
-					placeholder="Tapez votre message... / Type your message..."
-					rows="3"
-					class="flex-1 bg-slate-700/50 text-white rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-				></textarea>
-				<button
-					onclick={handleSend}
-					disabled={llmStore.isLoading || llmStore.isGenerating || !messageInput.trim()}
-					aria-label="Envoyer le message / Send message"
-					class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
-				>
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-							d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-					</svg>
-				</button>
 			</div>
 			
-			<!-- Bouton pour effacer la conversation / Button to clear conversation -->
-			{#if llmStore.messages.length > 0}
-				<button
-					onclick={() => llmStore.clearMessages()}
-					class="mt-2 text-sm text-slate-400 hover:text-white transition-colors"
-				>
-					🗑️ Effacer la conversation / Clear conversation
-				</button>
+			<!-- Bouton pour revenir en bas / Button to scroll to bottom -->
+			{#if isUserScrolling && llmStore.messages.length > 0}
+				<div class="sticky bottom-4 left-0 right-0 flex justify-center pointer-events-none">
+					<button
+						onclick={() => {
+							isUserScrolling = false;
+							scrollToBottom();
+						}}
+						class="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all animate-bounce"
+						aria-label="Retour en bas / Scroll to bottom"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+						</svg>
+						<span class="text-sm font-medium">Retour en bas / Scroll to bottom</span>
+					</button>
+				</div>
 			{/if}
 		</div>
-
 	</main>
+
+	<!-- Zone d'input / Input area - Fixée en bas / Fixed at bottom -->
+	<div class="flex-shrink-0 backdrop-blur-sm">
+		<div class="container mx-auto p-4 max-w-4xl">
+			<div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-slate-700">
+				<div class="flex gap-2">
+					<textarea
+						bind:value={messageInput}
+						onkeydown={handleKeydown}
+						disabled={llmStore.isLoading || llmStore.isGenerating}
+						placeholder="Tapez votre message... / Type your message..."
+						rows="3"
+						class="flex-1 bg-slate-700/50 text-white rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+					></textarea>
+					<button
+						onclick={handleSend}
+						disabled={llmStore.isLoading || llmStore.isGenerating || !messageInput.trim()}
+						aria-label="Envoyer le message / Send message"
+						class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+								d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+						</svg>
+					</button>
+				</div>
+				
+				<!-- Bouton pour effacer la conversation / Button to clear conversation -->
+				{#if llmStore.messages.length > 0}
+					<button
+						onclick={() => llmStore.clearMessages()}
+						class="mt-2 text-sm text-slate-400 hover:text-white transition-colors"
+					>
+						🗑️ Effacer la conversation / Clear conversation
+					</button>
+				{/if}
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- Modal pour ajouter un modèle personnalisé / Modal to add custom model -->

@@ -1,8 +1,8 @@
-# 📱 Guide PWA - Ho my AI!
+# 📱 Guide PWA - Oh my AI!
 
-**Ho my AI!** est maintenant une **Progressive Web App (PWA)** complète !
+**Oh my AI!** est maintenant une **Progressive Web App (PWA)** complète !
 
-**Ho my AI!** is now a complete **Progressive Web App (PWA)**!
+**Oh my AI!** is now a complete **Progressive Web App (PWA)**!
 
 ---
 
@@ -133,7 +133,7 @@ ohmyai.app/
 
 ```json
 {
-  "name": "Ho my AI!",
+  "name": "Oh my AI!",
   "short_name": "Ho my AI",
   "display": "standalone",
   "background_color": "#0f172a",
@@ -421,7 +421,7 @@ Optimisations :
 
 ## 🎉 Résultat / Result
 
-**Ho my AI!** est maintenant une PWA complète :
+**Oh my AI!** est maintenant une PWA complète :
 
 ✅ **Installable** comme une app native  
 ✅ **Fonctionne offline** (cache intelligent)  

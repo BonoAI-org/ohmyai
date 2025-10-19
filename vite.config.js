@@ -18,7 +18,7 @@ export default defineConfig({
 			base: '/',
 			selfDestroying: false,
 			manifest: {
-				name: 'Ho my AI!',
+				name: 'Oh my AI!',
 				short_name: 'Ho my AI',
 				description: 'Chatbot IA 100% local fonctionnant dans votre navigateur via WebAssembly. Aucune donnée envoyée à un serveur.',
 				start_url: '/',

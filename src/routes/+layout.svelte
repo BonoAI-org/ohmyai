@@ -17,15 +17,15 @@
 </script>
 
 <svelte:head>
-	<title>Ho my AI! - IA locale dans votre navigateur</title>
+	<title>Oh my AI! - IA locale dans votre navigateur</title>
 	<meta name="description" content="Chatbot IA 100% local fonctionnant dans votre navigateur via WebAssembly. Aucune donnée envoyée à un serveur." />
 	<meta name="keywords" content="AI, LLM, WebAssembly, Local AI, Privacy, Chat, Chatbot" />
 	
 	<!-- PWA Meta Tags -->
-	<meta name="application-name" content="Ho my AI!" />
+	<meta name="application-name" content="Oh my AI!" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-	<meta name="apple-mobile-web-app-title" content="Ho my AI!" />
+	<meta name="apple-mobile-web-app-title" content="Oh my AI!" />
 	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="theme-color" content="#7c3aed" />
 	
