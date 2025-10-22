@@ -4,6 +4,9 @@
 	import ChatMessage from '$lib/components/ChatMessage.svelte';
 	import AddCustomModelModal from '$lib/components/AddCustomModelModal.svelte';
 	import ConversationHistory from '$lib/components/ConversationHistory.svelte';
+	import LanguageSelector from '$lib/components/LanguageSelector.svelte';
+	import logo from '$lib/assets/logo.svg';
+	import { _ } from 'svelte-i18n';
 
 	// Référence pour l'input du message / Reference for message input
 	let messageInput = $state('');
@@ -286,17 +289,18 @@
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
 					</button>
-					<div>
-						<h1 class="text-3xl font-bold text-white flex items-center gap-3">
-							<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-									d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-							</svg>
-							Oh my AI!
-						</h1>
-						<p class="text-slate-300 mt-1">
-							IA locale dans votre navigateur • Local AI in your browser
-						</p>
+					<div class="flex flex-row gap-3">
+						<div class="flex flex-col items-center">
+							<img src={logo} alt="Oh my AI! Logo" class="h-16 w-auto" />
+						</div>
+						<div class="flex flex-col mt-4 -ml-2 justify-end">
+							<h1 class="text-3xl font-bold text-white flex items-center gap-1">
+								h my AI!
+							</h1>
+							<p class="text-slate-300 -mt-1 -ml-3">
+								IA locale dans votre navigateur • Local AI in your browser
+							</p>
+						</div>
 					</div>
 				</div>
 				
@@ -355,6 +359,9 @@
 							</svg>
 						</div>
 					{/if}
+					
+					<!-- Sélecteur de langue / Language selector -->
+					<LanguageSelector />
 					
 					<!-- Sélecteur de modèle / Model selector -->
 					<div class="relative model-selector-container">

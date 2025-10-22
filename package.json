@@ -14,7 +14,9 @@
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"db:studio": "drizzle-kit studio",
+		"generate:icons": "bun run scripts/generate-icons.js",
+		"svg-to-png": "bun run scripts/svg-to-png.js"
 	},
 	"devDependencies": {
 		"@libsql/client": "^0.15.15",
@@ -38,6 +40,7 @@
 	},
 	"dependencies": {
 		"@mlc-ai/web-llm": "^0.2.79",
-		"dexie": "^4.2.1"
+		"dexie": "^4.2.1",
+		"svelte-i18n": "^4.0.1"
 	}
 }

@@ -1,3 +1,9 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+/* Configuration de la police par défaut / Default font configuration */
+/* Nunito est une police rounded pour un design moderne et amical / Nunito is a rounded font for a modern and friendly design */
+@theme {
+	--font-family-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}

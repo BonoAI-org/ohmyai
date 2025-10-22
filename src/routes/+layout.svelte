@@ -3,11 +3,24 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { registerServiceWorker, setupInstallPrompt } from '$lib/pwa.js';
+	import { initI18n } from '$lib/i18n';
+	import { isLoading } from 'svelte-i18n';
 	
 	let { children } = $props();
 	
+	// Initialise i18n / Initialize i18n
+	initI18n();
+	
 	// Enregistre le service worker au montage / Register service worker on mount
 	onMount(() => {
+		// Charge la langue préférée depuis le localStorage / Load preferred language from localStorage
+		const preferredLang = localStorage.getItem('preferred-language');
+		if (preferredLang) {
+			import('svelte-i18n').then(({ locale }) => {
+				locale.set(preferredLang);
+			});
+		}
+		
 		// Enregistre le SW / Register SW
 		registerServiceWorker();
 		
@@ -20,6 +33,11 @@
 	<title>Oh my AI! - IA locale dans votre navigateur</title>
 	<meta name="description" content="Chatbot IA 100% local fonctionnant dans votre navigateur via WebAssembly. Aucune donnée envoyée à un serveur." />
 	<meta name="keywords" content="AI, LLM, WebAssembly, Local AI, Privacy, Chat, Chatbot" />
+	
+	<!-- Google Fonts - Nunito (police rounded) / Nunito (rounded font) -->
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 	
 	<!-- PWA Meta Tags -->
 	<meta name="application-name" content="Oh my AI!" />
@@ -41,4 +59,14 @@
 	<link rel="manifest" href="/manifest.json" />
 </svelte:head>
 
-{@render children?.()}
+<!-- Écran de chargement des traductions / Translation loading screen -->
+{#if $isLoading}
+	<div class="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+		<div class="flex flex-col items-center gap-4">
+			<div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+			<p class="text-white text-lg">Loading / Chargement...</p>
+		</div>
+	</div>
+{:else}
+	{@render children?.()}
+{/if}

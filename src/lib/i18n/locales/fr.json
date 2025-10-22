@@ -1,0 +1,55 @@
+{
+	"app": {
+		"title": "Oh my AI!",
+		"subtitle": "IA locale dans votre navigateur",
+		"description": "Chatbot IA 100% local fonctionnant dans votre navigateur via WebAssembly. Aucune donnée envoyée à un serveur."
+	},
+	"header": {
+		"new": "Nouveau",
+		"newConversation": "Nouvelle conversation",
+		"startNewConversation": "Démarrer une nouvelle conversation",
+		"history": "Historique",
+		"conversationHistory": "Historique des conversations",
+		"install": "Installer l'app",
+		"installApp": "Installer Oh my AI! sur votre appareil",
+		"selectModel": "Sélectionner un modèle",
+		"chooseModel": "Choisir un modèle"
+	},
+	"model": {
+		"recommended": "Recommandé",
+		"custom": "Custom",
+		"customModels": "Modèles Personnalisés",
+		"addCustomModel": "Ajouter un modèle personnalisé",
+		"deleteModel": "Supprimer ce modèle personnalisé ?"
+	},
+	"chat": {
+		"startConversation": "Commencez une conversation",
+		"runsInBrowser": "Le modèle s'exécute entièrement dans votre navigateur via WebAssembly",
+		"typePlaceholder": "Tapez votre message...",
+		"send": "Envoyer le message",
+		"clear": "Effacer la conversation",
+		"clearConversation": "🗑️ Effacer la conversation",
+		"generating": "Génération en cours...",
+		"scrollToBottom": "Retour en bas"
+	},
+	"loading": {
+		"loadingModel": "Chargement du modèle...",
+		"progress": "Progression"
+	},
+	"error": {
+		"title": "Erreur"
+	},
+	"ram": {
+		"warning": "⚠️ RAM insuffisante détectée",
+		"insufficientMessage": "Votre appareil dispose de moins de {min} GB de RAM. Les modèles d'IA peuvent ne pas fonctionner correctement ou être très lents.",
+		"tip": "💡 Conseil : Utilisez un modèle léger comme Phi-3.5 ou Llama-3.2-1B pour de meilleures performances.",
+		"insufficientForInstall": "RAM insuffisante pour l'installation (minimum {min} GB requis)"
+	},
+	"pwa": {
+		"newConversation": "Nouvelle Conversation",
+		"new": "Nouveau",
+		"newDescription": "Démarrer une nouvelle conversation",
+		"historyShortcut": "Historique",
+		"historyDescription": "Voir l'historique des conversations"
+	}
+}

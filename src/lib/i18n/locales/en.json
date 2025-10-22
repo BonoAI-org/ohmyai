@@ -1,0 +1,55 @@
+{
+	"app": {
+		"title": "Oh my AI!",
+		"subtitle": "Local AI in your browser",
+		"description": "100% local AI chatbot running in your browser via WebAssembly. No data sent to any server."
+	},
+	"header": {
+		"new": "New",
+		"newConversation": "New conversation",
+		"startNewConversation": "Start a new conversation",
+		"history": "History",
+		"conversationHistory": "Conversation history",
+		"install": "Install app",
+		"installApp": "Install Oh my AI! on your device",
+		"selectModel": "Select a model",
+		"chooseModel": "Choose a model"
+	},
+	"model": {
+		"recommended": "Recommended",
+		"custom": "Custom",
+		"customModels": "Custom Models",
+		"addCustomModel": "Add custom model",
+		"deleteModel": "Delete this custom model?"
+	},
+	"chat": {
+		"startConversation": "Start a conversation",
+		"runsInBrowser": "The model runs entirely in your browser via WebAssembly",
+		"typePlaceholder": "Type your message...",
+		"send": "Send message",
+		"clear": "Clear conversation",
+		"clearConversation": "🗑️ Clear conversation",
+		"generating": "Generating...",
+		"scrollToBottom": "Scroll to bottom"
+	},
+	"loading": {
+		"loadingModel": "Loading model...",
+		"progress": "Progress"
+	},
+	"error": {
+		"title": "Error"
+	},
+	"ram": {
+		"warning": "⚠️ Insufficient RAM detected",
+		"insufficientMessage": "Your device has less than {min} GB of RAM. AI models may not work properly or be very slow.",
+		"tip": "💡 Tip: Use a lightweight model like Phi-3.5 or Llama-3.2-1B for better performance.",
+		"insufficientForInstall": "Insufficient RAM for installation (minimum {min} GB required)"
+	},
+	"pwa": {
+		"newConversation": "New Conversation",
+		"new": "New",
+		"newDescription": "Start a new conversation",
+		"historyShortcut": "History",
+		"historyDescription": "View conversation history"
+	}
+}

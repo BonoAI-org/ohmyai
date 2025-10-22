@@ -22,7 +22,7 @@ const MASKABLE_SIZES = [192, 512];
 
 // Chemins / Paths
 const SOURCE_ICON = 'static/icon-source.png';
-const OUTPUT_DIR = 'static/icons';
+const OUTPUT_DIR = 'static';
 
 /**
  * Génère une icône à la taille spécifiée / Generate icon at specified size
@@ -133,11 +133,8 @@ async function main() {
 		process.exit(1);
 	}
 	
-	// Crée le dossier de sortie / Create output directory
-	if (!existsSync(OUTPUT_DIR)) {
-		await mkdir(OUTPUT_DIR, { recursive: true });
-		console.log(`📁 Dossier créé / Directory created: ${OUTPUT_DIR}\n`);
-	}
+	// Le dossier static existe déjà / The static directory already exists
+	console.log(`📁 Génération des icônes dans / Generating icons in: ${OUTPUT_DIR}\n`);
 	
 	try {
 		// Génère les icônes normales / Generate normal icons
