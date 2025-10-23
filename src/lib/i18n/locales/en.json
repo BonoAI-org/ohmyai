@@ -2,6 +2,7 @@
 	"app": {
 		"title": "Oh my AI!",
 		"subtitle": "Local AI in your browser",
+		"tagline": "Local AI in your browser",
 		"description": "100% local AI chatbot running in your browser via WebAssembly. No data sent to any server."
 	},
 	"header": {

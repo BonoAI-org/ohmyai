@@ -2,6 +2,7 @@
 	"app": {
 		"title": "Oh my AI!",
 		"subtitle": "IA locale dans votre navigateur",
+		"tagline": "IA locale dans votre navigateur",
 		"description": "Chatbot IA 100% local fonctionnant dans votre navigateur via WebAssembly. Aucune donnée envoyée à un serveur."
 	},
 	"header": {

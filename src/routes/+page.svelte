@@ -11,6 +11,9 @@
 	// Référence pour l'input du message / Reference for message input
 	let messageInput = $state('');
 	
+	// Référence au composant LanguageSelector / Reference to LanguageSelector component
+	let languageSelectorRef = $state(null);
+	
 	// État du menu de sélection de modèle / Model selection menu state
 	let isModelSelectorOpen = $state(false);
 	
@@ -232,12 +235,18 @@
 	});
 
 	/**
-	 * Ferme le sélecteur de modèle quand on clique en dehors
-	 * Close model selector when clicking outside
+	 * Ferme les menus déroulants quand on clique en dehors
+	 * Close dropdown menus when clicking outside
 	 */
 	function handleClickOutside(event) {
+		// Ferme le sélecteur de modèle / Close model selector
 		if (isModelSelectorOpen && !event.target.closest('.model-selector-container')) {
 			isModelSelectorOpen = false;
+		}
+		
+		// Ferme le sélecteur de langue / Close language selector
+		if (languageSelectorRef && !event.target.closest('.language-selector')) {
+			languageSelectorRef.closeMenu?.();
 		}
 	}
 
@@ -271,9 +280,9 @@
 					<!-- Bouton nouveau mobile / New button mobile -->
 					<button
 						onclick={() => llmStore.startNewConversation()}
-						class="lg:hidden flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg transition-all shadow-lg"
-						aria-label="Nouvelle conversation / New conversation"
-						title="Démarrer une nouvelle conversation / Start a new conversation"
+						class="lg:hidden flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white rounded-lg transition-all shadow-lg touch-manipulation"
+						aria-label={$_('header.newConversation')}
+						title={$_('header.startNewConversation')}
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -281,9 +290,9 @@
 					</button>
 					<button
 						onclick={() => isHistoryOpen = true}
-						class="lg:hidden flex items-center justify-center w-10 h-10 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors"
-						aria-label="Historique / History"
-						title="Historique des conversations / Conversation history"
+						class="lg:hidden flex items-center justify-center w-10 h-10 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg transition-colors touch-manipulation"
+						aria-label={$_('header.history')}
+						title={$_('header.conversationHistory')}
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -298,7 +307,7 @@
 								h my AI!
 							</h1>
 							<p class="text-slate-300 -mt-1 -ml-3">
-								IA locale dans votre navigateur • Local AI in your browser
+								{$_('app.tagline')}
 							</p>
 						</div>
 					</div>
@@ -309,26 +318,26 @@
 					<!-- Bouton nouvelle conversation / New conversation button -->
 					<button
 						onclick={() => llmStore.startNewConversation()}
-						class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 rounded-lg transition-all shadow-lg hover:shadow-purple-500/50"
-						aria-label="Nouvelle conversation / New conversation"
-						title="Démarrer une nouvelle conversation / Start a new conversation"
+						class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-4 py-2 rounded-lg transition-all shadow-lg hover:shadow-purple-500/50 touch-manipulation"
+						aria-label={$_('header.newConversation')}
+						title={$_('header.startNewConversation')}
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
 						</svg>
-						<span class="text-sm font-medium hidden sm:inline">Nouveau</span>
+						<span class="text-sm font-medium hidden sm:inline">{$_('header.new')}</span>
 					</button>
 					
 					<!-- Bouton historique (desktop) / History button (desktop) -->
 					<button
 						onclick={() => isHistoryOpen = true}
-						class="hidden lg:flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors"
-						aria-label="Historique / History"
+						class="hidden lg:flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors touch-manipulation"
+						aria-label={$_('header.history')}
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
-						<span class="text-sm">Historique</span>
+						<span class="text-sm">{$_('header.history')}</span>
 						{#if llmStore.conversationHistory.length > 0}
 							<span class="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded-full">
 								{llmStore.conversationHistory.length}
@@ -340,9 +349,9 @@
 					{#if showInstallButton}
 						<button
 							onclick={handleInstallClick}
-							class="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all shadow-lg hover:shadow-green-500/50"
-							aria-label="Installer l'app / Install app"
-							title="Installer Oh my AI! sur votre appareil / Install Oh my AI! on your device"
+							class="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 active:from-green-800 active:to-green-900 text-white rounded-lg transition-all shadow-lg hover:shadow-green-500/50 touch-manipulation"
+							aria-label={$_('header.install')}
+							title={$_('header.installApp')}
 						>
 							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -352,7 +361,7 @@
 						<!-- Message RAM insuffisante / Insufficient RAM message -->
 						<div 
 							class="flex items-center justify-center w-10 h-10 bg-orange-600/20 border border-orange-600/50 text-orange-400 rounded-lg"
-							title="RAM insuffisante pour l'installation (minimum {MIN_RAM_GB} GB requis) / Insufficient RAM for installation (minimum {MIN_RAM_GB} GB required)"
+							title={$_('ram.insufficientForInstall', { values: { min: MIN_RAM_GB } })}
 						>
 							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -361,35 +370,36 @@
 					{/if}
 					
 					<!-- Sélecteur de langue / Language selector -->
-					<LanguageSelector />
+					<LanguageSelector bind:this={languageSelectorRef} />
 					
 					<!-- Sélecteur de modèle / Model selector -->
 					<div class="relative model-selector-container">
 					<button
-						onclick={() => isModelSelectorOpen = !isModelSelectorOpen}
+						onclick={(e) => { e.stopPropagation(); isModelSelectorOpen = !isModelSelectorOpen; }}
 						disabled={llmStore.isLoading || llmStore.isGenerating}
-						class="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-						aria-label="Sélectionner un modèle / Select a model"
+						class="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+						aria-label={$_('header.selectModel')}
+						aria-expanded={isModelSelectorOpen}
 					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
 								d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 						</svg>
-						<span class="text-sm">
+						<span class="text-sm truncate max-w-[120px] sm:max-w-none">
 							{getSelectedModelName()}
 						</span>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 flex-shrink-0 transition-transform {isModelSelectorOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 						</svg>
 					</button>
 					
 					<!-- Menu déroulant / Dropdown menu -->
 					{#if isModelSelectorOpen}
-						<div class="absolute right-0 mt-2 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50">
+						<div class="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-0 mt-2 mx-4 sm:mx-0 sm:w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[100] max-h-[70vh] overflow-y-auto">
 							<div class="p-2">
 								<div class="text-xs text-slate-400 px-3 py-2 font-semibold uppercase">
-									Choisir un modèle / Choose a model
+									{$_('header.chooseModel')}
 								</div>
 								{#each AVAILABLE_MODELS as model}
 									<button
@@ -404,7 +414,7 @@
 													<span class="font-semibold text-white">{model.name}</span>
 													{#if model.recommended}
 														<span class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
-															Recommandé
+															{$_('model.recommended')}
 														</span>
 													{/if}
 													{#if model.id === llmStore.selectedModel}
@@ -428,7 +438,7 @@
 											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
 											</svg>
-											Modèles Personnalisés / Custom Models
+											{$_('model.customModels')}
 										</div>
 										{#each llmStore.customModels as model}
 											<div class="relative group">
@@ -489,7 +499,7 @@
 										<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
 										</svg>
-										<span class="font-semibold">Ajouter un modèle personnalisé / Add custom model</span>
+										<span class="font-semibold">{$_('model.addCustomModel')}</span>
 									</button>
 								</div>
 							</div>
@@ -511,15 +521,12 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
 					</svg>
 					<div class="text-orange-200">
-						<p class="font-semibold mb-1">⚠️ RAM insuffisante détectée / Insufficient RAM detected</p>
+						<p class="font-semibold mb-1">{$_('ram.warning')}</p>
 						<p class="text-sm text-orange-300">
-							Votre appareil dispose de moins de {MIN_RAM_GB} GB de RAM. Les modèles d'IA peuvent ne pas fonctionner correctement ou être très lents.
-						</p>
-						<p class="text-sm text-orange-300 mt-1">
-							Your device has less than {MIN_RAM_GB} GB of RAM. AI models may not work properly or be very slow.
+							{$_('ram.insufficientMessage', { values: { min: MIN_RAM_GB } })}
 						</p>
 						<p class="text-xs text-orange-400 mt-2">
-							💡 Conseil : Utilisez un modèle léger comme Phi-3.5 ou Llama-3.2-1B pour de meilleures performances.
+							{$_('ram.tip')}
 						</p>
 					</div>
 				</div>
@@ -531,7 +538,7 @@
 					<div class="flex flex-col items-center gap-4">
 						<div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
 						<div class="text-white">
-							<p class="font-semibold">Chargement du modèle... / Loading model...</p>
+							<p class="font-semibold">{$_('loading.loadingModel')}</p>
 							<p class="text-sm text-slate-300 mt-2">{llmStore.loadingProgress}</p>
 						</div>
 					</div>
@@ -542,7 +549,7 @@
 			{#if llmStore.error}
 				<div class="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
 					<p class="text-red-200">
-						<strong>Erreur / Error:</strong> {llmStore.error}
+						<strong>{$_('error.title')}:</strong> {llmStore.error}
 					</p>
 				</div>
 			{/if}
@@ -555,9 +562,8 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
 							d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
 					</svg>
-					<p class="text-lg">Commencez une conversation / Start a conversation</p>
-					<p class="text-sm mt-2">Le modèle s'exécute entièrement dans votre navigateur via WebAssembly</p>
-					<p class="text-sm">The model runs entirely in your browser via WebAssembly</p>
+					<p class="text-lg">{$_('chat.startConversation')}</p>
+					<p class="text-sm mt-2">{$_('chat.runsInBrowser')}</p>
 				</div>
 			{/if}
 
@@ -572,7 +578,7 @@
 						<div class="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 150ms;"></div>
 						<div class="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 300ms;"></div>
 					</div>
-					<span class="text-sm">Génération en cours... / Generating...</span>
+					<span class="text-sm">{$_('chat.generating')}</span>
 				</div>
 			{/if}
 			</div>
@@ -586,12 +592,12 @@
 							scrollToBottom();
 						}}
 						class="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all animate-bounce"
-						aria-label="Retour en bas / Scroll to bottom"
+						aria-label={$_('chat.scrollToBottom')}
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
 						</svg>
-						<span class="text-sm font-medium">Retour en bas / Scroll to bottom</span>
+						<span class="text-sm font-medium">{$_('chat.scrollToBottom')}</span>
 					</button>
 				</div>
 			{/if}
@@ -607,15 +613,18 @@
 						bind:value={messageInput}
 						onkeydown={handleKeydown}
 						disabled={llmStore.isLoading || llmStore.isGenerating}
-						placeholder="Tapez votre message... / Type your message..."
+						placeholder={$_('chat.typePlaceholder')}
 						rows="3"
-						class="flex-1 bg-slate-700/50 text-white rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+						autocomplete="off"
+						autocorrect="on"
+						autocapitalize="sentences"
+						class="flex-1 bg-slate-700/50 text-white rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-base"
 					></textarea>
 					<button
 						onclick={handleSend}
 						disabled={llmStore.isLoading || llmStore.isGenerating || !messageInput.trim()}
-						aria-label="Envoyer le message / Send message"
-						class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
+						aria-label={$_('chat.send')}
+						class="px-4 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -630,7 +639,7 @@
 						onclick={() => llmStore.clearMessages()}
 						class="mt-2 text-sm text-slate-400 hover:text-white transition-colors"
 					>
-						🗑️ Effacer la conversation / Clear conversation
+						{$_('chat.clearConversation')}
 					</button>
 				{/if}
 			</div>

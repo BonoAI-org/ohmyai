@@ -36,33 +36,38 @@
 	}
 
 	/**
-	 * Ferme le menu si on clique en dehors / Close menu when clicking outside
+	 * Gère le toggle du menu / Handle menu toggle
 	 */
-	function handleClickOutside(event) {
-		if (isOpen && !event.target.closest('.language-selector')) {
-			isOpen = false;
-		}
+	function toggleMenu(event) {
+		event.stopPropagation();
+		isOpen = !isOpen;
+	}
+	
+	/**
+	 * Expose la fonction pour fermer le menu depuis l'extérieur / Expose function to close menu from outside
+	 */
+	export function closeMenu() {
+		isOpen = false;
 	}
 </script>
 
-<svelte:window onclick={handleClickOutside} />
-
 <div class="relative language-selector">
 	<button
-		onclick={() => isOpen = !isOpen}
-		class="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 text-white px-3 py-2 rounded-lg transition-colors"
+		onclick={toggleMenu}
+		class="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white px-3 py-2 rounded-lg transition-colors touch-manipulation"
 		aria-label="Sélectionner la langue / Select language"
 		title="Langue / Language"
+		aria-expanded={isOpen}
 	>
 		<span class="text-lg">{languages[getCurrentLanguage()]?.flag || '🌐'}</span>
 		<span class="text-sm hidden sm:inline">{languages[getCurrentLanguage()]?.name || 'Language'}</span>
-		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<svg class="w-4 h-4 transition-transform {isOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 		</svg>
 	</button>
 
 	{#if isOpen}
-		<div class="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50">
+		<div class="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-0 mt-2 mx-4 sm:mx-0 sm:w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[100]">
 			<div class="p-2">
 				{#each Object.entries(languages) as [code, lang]}
 					<button
