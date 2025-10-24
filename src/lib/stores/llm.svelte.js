@@ -1,5 +1,7 @@
 import { CreateMLCEngine } from '@mlc-ai/web-llm';
 import { db } from '$lib/db/conversationDB.js';
+import { get } from 'svelte/store';
+import { _ } from 'svelte-i18n';
 
 /**
  * Liste des modèles disponibles avec leurs caractéristiques
@@ -73,11 +75,29 @@ class LLMStore {
 	error = $state(null);
 
 	/**
+	 * Vérifie si WebGPU est disponible / Check if WebGPU is available
+	 * @returns {boolean}
+	 */
+	isWebGPUAvailable() {
+		if (typeof navigator === 'undefined') return false;
+		return 'gpu' in navigator;
+	}
+
+	/**
 	 * Initialise le moteur LLM avec le modèle sélectionné
 	 * Initialize the LLM engine with the selected model
 	 */
 	async initEngine() {
 		if (this.engine) return; // Déjà initialisé / Already initialized
+		
+		// Vérifie WebGPU / Check WebGPU
+		if (!this.isWebGPUAvailable()) {
+			// Utilise la traduction i18n pour le message d'erreur / Use i18n translation for error message
+			const t = get(_);
+			this.error = t ? t('error.webgpuNotAvailable') : '❌ WebGPU not available';
+			console.error('WebGPU not available');
+			return;
+		}
 		
 		this.isLoading = true;
 		this.error = null;
@@ -87,18 +107,29 @@ class LLMStore {
 			// Callback to track download progress
 			const progressCallback = (progress) => {
 				this.loadingProgress = progress.text;
+				console.log('Loading progress:', progress.text);
 			};
 
-			// Crée le moteur MLCEngine qui exécute le modèle en WASM
-			// Create the MLCEngine which runs the model in WASM
+			console.log('Initializing WebLLM with model:', this.selectedModel);
+
+			// Crée le moteur MLCEngine qui exécute le modèle en WASM + WebGPU
+			// Create the MLCEngine which runs the model in WASM + WebGPU
 			this.engine = await CreateMLCEngine(this.selectedModel, {
 				initProgressCallback: progressCallback,
+				logLevel: 'INFO' // Ajouter plus de logs pour debugging / Add more logs for debugging
 			});
 			
-			this.loadingProgress = 'Modèle chargé avec succès ! / Model loaded successfully!';
+			// Utilise la traduction i18n / Use i18n translation
+			const t = get(_);
+			this.loadingProgress = t ? t('loading.modelLoaded') : 'Model loaded successfully!';
+			console.log('WebLLM engine initialized successfully');
 		} catch (err) {
-			this.error = err.message;
+			// Utilise la traduction i18n pour le titre d'erreur / Use i18n translation for error title
+			const t = get(_);
+			const errorTitle = t ? t('error.title') : 'Error';
+			this.error = `❌ ${errorTitle}: ${err.message}`;
 			console.error('Erreur lors du chargement du modèle / Error loading model:', err);
+			console.error('Stack trace:', err.stack);
 		} finally {
 			this.isLoading = false;
 		}

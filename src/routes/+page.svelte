@@ -26,9 +26,9 @@
 	// Prompt d'installation PWA / PWA install prompt
 	let deferredInstallPrompt = $state(null);
 	let showInstallButton = $state(false);
-	let hasEnoughRAM = $state(true);
 	
-	// RAM minimum requise en Go / Minimum required RAM in GB
+	// Vérifie la RAM disponible / Check available RAM
+	let hasEnoughRAM = $state(true);
 	const MIN_RAM_GB = 4;
 
 	/**
@@ -36,6 +36,8 @@
 	 * Check if device has enough RAM
 	 */
 	function checkRAM() {
+		if (typeof navigator === 'undefined') return true;
+		
 		// API Device Memory (Chrome, Edge)
 		// Returns RAM en Go / Returns RAM in GB
 		if ('deviceMemory' in navigator) {
@@ -68,11 +70,11 @@
 		// Charge l'historique des conversations / Load conversation history
 		llmStore.loadConversationHistory();
 		
-		// Initialise le moteur / Initialize engine
-		llmStore.initEngine();
-		
 		// Vérifie la RAM disponible / Check available RAM
 		checkRAM();
+		
+		// Initialise le moteur (inclut la vérification WebGPU) / Initialize engine (includes WebGPU check)
+		llmStore.initEngine();
 		
 		// Écoute l'événement d'installation PWA / Listen for PWA install event
 		window.addEventListener('beforeinstallprompt', (event) => {

@@ -13,7 +13,7 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { precacheAndRoute } from 'workbox-precaching';
 
 // Version et nom du cache / Version and cache name
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const CACHE_NAME = `ho-my-ai-${VERSION}`;
 
 // Précache les ressources (injecté automatiquement par Workbox)
@@ -73,20 +73,27 @@ registerRoute(
 	})
 );
 
-// NE PAS CACHER LES FICHIERS WASM (trop gros)
-// DON'T CACHE WASM FILES (too large)
+// NE PAS CACHER les fichiers des modèles LLM et ressources WebLLM
+// DON'T CACHE LLM model files and WebLLM resources
+// WebLLM gère son propre cache via IndexedDB et Cache API
+// WebLLM manages its own cache via IndexedDB and Cache API
 registerRoute(
-	({ url }) => url.pathname.endsWith('.wasm') || url.pathname.endsWith('.bin'),
-	new NetworkFirst({
-		cacheName: `${CACHE_NAME}-wasm`,
-		plugins: [
-			new CacheableResponsePlugin({
-				statuses: [0, 200]
-			}),
-			// Pas d'expiration, on garde en cache une fois téléchargé
-			// No expiration, keep cached once downloaded
-		]
-	})
+	({ url }) => {
+		// Exclure tous les fichiers de modèles et ressources WebLLM
+		// Exclude all model files and WebLLM resources
+		return (
+			url.hostname.includes('huggingface.co') ||
+			url.hostname.includes('cdn.jsdelivr.net') ||
+			url.hostname.includes('unpkg.com') ||
+			url.pathname.includes('mlc-llm') ||
+			url.pathname.endsWith('.wasm') ||
+			url.pathname.endsWith('.bin') ||
+			url.pathname.endsWith('.params') ||
+			url.pathname.endsWith('.model')
+		);
+	},
+	// Stratégie Network Only - ne pas cacher du tout / Network Only strategy - don't cache at all
+	({ event }) => fetch(event.request)
 );
 
 // Installation du service worker / Service worker installation
@@ -179,6 +186,17 @@ self.addEventListener('notificationclick', (event) => {
 	event.waitUntil(
 		clients.openWindow('/')
 	);
+});
+
+// Gestion des erreurs globales / Global error handling
+self.addEventListener('error', (event) => {
+	console.error('[SW] Erreur globale / Global error:', event.error);
+});
+
+self.addEventListener('unhandledrejection', (event) => {
+	console.error('[SW] Promise rejetée non gérée / Unhandled promise rejection:', event.reason);
+	// Empêche l'erreur de remonter et crasher le SW / Prevent error from bubbling up and crashing SW
+	event.preventDefault();
 });
 
 console.log('[SW] Service Worker chargé / Service Worker loaded:', VERSION);

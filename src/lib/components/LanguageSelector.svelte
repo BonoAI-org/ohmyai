@@ -17,8 +17,10 @@
 	/**
 	 * Change la langue de l'application / Change application language
 	 * @param {string} lang - Code de la langue / Language code
+	 * @param {Event} event - Événement de clic / Click event
 	 */
-	function changeLanguage(lang) {
+	function changeLanguage(lang, event) {
+		event.stopPropagation();
 		locale.set(lang);
 		isOpen = false;
 		// Sauvegarde la préférence / Save preference
@@ -71,8 +73,8 @@
 			<div class="p-2">
 				{#each Object.entries(languages) as [code, lang]}
 					<button
-						onclick={() => changeLanguage(code)}
-						class="w-full text-left px-3 py-2 rounded hover:bg-slate-700/50 transition-colors flex items-center gap-3 {
+						onclick={(e) => changeLanguage(code, e)}
+						class="w-full text-left px-3 py-2 rounded hover:bg-slate-700/50 active:bg-slate-600 transition-colors flex items-center gap-3 touch-manipulation {
 							code === getCurrentLanguage() ? 'bg-purple-600/20 border border-purple-500/50' : ''
 						}"
 					>

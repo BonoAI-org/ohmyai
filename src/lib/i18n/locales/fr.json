@@ -35,10 +35,12 @@
 	},
 	"loading": {
 		"loadingModel": "Chargement du modèle...",
-		"progress": "Progression"
+		"progress": "Progression",
+		"modelLoaded": "Modèle chargé avec succès !"
 	},
 	"error": {
-		"title": "Erreur"
+		"title": "Erreur",
+		"webgpuNotAvailable": "❌ WebGPU non disponible. Votre navigateur ou appareil ne supporte pas WebGPU. Essayez Chrome/Edge 113+ sur desktop ou activez WebGPU dans les flags du navigateur."
 	},
 	"ram": {
 		"warning": "⚠️ RAM insuffisante détectée",

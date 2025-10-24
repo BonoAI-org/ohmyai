@@ -1,18 +1,8 @@
 # 🤖 Oh my AI!
 
-Une application web moderne qui exécute un Large Language Model (LLM) entièrement dans votre navigateur grâce à WebAssembly.
-
 A modern web application that runs a Large Language Model (LLM) entirely in your browser using WebAssembly.
 
-## ✨ Fonctionnalités / Features
-
-- 🚀 **Exécution locale** : Le modèle s'exécute 100% dans votre navigateur via WebAssembly
-- 🔒 **Confidentialité totale** : Aucune donnée n'est envoyée à un serveur externe
-- 💬 **Interface de chat moderne** : Interface utilisateur élégante avec TailwindCSS
-- ⚡ **Streaming en temps réel** : Les réponses s'affichent au fur et à mesure de leur génération
-- 🎨 **Design responsive** : Fonctionne parfaitement sur ordinateur et mobile
-
----
+## ✨ Features
 
 - 🚀 **Local execution**: The model runs 100% in your browser via WebAssembly
 - 🔒 **Complete privacy**: No data is sent to external servers
@@ -22,52 +12,46 @@ A modern web application that runs a Large Language Model (LLM) entirely in your
 
 ## 🛠️ Technologies
 
-- **SvelteKit** : Framework web moderne et performant / Modern and performant web framework
-- **Bun** : Runtime JavaScript ultra-rapide / Ultra-fast JavaScript runtime
-- **TailwindCSS** : Framework CSS utilitaire / Utility-first CSS framework
-- **WebLLM** : Bibliothèque pour exécuter des LLM en WASM / Library to run LLMs in WASM
-- **WebAssembly** : Compilation pour performances natives / Compilation for native performance
+- **SvelteKit**: Modern and performant web framework
+- **Bun**: Ultra-fast JavaScript runtime
+- **TailwindCSS**: Utility-first CSS framework
+- **WebLLM**: Library to run LLMs in WASM
+- **WebAssembly**: Compilation for native performance
 
-## 📋 Prérequis / Prerequisites
+## 📋 Prerequisites
 
-- **Bun** : Version 1.0 ou supérieure / Version 1.0 or higher
-- **Navigateur moderne** : Chrome, Firefox, Safari ou Edge avec support WebAssembly / Modern browser with WebAssembly support
-- **Mémoire** : Au moins 4 GB de RAM recommandé / At least 4 GB RAM recommended
+- **Bun**: Version 1.0 or higher
+- **Modern browser**: Chrome, Firefox, Safari or Edge with WebAssembly support
+- **Memory**: At least 4 GB RAM recommended
 
 ## 🚀 Installation
 
-### 1. Cloner le projet / Clone the project
+### 1. Clone the project
 
 ```sh
-git clone <votre-repo>
+git clone <your-repo>
 cd llm-wasm-app
 ```
 
-### 2. Installer les dépendances / Install dependencies
+### 2. Install dependencies
 
 ```sh
 bun install
 ```
 
-### 3. Lancer le serveur de développement / Start development server
+### 3. Start development server
 
 ```sh
 bun run dev
 ```
 
-L'application sera accessible sur `http://localhost:5173`
-
 The application will be available at `http://localhost:5173`
 
-### 4. Ouvrir dans le navigateur / Open in browser
-
-Ouvrez votre navigateur et accédez à l'URL affichée. Le modèle commencera à se télécharger automatiquement.
+### 4. Open in browser
 
 Open your browser and go to the displayed URL. The model will start downloading automatically.
 
-## 📦 Build pour la production / Build for production
-
-Pour créer une version optimisée pour la production :
+## 📦 Build for production
 
 To create an optimized production version:
 
@@ -75,61 +59,51 @@ To create an optimized production version:
 bun run build
 ```
 
-Pour prévisualiser le build de production :
-
 To preview the production build:
 
 ```sh
 bun run preview
 ```
 
-## 🎯 Utilisation / Usage
+## 🎯 Usage
 
-### Première utilisation / First use
-
-1. **Chargement du modèle** : Au premier chargement, le modèle (~1-2 GB) sera téléchargé et mis en cache
-2. **Attendre le chargement** : Une barre de progression indiquera l'état du téléchargement
-3. **Commencer à discuter** : Une fois chargé, tapez votre message et appuyez sur Entrée ou cliquez sur le bouton d'envoi
-
----
+### First use
 
 1. **Model loading**: On first load, the model (~1-2 GB) will be downloaded and cached
 2. **Wait for loading**: A progress bar will show the download status
 3. **Start chatting**: Once loaded, type your message and press Enter or click the send button
 
-### Fonctionnalités de l'interface / Interface features
+### Interface features
 
-- **Enter** : Envoyer un message / Send a message
-- **Shift + Enter** : Nouvelle ligne / New line
-- **Bouton 🗑️** : Effacer la conversation / Clear conversation
+- **Enter**: Send a message
+- **Shift + Enter**: New line
+- **🗑️ Button**: Clear conversation
 
-## 🧩 Architecture du projet / Project architecture
+## 🧩 Project architecture
 
 ```
 llm-wasm-app/
 ├── src/
 │   ├── lib/
 │   │   ├── components/
-│   │   │   └── ChatMessage.svelte     # Composant message / Message component
+│   │   │   └── ChatMessage.svelte     # Message component
 │   │   └── stores/
-│   │       └── llm.svelte.js          # Store de gestion du LLM / LLM management store
+│   │       └── llm.svelte.js          # LLM management store
 │   ├── routes/
-│   │   ├── +layout.svelte             # Layout principal / Main layout
-│   │   └── +page.svelte               # Page de chat / Chat page
-│   ├── app.css                        # Styles globaux / Global styles
-│   └── app.html                       # Template HTML / HTML template
-├── static/                            # Fichiers statiques / Static files
-├── package.json                       # Dépendances / Dependencies
-├── svelte.config.js                   # Configuration Svelte
-├── vite.config.js                     # Configuration Vite
-└── tailwind.config.js                 # Configuration Tailwind (si présent)
+│   │   ├── +layout.svelte             # Main layout
+│   │   └── +page.svelte               # Chat page
+│   ├── app.css                        # Global styles
+│   └── app.html                       # HTML template
+├── static/                            # Static files
+├── package.json                       # Dependencies
+├── svelte.config.js                   # Svelte configuration
+├── vite.config.js                     # Vite configuration
+└── tailwind.config.js                 # Tailwind configuration
 ```
 
 ## 🔧 Configuration
 
-### Changer le modèle / Change the model
-
-Pour utiliser un modèle différent, modifiez la valeur de `selectedModel` dans `/src/lib/stores/llm.svelte.js` :
+### Change the model
 
 To use a different model, modify the `selectedModel` value in `/src/lib/stores/llm.svelte.js`:
 
@@ -137,48 +111,40 @@ To use a different model, modify the `selectedModel` value in `/src/lib/stores/l
 selectedModel = $state('Llama-3.2-1B-Instruct-q4f32_1-MLC');
 ```
 
-Modèles disponibles / Available models:
-- `Llama-3.2-1B-Instruct-q4f32_1-MLC` (léger / lightweight)
-- `Llama-3.2-3B-Instruct-q4f32_1-MLC` (équilibré / balanced)
-- `Phi-3.5-mini-instruct-q4f16_1-MLC` (rapide / fast)
-- Voir la liste complète sur : https://github.com/mlc-ai/web-llm
+Available models:
+- `Llama-3.2-1B-Instruct-q4f32_1-MLC` (lightweight)
+- `Llama-3.2-3B-Instruct-q4f32_1-MLC` (balanced)
+- `Phi-3.5-mini-instruct-q4f16_1-MLC` (fast)
+- See full list at: https://github.com/mlc-ai/web-llm
 
-### Ajuster les paramètres de génération / Adjust generation parameters
-
-Dans `/src/lib/stores/llm.svelte.js`, méthode `sendMessage()` :
+### Adjust generation parameters
 
 In `/src/lib/stores/llm.svelte.js`, `sendMessage()` method:
 
 ```javascript
 const asyncChunkGenerator = await this.engine.chat.completions.create({
 	messages: chatMessages,
-	temperature: 0.7,      // Créativité (0-1) / Creativity (0-1)
-	max_tokens: 512,       // Longueur max / Max length
+	temperature: 0.7,      // Creativity (0-1)
+	max_tokens: 512,       // Max length
 	stream: true,
 });
 ```
 
-## 🐛 Dépannage / Troubleshooting
+## 🐛 Troubleshooting
 
-### Le modèle ne se charge pas / Model won't load
+### Model won't load
 
-- Vérifiez votre connexion internet / Check your internet connection
-- Assurez-vous d'avoir assez d'espace disque (cache du navigateur) / Make sure you have enough disk space (browser cache)
-- Essayez un modèle plus petit / Try a smaller model
+- Check your internet connection
+- Make sure you have enough disk space (browser cache)
+- Try a smaller model
 
-### Erreur de mémoire / Memory error
+### Memory error
 
-- Fermez les autres onglets / Close other tabs
-- Utilisez un modèle plus petit / Use a smaller model
-- Augmentez la RAM disponible pour votre navigateur / Increase available RAM for your browser
+- Close other tabs
+- Use a smaller model
+- Increase available RAM for your browser
 
-### Performance lente / Slow performance
-
-- Utilisez un navigateur basé sur Chromium (Chrome, Edge) pour de meilleures performances
-- Assurez-vous que l'accélération matérielle est activée dans les paramètres du navigateur
-- Essayez un modèle quantifié plus petit / Try a smaller quantized model
-
----
+### Slow performance
 
 - Use a Chromium-based browser (Chrome, Edge) for better performance
 - Make sure hardware acceleration is enabled in browser settings
@@ -186,40 +152,38 @@ const asyncChunkGenerator = await this.engine.chat.completions.create({
 
 ## 📚 Documentation
 
-### Guides Complets / Complete Guides
+### Complete Guides
 
-- 🚀 **[Quick Start](docs/QUICKSTART.md)** - Démarrage rapide / Quick start guide
-- 🏗️ **[Architecture](docs/ARCHITECTURE.md)** - Architecture du projet / Project architecture
-- 🌐 **[Déploiement](docs/DEPLOYMENT.md)** - Guide de déploiement complet / Complete deployment guide
-- ⚡ **[Cloudflare Quick Deploy](docs/CLOUDFLARE_QUICKSTART.md)** - Déploiement Cloudflare / Cloudflare deployment
-- 📱 **[PWA Guide](docs/PWA_GUIDE.md)** - Progressive Web App / PWA features
-- 💾 **[Vérification RAM](docs/RAM_CHECK.md)** - Détection de RAM / RAM detection
+- 🚀 **[Quick Start](docs/QUICKSTART.md)** - Quick start guide
+- 🏗️ **[Architecture](docs/ARCHITECTURE.md)** - Project architecture
+- 🌐 **[Deployment](docs/DEPLOYMENT.md)** - Complete deployment guide
+- ⚡ **[Cloudflare Quick Deploy](docs/CLOUDFLARE_QUICKSTART.md)** - Cloudflare deployment
+- 📱 **[PWA Guide](docs/PWA_GUIDE.md)** - Progressive Web App features
+- 💾 **[RAM Check](docs/RAM_CHECK.md)** - RAM detection
 
-### Fonctionnalités / Features
+### Features
 
-- 🤖 **[Modèles](docs/MODELES.md)** - Liste des modèles disponibles / Available models
-- ➕ **[Modèles Personnalisés](docs/CUSTOM_MODELS.md)** - Ajouter vos modèles / Add custom models
-- 💬 **[Historique](docs/CONVERSATION_HISTORY.md)** - Gestion des conversations / Conversation management
-- 🗄️ **[Migration Dexie](docs/DEXIE_MIGRATION.md)** - Migration de la base de données / Database migration
+- 🤖 **[Models](docs/MODELES.md)** - Available models list
+- ➕ **[Custom Models](docs/CUSTOM_MODELS.md)** - Add custom models
+- 💬 **[History](docs/CONVERSATION_HISTORY.md)** - Conversation management
+- 🗄️ **[Dexie Migration](docs/DEXIE_MIGRATION.md)** - Database migration
 
-### Développement / Development
+### Development
 
-- 🤝 **[Contributing](docs/CONTRIBUTING.md)** - Guide de contribution / Contribution guide
-- 📊 **[Project Summary](docs/PROJECT_SUMMARY.md)** - Résumé du projet / Project summary
+- 🤝 **[Contributing](docs/CONTRIBUTING.md)** - Contribution guide
+- 📊 **[Project Summary](docs/PROJECT_SUMMARY.md)** - Project summary
 
-## 📚 Ressources Externes / External Resources
+## 📚 External Resources
 
-- [Documentation WebLLM](https://github.com/mlc-ai/web-llm)
-- [Documentation SvelteKit](https://kit.svelte.dev/)
-- [Documentation Bun](https://bun.sh/)
+- [WebLLM Documentation](https://github.com/mlc-ai/web-llm)
+- [SvelteKit Documentation](https://kit.svelte.dev/)
+- [Bun Documentation](https://bun.sh/)
 - [TailwindCSS](https://tailwindcss.com/)
 
-## 📝 Licence / License
+## 📝 License
 
 MIT
 
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+## 🤝 Contributing
 
 Contributions are welcome! Feel free to open an issue or pull request.
