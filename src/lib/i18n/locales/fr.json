@@ -54,5 +54,30 @@
 		"newDescription": "Démarrer une nouvelle conversation",
 		"historyShortcut": "Historique",
 		"historyDescription": "Voir l'historique des conversations"
+	},
+	"history": {
+		"title": "Historique",
+		"close": "Fermer",
+		"new": "Nouvelle",
+		"export": "Exporter",
+		"exportHistory": "Exporter l'historique",
+		"import": "Importer",
+		"importHistory": "Importer l'historique",
+		"searchPlaceholder": "Rechercher...",
+		"searching": "Recherche...",
+		"noConversations": "Aucune conversation sauvegardée",
+		"current": "Actuel",
+		"messages": "msg",
+		"rename": "Renommer",
+		"delete": "Supprimer",
+		"save": "Sauvegarder",
+		"cancel": "Annuler",
+		"deleteConfirm": "Supprimer cette conversation ?",
+		"importSuccess": "Historique importé avec succès !\n{count} conversations importées",
+		"importError": "Erreur lors de l'importation",
+		"conversationCount": "{count} conversation(s) sauvegardée(s)",
+		"today": "Aujourd'hui",
+		"yesterday": "Hier",
+		"minutesAgo": "Il y a {minutes} min"
 	}
 }

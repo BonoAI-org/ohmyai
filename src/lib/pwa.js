@@ -36,11 +36,15 @@ export async function registerServiceWorker() {
 			const newWorker = registration.installing;
 			console.log('🆕 Nouvelle version détectée / New version detected');
 
-			newWorker?.addEventListener('statechange', () => {
+			newWorker?.addEventListener('statechange', async () => {
 				if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-					// Une nouvelle version est disponible / New version available
-					console.log('📦 Nouvelle version prête / New version ready');
-					showUpdateNotification(registration);
+					const oldVersion = await getSWVersion(navigator.serviceWorker.controller);
+					const newVersion = await getSWVersion(newWorker);
+					console.log(`[PWA] Version installée: ${oldVersion}, Nouvelle version: ${newVersion}`);
+					if (newVersion && newVersion !== oldVersion) {
+						console.log('📦 Nouvelle version prête / New version ready');
+						showUpdateNotification(registration);
+					}
 				}
 			});
 		});
@@ -61,6 +65,24 @@ export async function registerServiceWorker() {
  * Affiche une notification de mise à jour
  * Show update notification
  */
+async function getSWVersion(worker) {
+	return new Promise((resolve, reject) => {
+		const messageChannel = new MessageChannel();
+		messageChannel.port1.onmessage = (event) => {
+			if (event.data.error) {
+				reject(event.data.error);
+			} else {
+				resolve(event.data.version);
+			}
+		};
+		try {
+			worker.postMessage({ type: 'GET_VERSION' }, [messageChannel.port2]);
+		} catch (e) {
+			reject(e);
+		}
+	});
+}
+
 function showUpdateNotification(registration) {
 	// Crée une bannière de notification / Create notification banner
 	const banner = document.createElement('div');

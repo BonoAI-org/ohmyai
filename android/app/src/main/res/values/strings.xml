@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ho-my-ai</string>
+    <string name="title_activity_main">ho-my-ai</string>
+    <string name="package_name">org.ohmyai.app</string>
+    <string name="custom_url_scheme">org.ohmyai.app</string>
+</resources>

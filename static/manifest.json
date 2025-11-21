@@ -58,6 +58,15 @@
 			"purpose": "any"
 		}
 	],
+	"screenshots": [
+		{
+			"src": "/screenshot-desktop.png",
+			"sizes": "1024x560",
+			"type": "image/png",
+			"form_factor": "wide",
+			"label": "Oh my AI! - Interface principale de chat avec IA locale"
+		}
+	],
 	"shortcuts": [
 		{
 			"name": "Nouvelle Conversation",

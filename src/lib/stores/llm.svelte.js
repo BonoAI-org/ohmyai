@@ -1,7 +1,26 @@
-import { CreateMLCEngine } from '@mlc-ai/web-llm';
+import { CreateMLCEngine, hasModelInCache, prebuiltAppConfig } from '@mlc-ai/web-llm';
+import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs } from '$lib/opfs.js';
 import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
+
+/**
+ * Configuration de l'application avec le modèle Gemma 2 ajouté manuellement
+ * App configuration with manually added Gemma 2 model
+ */
+const appConfig = {
+	model_list: [
+		...prebuiltAppConfig.model_list,
+		{
+			"model": "https://huggingface.co/mlc-ai/gemma-2-9b-it-q4f16_1-MLC",
+			"model_id": "gemma-2-9b-it-q4f16_1-MLC",
+			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0.2.48/Gemma-2-9B-Instruct-q4f16_1-MLC-webgpu.wasm",
+			"vram_required_MB": 6103.52,
+			"low_resource_required": false,
+		}
+	],
+	use_web_worker: true
+};
 
 /**
  * Liste des modèles disponibles avec leurs caractéristiques
@@ -9,31 +28,40 @@ import { _ } from 'svelte-i18n';
  */
 export const AVAILABLE_MODELS = [
 	{
-		id: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-		name: 'Llama 3.2 1B',
-		size: '~650 MB',
-		description: 'Rapide et léger / Fast and lightweight',
+		id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
+		name: 'Phi-3 Mini (4k Instruct)',
+		size: '~2.2 GB',
+		description: 'Excellent pour le code / Excellent for code',
 		recommended: true
 	},
 	{
-		id: 'Llama-3.2-3B-Instruct-q4f32_1-MLC',
-		name: 'Llama 3.2 3B',
-		size: '~1.9 GB',
-		description: 'Équilibré, meilleure qualité / Balanced, better quality',
+		id: 'Llama-3-8B-Instruct-q4f16_1-MLC',
+		name: 'Llama 3 (8B)',
+		vram: '5.2 GB',
+		size: '4.4 GB',
+		description: 'Modèle Llama populaire et équilibré.',
+		recommended: true
+	},
+	{
+		id: 'gemma-2-9b-it-q4f16_1-MLC',
+		name: 'Gemma 2 (9B)',
+		vram: '6.1 GB',
+		size: '5.5 GB',
+		description: 'Modèle de Google, nouvelle génération.'
+	},
+	{
+		id: 'Mistral-7B-Instruct-v0.3-q4f16_1-MLC',
+		name: 'Mistral 7B Instruct v0.3',
+		size: '~3.8 GB',
+		description: 'Modèle populaire et performant / Popular and powerful model',
 		recommended: false
 	},
 	{
-		id: 'Phi-3.5-mini-instruct-q4f16_1-MLC',
-		name: 'Phi 3.5 Mini',
-		size: '~2.2 GB',
-		description: 'Excellent pour le code / Excellent for code',
-		recommended: false
-	},
-	{
-		id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
-		name: 'Qwen 2.5 1.5B',
-		size: '~950 MB',
-		description: 'Multilingue / Multilingual',
+		id: 'Phi-3-vision-128k-instruct-q4f16_1-MLC',
+		name: 'Phi-3 Vision (128k Instruct)',
+		size: '~2.8 GB',
+		description: 'Modèle vision multimodale / Multimodal vision model',
+		multimodal: true,
 		recommended: false
 	}
 ];
@@ -45,34 +73,35 @@ export const AVAILABLE_MODELS = [
 class LLMStore {
 	// État du moteur LLM / LLM engine state
 	engine = $state(null);
-	
+
 	// Messages de la conversation / Conversation messages
 	messages = $state([]);
-	
+
 	// Statut du chargement du modèle / Model loading status
 	isLoading = $state(false);
-	
+
 	// Statut de la génération de texte / Text generation status
 	isGenerating = $state(false);
-	
+
 	// Progression du chargement / Loading progress
 	loadingProgress = $state('');
-	
+
 	// Modèle sélectionné / Selected model
-	selectedModel = $state('Llama-3.2-1B-Instruct-q4f32_1-MLC');
-	
+	selectedModel = $state('Phi-3-mini-4k-instruct-q4f16_1-MLC');
+
 	// Liste des modèles personnalisés ajoutés par l'utilisateur
 	// List of custom models added by the user
 	customModels = $state([]);
-	
+
 	// Historique des conversations sauvegardées / Saved conversation history
 	conversationHistory = $state([]);
-	
+
 	// ID de la conversation actuelle / Current conversation ID
 	currentConversationId = $state(null);
-	
+
 	// Erreur éventuelle / Potential error
 	error = $state(null);
+	huggingFaceToken = $state(null);
 
 	/**
 	 * Vérifie si WebGPU est disponible / Check if WebGPU is available
@@ -84,12 +113,66 @@ class LLMStore {
 	}
 
 	/**
+	 * Indique si le modèle sélectionné est multimodal (texte+image)
+	 * Indicates if the selected model is multimodal (text+image)
+	 * @returns {boolean}
+	 */
+	isSelectedModelMultimodal() {
+		try {
+			const standard = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
+			if (standard) return !!standard.multimodal;
+			const custom = this.customModels.find(m => m.id === this.selectedModel);
+			return !!(custom && custom.multimodal);
+		} catch (_) {
+			return false;
+		}
+	}
+
+	/**
+	 * Sauvegarde le modèle sélectionné dans localStorage
+	 * Save currently selected model to localStorage
+	 */
+	saveSelectedModel() {
+		try {
+			localStorage.setItem('selectedModel', this.selectedModel);
+		} catch (err) {
+			console.error('Erreur sauvegarde selectedModel / Error saving selectedModel:', err);
+		}
+	}
+
+	/**
+	 * Charge le dernier modèle sélectionné depuis localStorage
+	 * Load last selected model from localStorage
+	 */
+	loadSelectedModel() {
+		try {
+			const saved = localStorage.getItem('selectedModel');
+			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
+			const modelExists = allModels.some(m => m.id === saved);
+
+			if (saved && modelExists) {
+				this.selectedModel = saved;
+			} else {
+				if (saved) {
+					console.warn(`Modèle sauvegardé "${saved}" non trouvé. Réinitialisation au modèle par défaut.`);
+				}
+				// Retour au modèle recommandé ou au premier de la liste
+				this.selectedModel = AVAILABLE_MODELS.find(m => m.recommended)?.id || AVAILABLE_MODELS[0].id;
+				this.saveSelectedModel();
+			}
+		} catch (err) {
+			console.error('Erreur chargement modèle / Error loading model:', err);
+		}
+	}
+
+	/**
 	 * Initialise le moteur LLM avec le modèle sélectionné
 	 * Initialize the LLM engine with the selected model
 	 */
 	async initEngine() {
+
 		if (this.engine) return; // Déjà initialisé / Already initialized
-		
+
 		// Vérifie WebGPU / Check WebGPU
 		if (!this.isWebGPUAvailable()) {
 			// Utilise la traduction i18n pour le message d'erreur / Use i18n translation for error message
@@ -98,27 +181,92 @@ class LLMStore {
 			console.error('WebGPU not available');
 			return;
 		}
-		
+
 		this.isLoading = true;
 		this.error = null;
-		
+
 		try {
 			// Callback pour suivre la progression du téléchargement
 			// Callback to track download progress
 			const progressCallback = (progress) => {
 				this.loadingProgress = progress.text;
-				console.log('Loading progress:', progress.text);
+				// console.log('Loading progress:', progress.text);
 			};
 
-			console.log('Initializing WebLLM with model:', this.selectedModel);
+			// console.log('Initializing WebLLM with model:', this.selectedModel);
 
 			// Crée le moteur MLCEngine qui exécute le modèle en WASM + WebGPU
 			// Create the MLCEngine which runs the model in WASM + WebGPU
-			this.engine = await CreateMLCEngine(this.selectedModel, {
-				initProgressCallback: progressCallback,
-				logLevel: 'INFO' // Ajouter plus de logs pour debugging / Add more logs for debugging
-			});
-			
+			const selectedModelConfig = AVAILABLE_MODELS.find((m) => m.id === this.selectedModel);
+
+			const useOpfs = isOpfsSupported();
+			let opfsSuccess = false;
+
+			if (useOpfs && !selectedModelConfig.multimodal) {
+				try {
+					const t = get(_);
+					this.loadingProgress = t ? t('loading.checkingOpfs') : 'Checking local storage...';
+
+					const ndarrayCacheUrl = `https://huggingface.co/mlc-ai/${this.selectedModel}/resolve/main/ndarray-cache.json`;
+					const headers = new Headers();
+					if (this.huggingFaceToken) {
+						headers.append('Authorization', `Bearer ${this.huggingFaceToken}`);
+					}
+					const ndarrayCacheResponse = await fetch(ndarrayCacheUrl, { headers });
+					if (!ndarrayCacheResponse.ok) throw new Error(`Failed to fetch ndarray-cache for ${this.selectedModel}`);
+					const ndarrayCache = await ndarrayCacheResponse.json();
+					const fileList = ndarrayCache.records.map(r => r.dataPath);
+
+					const modelInOpfs = await checkModelInOpfs(this.selectedModel, fileList);
+
+					if (modelInOpfs) {
+						this.loadingProgress = t ? t('loading.loadingFromOpfs') : 'Loading from local storage...';
+						this.engine = await CreateMLCEngine(this.selectedModel, {
+							appConfig,
+							initProgressCallback: progressCallback,
+							logLevel: 'SILENT',
+							modelCache: { cacheUrl: `/opfs/${this.selectedModel}/` }
+						});
+					} else {
+						this.engine = await CreateMLCEngine(this.selectedModel, {
+							appConfig,
+							initProgressCallback: progressCallback,
+							logLevel: 'SILENT'
+						});
+
+						// Lance la sauvegarde en arrière-plan sans bloquer l'interface
+						(async () => {
+							console.log('Début de la sauvegarde OPFS en arrière-plan...');
+							const modelDir = await getModelDirectory(this.selectedModel);
+							for (const fileName of fileList) {
+								try {
+									const fileUrl = `https://huggingface.co/mlc-ai/${this.selectedModel}/resolve/main/${fileName}`;
+									const response = await fetch(fileUrl, { headers });
+									if (!response.ok) continue; // Ignore les fichiers qui n'existent pas
+									const data = await response.arrayBuffer();
+									await saveFileToOpfs(modelDir, fileName, data);
+								} catch (e) {
+									console.warn(`Échec de la sauvegarde du fichier ${fileName} dans OPFS:`, e);
+								}
+							}
+							console.log('Sauvegarde OPFS en arrière-plan terminée.');
+						})();
+					}
+					opfsSuccess = true;
+				} catch (opfsError) {
+					console.warn(`OPFS caching failed for ${this.selectedModel}, falling back to standard loading. Error:`, opfsError);
+					opfsSuccess = false;
+				}
+			}
+
+			if (!opfsSuccess) {
+				this.engine = await CreateMLCEngine(this.selectedModel, {
+					appConfig,
+					initProgressCallback: progressCallback,
+					logLevel: 'SILENT'
+				});
+			}
+
 			// Utilise la traduction i18n / Use i18n translation
 			const t = get(_);
 			this.loadingProgress = t ? t('loading.modelLoaded') : 'Model loaded successfully!';
@@ -139,22 +287,38 @@ class LLMStore {
 	 * Envoie un message et génère une réponse
 	 * Send a message and generate a response
 	 * @param {string} userMessage - Le message de l'utilisateur / The user's message
+	 * @param {string[]} imageDataUrls - Liste d'URLs d'images / List of image URLs
 	 */
-	async sendMessage(userMessage) {
+	async sendMessage(userMessage, imageDataUrls = []) {
 		if (!this.engine || this.isGenerating) return;
-		
+
 		// Ajoute le message de l'utilisateur / Add user message
-		this.messages = [...this.messages, { role: 'user', content: userMessage }];
-		
+		// Note FR/EN: on attache aussi les images (data URLs) pour le rendu et l’historique
+		// We also attach images (data URLs) for rendering and history
+		const allowImages = this.isSelectedModelMultimodal();
+		const images = allowImages && Array.isArray(imageDataUrls) ? imageDataUrls : [];
+		this.messages = [...this.messages, { role: 'user', content: userMessage, images }];
+
 		this.isGenerating = true;
 		this.error = null;
-		
+
 		try {
 			// Prépare le contexte de conversation / Prepare conversation context
-			const chatMessages = this.messages.map(msg => ({
-				role: msg.role,
-				content: msg.content
-			}));
+			// FR: Si un message contient des images, on suit le schéma OpenAI: content = [ {type:'text',...}, {type:'image_url',...}, ... ]
+			// EN: If a message contains images, follow OpenAI schema: content = [ {type:'text',...}, {type:'image_url',...}, ... ]
+			const chatMessages = this.messages.map(msg => {
+				if (msg.images && msg.images.length > 0) {
+					const parts = [];
+					if (msg.content && msg.content.length > 0) {
+						parts.push({ type: 'text', text: msg.content });
+					}
+					for (const url of msg.images) {
+						parts.push({ type: 'image_url', image_url: { url } });
+					}
+					return { role: msg.role, content: parts };
+				}
+				return { role: msg.role, content: msg.content };
+			});
 
 			// Ajoute un message assistant vide pour la réponse
 			// Add an empty assistant message for the response
@@ -172,11 +336,11 @@ class LLMStore {
 			// Traite chaque chunk de la réponse / Process each response chunk
 			for await (const chunk of asyncChunkGenerator) {
 				const newContent = chunk.choices[0]?.delta?.content || '';
-				
+
 				// Met à jour le message assistant avec le nouveau contenu
 				// Update assistant message with new content
-				this.messages = this.messages.map((msg, idx) => 
-					idx === assistantMessageIndex 
+				this.messages = this.messages.map((msg, idx) =>
+					idx === assistantMessageIndex
 						? { ...msg, content: msg.content + newContent }
 						: msg
 				);
@@ -186,14 +350,25 @@ class LLMStore {
 			console.error('Erreur lors de la génération / Error during generation:', err);
 		} finally {
 			this.isGenerating = false;
+
+			// Sauvegarde automatiquement la conversation après chaque échange
+			// Automatically save conversation after each exchange
+			await this.saveCurrentConversation();
 		}
 	}
 
 	/**
 	 * Réinitialise la conversation / Reset the conversation
 	 */
-	clearMessages() {
+	async clearMessages() {
+		// Sauvegarde la conversation actuelle avant d'effacer si elle contient des messages
+		// Save current conversation before clearing if it contains messages
+		if (this.messages.length > 0) {
+			await this.saveCurrentConversation();
+		}
+
 		this.messages = [];
+		this.currentConversationId = null;
 	}
 
 	/**
@@ -202,8 +377,9 @@ class LLMStore {
 	 */
 	async changeModel(modelName) {
 		this.selectedModel = modelName;
+		this.saveSelectedModel();
 		this.engine = null; // Force la réinitialisation / Force reinitialization
-		this.clearMessages();
+		await this.clearMessages();
 		await this.initEngine();
 	}
 
@@ -271,6 +447,71 @@ class LLMStore {
 	}
 
 	/**
+	 * Vide le cache de tous les modèles WebLLM.
+	 * Clear the cache of all WebLLM models.
+	 */
+	async clearCache() {
+		if (!this.engine) {
+			console.warn('Le moteur doit être initialisé pour vider le cache.');
+			// Crée une instance temporaire juste pour le nettoyage
+			this.engine = await CreateMLCEngine(this.selectedModel, { appConfig, logLevel: 'SILENT' });
+		}
+		await this.engine.runtime.clear();
+		console.log('Cache WebLLM vidé.');
+		// Force le rechargement de la page pour repartir sur une base saine
+		window.location.reload();
+	}
+
+	/**
+	 * Annule le chargement en cours du modèle.
+	 * Cancel the ongoing model loading.
+	 */
+	async cancelLoading() {
+		console.log('Annulation du chargement demandée. Envoi du message au Service Worker...');
+
+		if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+			navigator.serviceWorker.controller.postMessage({ type: 'ABORT_DOWNLOADS' });
+		}
+
+		// Réinitialise l'état de l'application
+		this.isLoading = false;
+		this.loadingProgress = '';
+		this.error = 'Le chargement a été annulé. Les caches sont en cours de nettoyage. Veuillez recharger la page dans quelques instants.';
+
+		// Un rechargement est toujours une bonne idée pour s'assurer que tout est propre
+		setTimeout(() => window.location.reload(), 500);
+	}
+
+	/**
+	 * Sauvegarde le token Hugging Face dans le store et le localStorage.
+	 * Save the Hugging Face token to the store and localStorage.
+	 * @param {string} token - Le token d'accès / The access token.
+	 */
+	setHuggingFaceToken(token) {
+		this.huggingFaceToken = token;
+		try {
+			localStorage.setItem('huggingFaceToken', token);
+		} catch (err) {
+			console.error('Erreur sauvegarde huggingFaceToken / Error saving huggingFaceToken:', err);
+		}
+	}
+
+	/**
+	 * Charge le token Hugging Face depuis le localStorage.
+	 * Load the Hugging Face token from localStorage.
+	 */
+	loadHuggingFaceToken() {
+		try {
+			const saved = localStorage.getItem('huggingFaceToken');
+			if (saved && typeof saved === 'string' && saved.length > 0) {
+				this.huggingFaceToken = saved;
+			}
+		} catch (err) {
+			console.error('Erreur chargement huggingFaceToken / Error loading huggingFaceToken:', err);
+		}
+	}
+
+	/**
 	 * Sauvegarde la conversation actuelle / Save current conversation
 	 * @param {string} title - Titre optionnel de la conversation / Optional conversation title
 	 */
@@ -278,14 +519,18 @@ class LLMStore {
 		if (this.messages.length === 0) return;
 
 		const conversationId = this.currentConversationId || this.generateConversationId();
-		
+
 		// Génère un titre automatique si non fourni / Generate auto title if not provided
 		const conversationTitle = title || this.generateConversationTitle();
+
+		// Sérialise les messages pour éviter les erreurs DataCloneError avec les proxies Svelte
+		// Serialize messages to avoid DataCloneError with Svelte proxies
+		const serializedMessages = $state.snapshot(this.messages);
 
 		const conversation = {
 			id: conversationId,
 			title: conversationTitle,
-			messages: [...this.messages],
+			messages: serializedMessages, // Correction: Utilise les messages sérialisés
 			model: this.selectedModel,
 			timestamp: this.currentConversationId ? (await db.getConversation(conversationId))?.timestamp || Date.now() : Date.now(),
 			lastModified: Date.now()
@@ -293,9 +538,9 @@ class LLMStore {
 
 		// Sauvegarde dans Dexie / Save to Dexie
 		await db.saveConversation(conversation);
-		
+
 		this.currentConversationId = conversationId;
-		
+
 		// Recharge l'historique / Reload history
 		await this.loadConversationHistory();
 	}
@@ -313,14 +558,14 @@ class LLMStore {
 	 */
 	generateConversationTitle() {
 		if (this.messages.length === 0) return 'Nouvelle conversation / New conversation';
-		
+
 		const firstUserMessage = this.messages.find(m => m.role === 'user');
 		if (firstUserMessage) {
 			// Prend les 50 premiers caractères / Take first 50 characters
 			const title = firstUserMessage.content.substring(0, 50);
 			return title.length < firstUserMessage.content.length ? title + '...' : title;
 		}
-		
+
 		return 'Nouvelle conversation / New conversation';
 	}
 
@@ -333,7 +578,7 @@ class LLMStore {
 		if (conversation) {
 			this.messages = [...conversation.messages];
 			this.currentConversationId = conversationId;
-			
+
 			// Change le modèle si différent / Change model if different
 			if (conversation.model !== this.selectedModel) {
 				// Note: Ne change pas automatiquement le modèle pour éviter les rechargements
@@ -351,9 +596,11 @@ class LLMStore {
 		if (this.messages.length > 0) {
 			await this.saveCurrentConversation();
 		}
-		
+
+		// Réinitialise complètement l'état / Completely reset state
 		this.messages = [];
 		this.currentConversationId = null;
+		this.error = null;
 	}
 
 	/**
@@ -363,14 +610,14 @@ class LLMStore {
 	async deleteConversation(conversationId) {
 		// Supprime de Dexie / Delete from Dexie
 		await db.deleteConversation(conversationId);
-		
+
 		// Si on supprime la conversation actuelle, la réinitialiser
 		// If deleting current conversation, reset it
 		if (this.currentConversationId === conversationId) {
 			this.messages = [];
 			this.currentConversationId = null;
 		}
-		
+
 		// Recharge l'historique / Reload history
 		await this.loadConversationHistory();
 	}
@@ -386,7 +633,7 @@ class LLMStore {
 			conversation.title = newTitle;
 			conversation.lastModified = Date.now();
 			await db.saveConversation(conversation);
-			
+
 			// Recharge l'historique / Reload history
 			await this.loadConversationHistory();
 		}
@@ -419,7 +666,7 @@ class LLMStore {
 					console.log(`✅ Migration réussie: ${migrated.conversations} conversations importées`);
 				}
 			}
-			
+
 			// Charge toutes les conversations depuis Dexie / Load all conversations from Dexie
 			this.conversationHistory = await db.getAllConversations();
 		} catch (err) {
@@ -446,10 +693,10 @@ class LLMStore {
 	async importHistory(jsonData, merge = true) {
 		try {
 			const data = JSON.parse(jsonData);
-			
+
 			// Importe dans Dexie / Import to Dexie
 			const imported = await db.importData(data, merge);
-			
+
 			// Importe les modèles personnalisés / Import custom models
 			if (data.customModels) {
 				if (merge) {
@@ -463,10 +710,10 @@ class LLMStore {
 				}
 				this.saveCustomModels();
 			}
-			
+
 			// Recharge l'historique / Reload history
 			await this.loadConversationHistory();
-			
+
 			return imported;
 		} catch (err) {
 			console.error('Erreur lors de l\'importation / Error importing:', err);

@@ -1,4 +1,6 @@
 <script>
+	import logo from '$lib/assets/logo.svg';
+	
 	/**
 	 * Composant pour afficher un message de chat
 	 * Component to display a chat message
@@ -26,11 +28,8 @@
 				</svg>
 				<span class="font-semibold text-sm">Vous / You</span>
 			{:else}
-				<!-- Icône IA / AI icon -->
-				<svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-						d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-				</svg>
+				<!-- Logo IA / AI logo -->
+				<img src={logo} alt="AI Logo" class="w-5 h-5" />
 				<span class="font-semibold text-sm text-purple-400">Assistant IA / AI Assistant</span>
 			{/if}
 		</div>
@@ -45,5 +44,14 @@
 				<span class="text-slate-400 text-sm italic">...</span>
 			{/if}
 		</div>
+
+		<!-- Images attachées (si présentes) / Attached images (if any) -->
+		{#if message.images && message.images.length > 0}
+			<div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+				{#each message.images as img, idx}
+					<img src={img} alt="Pièce jointe / Attachment" class="w-full h-32 object-cover rounded border border-slate-700" />
+				{/each}
+			</div>
+		{/if}
 	</div>
 </div>

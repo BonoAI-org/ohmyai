@@ -29,8 +29,8 @@ A modern web application that runs a Large Language Model (LLM) entirely in your
 ### 1. Clone the project
 
 ```sh
-git clone <your-repo>
-cd llm-wasm-app
+git clone https://github.com/BonoAI-org/ohmyai.git
+cd ohmyai
 ```
 
 ### 2. Install dependencies
@@ -82,7 +82,7 @@ bun run preview
 ## 🧩 Project architecture
 
 ```
-llm-wasm-app/
+ohmyai/
 ├── src/
 │   ├── lib/
 │   │   ├── components/
@@ -167,6 +167,7 @@ const asyncChunkGenerator = await this.engine.chat.completions.create({
 - ➕ **[Custom Models](docs/CUSTOM_MODELS.md)** - Add custom models
 - 💬 **[History](docs/CONVERSATION_HISTORY.md)** - Conversation management
 - 🗄️ **[Dexie Migration](docs/DEXIE_MIGRATION.md)** - Database migration
+- 🗺️ **[Sitemap](docs/SITEMAP.md)** - SEO sitemap configuration
 
 ### Development
 
@@ -179,6 +180,14 @@ const asyncChunkGenerator = await this.engine.chat.completions.create({
 - [SvelteKit Documentation](https://kit.svelte.dev/)
 - [Bun Documentation](https://bun.sh/)
 - [TailwindCSS](https://tailwindcss.com/)
+
+## 🌐 About
+
+This project is developed by [BonoAI](https://bonoai.org) - Building the future of local AI applications.
+
+**Repository**: [github.com/BonoAI-org/ohmyai](https://github.com/BonoAI-org/ohmyai)
+
+Visit [bonoai.org](https://bonoai.org) to discover more innovative AI projects.
 
 ## 📝 License
 

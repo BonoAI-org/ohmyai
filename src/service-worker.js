@@ -6,14 +6,19 @@
  * Handles offline cache and updates
  */
 
+// import { setConfig } from 'workbox-core';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { precacheAndRoute } from 'workbox-precaching';
 
+// Désactive les logs de Workbox / Disable Workbox logs
+// setConfig({ debug: false });
+
 // Version et nom du cache / Version and cache name
-const VERSION = '1.0.1';
+// This will be replaced by Vite PWA plugin
+const VERSION = typeof __PWA_VERSION__ !== 'undefined' ? __PWA_VERSION__ : '0.0.0';
 const CACHE_NAME = `ho-my-ai-${VERSION}`;
 
 // Précache les ressources (injecté automatiquement par Workbox)
@@ -98,11 +103,11 @@ registerRoute(
 
 // Installation du service worker / Service worker installation
 self.addEventListener('install', (event) => {
-	console.log('[SW] Installation...', VERSION);
+	// console.log('[SW] Installation...', VERSION);
 	
 	event.waitUntil(
 		caches.open(CACHE_NAME).then((cache) => {
-			console.log('[SW] Cache ouvert / Cache opened');
+			// console.log('[SW] Cache ouvert / Cache opened');
 			// Le précache est géré par Workbox
 			// Precaching is handled by Workbox
 		})
@@ -114,7 +119,7 @@ self.addEventListener('install', (event) => {
 
 // Activation du service worker / Service worker activation
 self.addEventListener('activate', (event) => {
-	console.log('[SW] Activation...', VERSION);
+	// console.log('[SW] Activation...', VERSION);
 	
 	event.waitUntil(
 		caches.keys().then((cacheNames) => {
@@ -122,7 +127,7 @@ self.addEventListener('activate', (event) => {
 				cacheNames
 					.filter((name) => name.startsWith('ho-my-ai-') && name !== CACHE_NAME)
 					.map((name) => {
-						console.log('[SW] Suppression ancien cache / Deleting old cache:', name);
+						// console.log('[SW] Suppression ancien cache / Deleting old cache:', name);
 						return caches.delete(name);
 					})
 			);
@@ -136,19 +141,34 @@ self.addEventListener('activate', (event) => {
 // Gestion des messages depuis l'app / Handle messages from app
 self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'SKIP_WAITING') {
-		console.log('[SW] Message reçu / Message received: SKIP_WAITING');
+		// console.log('[SW] Message reçu / Message received: SKIP_WAITING');
 		self.skipWaiting();
 	}
 	
 	if (event.data && event.data.type === 'GET_VERSION') {
 		event.ports[0].postMessage({ version: VERSION });
 	}
+	
+	if (event.data && event.data.type === 'ABORT_DOWNLOADS') {
+		console.log('SW: Message ABORT_DOWNLOADS reçu. Nettoyage des caches...');
+		// Supprime tous les caches gérés par ce service worker
+		event.waitUntil(
+			caches.keys().then((cacheNames) => {
+				return Promise.all(
+					cacheNames.map((cacheName) => {
+						console.log('SW: Suppression du cache:', cacheName);
+						return caches.delete(cacheName);
+					})
+				);
+			})
+		);
+	}
 });
 
 // Synchronisation en arrière-plan (si supporté)
 // Background sync (if supported)
 self.addEventListener('sync', (event) => {
-	console.log('[SW] Sync event:', event.tag);
+	// console.log('[SW] Sync event:', event.tag);
 	
 	if (event.tag === 'sync-conversations') {
 		event.waitUntil(
@@ -162,7 +182,7 @@ self.addEventListener('sync', (event) => {
 // Gestion des notifications push (si implémenté plus tard)
 // Handle push notifications (if implemented later)
 self.addEventListener('push', (event) => {
-	console.log('[SW] Push reçu / Push received');
+	// console.log('[SW] Push reçu / Push received');
 	
 	const options = {
 		body: event.data ? event.data.text() : 'Nouvelle notification',
@@ -179,7 +199,7 @@ self.addEventListener('push', (event) => {
 // Gestion des clics sur notifications
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
-	console.log('[SW] Notification cliquée / Notification clicked');
+	// console.log('[SW] Notification cliquée / Notification clicked');
 	
 	event.notification.close();
 	
@@ -190,13 +210,13 @@ self.addEventListener('notificationclick', (event) => {
 
 // Gestion des erreurs globales / Global error handling
 self.addEventListener('error', (event) => {
-	console.error('[SW] Erreur globale / Global error:', event.error);
+	// console.error('[SW] Erreur globale / Global error:', event.error);
 });
 
 self.addEventListener('unhandledrejection', (event) => {
-	console.error('[SW] Promise rejetée non gérée / Unhandled promise rejection:', event.reason);
+	// console.error('[SW] Promise rejetée non gérée / Unhandled promise rejection:', event.reason);
 	// Empêche l'erreur de remonter et crasher le SW / Prevent error from bubbling up and crashing SW
 	event.preventDefault();
 });
 
-console.log('[SW] Service Worker chargé / Service Worker loaded:', VERSION);
+// console.log('[SW] Service Worker chargé / Service Worker loaded:', VERSION);

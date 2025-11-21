@@ -72,8 +72,12 @@ export default defineConfig({
 					}
 				]
 			},
+			define: {
+				__PWA_VERSION__: JSON.stringify(process.env.npm_package_version)
+			},
 			injectManifest: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}']
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+				injectionPoint: 'self.__WB_MANIFEST'
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],

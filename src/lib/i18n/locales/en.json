@@ -54,5 +54,30 @@
 		"newDescription": "Start a new conversation",
 		"historyShortcut": "History",
 		"historyDescription": "View conversation history"
+	},
+	"history": {
+		"title": "History",
+		"close": "Close",
+		"new": "New",
+		"export": "Export",
+		"exportHistory": "Export history",
+		"import": "Import",
+		"importHistory": "Import history",
+		"searchPlaceholder": "Search...",
+		"searching": "Searching...",
+		"noConversations": "No saved conversations",
+		"current": "Current",
+		"messages": "msg",
+		"rename": "Rename",
+		"delete": "Delete",
+		"save": "Save",
+		"cancel": "Cancel",
+		"deleteConfirm": "Delete this conversation?",
+		"importSuccess": "History imported successfully!\n{count} conversations imported",
+		"importError": "Import error",
+		"conversationCount": "{count} conversation(s) saved",
+		"today": "Today",
+		"yesterday": "Yesterday",
+		"minutesAgo": "{minutes} min ago"
 	}
 }

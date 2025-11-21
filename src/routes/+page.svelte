@@ -3,13 +3,22 @@
 	import { llmStore, AVAILABLE_MODELS } from '$lib/stores/llm.svelte.js';
 	import ChatMessage from '$lib/components/ChatMessage.svelte';
 	import AddCustomModelModal from '$lib/components/AddCustomModelModal.svelte';
+	import Settings from '$lib/components/Settings.svelte';
 	import ConversationHistory from '$lib/components/ConversationHistory.svelte';
 	import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 	import logo from '$lib/assets/logo.svg';
 	import { _ } from 'svelte-i18n';
+	import Image from 'svelte-material-icons/Image.svelte';
+	import Send from 'svelte-material-icons/Send.svelte';
 
 	// Référence pour l'input du message / Reference for message input
 	let messageInput = $state('');
+	
+	// Images sélectionnées pour le message courant / Selected images for current message
+	let selectedImages = $state([]);
+	
+	// Référence à l'input fichier caché / Ref to hidden file input
+	let imageInputEl = $state(null);
 	
 	// Référence au composant LanguageSelector / Reference to LanguageSelector component
 	let languageSelectorRef = $state(null);
@@ -19,6 +28,7 @@
 	
 	// État du modal d'ajout de modèle / Add model modal state
 	let isAddModelModalOpen = $state(false);
+	let isSettingsModalOpen = $state(false);
 	
 	// État du panneau d'historique / History panel state
 	let isHistoryOpen = $state(false);
@@ -67,12 +77,17 @@
 		// Charge les modèles personnalisés sauvegardés / Load saved custom models
 		llmStore.loadCustomModels();
 		
+		// Charge le dernier modèle sélectionné / Load last selected model
+		llmStore.loadSelectedModel();
+		llmStore.loadHuggingFaceToken();
+		
 		// Charge l'historique des conversations / Load conversation history
 		llmStore.loadConversationHistory();
 		
 		// Vérifie la RAM disponible / Check available RAM
 		checkRAM();
 		
+
 		// Initialise le moteur (inclut la vérification WebGPU) / Initialize engine (includes WebGPU check)
 		llmStore.initEngine();
 		
@@ -121,18 +136,37 @@
 	}
 
 	/**
+	 * Démarre une nouvelle conversation / Start a new conversation
+	 */
+	async function handleNewConversation() {
+		console.log('🔵 handleNewConversation - Début');
+		try {
+			await llmStore.startNewConversation();
+			isHistoryOpen = false;
+			console.log('✅ handleNewConversation - Succès');
+		} catch (error) {
+			console.error('❌ handleNewConversation - Erreur:', error);
+		}
+	}
+
+	/**
 	 * Gère l'envoi d'un message / Handle sending a message
 	 */
 	async function handleSend() {
-		if (!messageInput.trim() || llmStore.isGenerating) return;
+		const allowImages = llmStore.isSelectedModelMultimodal();
+		const noText = messageInput.trim().length === 0;
+		const noImages = selectedImages.length === 0;
+		// Autorise l'envoi sans texte uniquement si modèle multimodal + images / Allow no-text only when multimodal + images
+		if ((noText && (!allowImages || noImages)) || llmStore.isGenerating) return;
 		
 		const message = messageInput.trim();
 		messageInput = ''; // Réinitialise l'input / Reset input
 		
-		await llmStore.sendMessage(message);
+		// Envoi du message avec images si modèle multimodal / Send images only when model is multimodal
+		await llmStore.sendMessage(message, allowImages ? selectedImages : []);
 		
-		// Sauvegarde automatiquement la conversation / Auto-save conversation
-		llmStore.saveCurrentConversation();
+		// Nettoie la sélection d'images / Clear selected images
+		selectedImages = [];
 		
 		// Réactive l'auto-scroll quand l'utilisateur envoie un message
 		// Reactivate auto-scroll when user sends a message
@@ -147,6 +181,45 @@
 			event.preventDefault();
 			handleSend();
 		}
+	}
+
+	/**
+	 * Gère les fichiers image sélectionnés / Handle selected image files
+	 * @param {FileList|File[]} files - Fichiers images / Image files
+	 */
+	async function handleImageFiles(files) {
+		const list = Array.from(files || []);
+		for (const f of list) {
+			if (!f.type.startsWith('image/')) continue;
+			await new Promise((resolve) => {
+				const reader = new FileReader();
+				reader.onload = () => {
+					selectedImages = [...selectedImages, reader.result];
+					resolve();
+				};
+				reader.onerror = () => resolve();
+				reader.readAsDataURL(f);
+			});
+		}
+	}
+
+	/**
+	 * Réception de la sélection via input[type=file] / Handle input[type=file] change
+	 */
+	function handleImageSelect(event) {
+		const files = event?.target?.files;
+		if (files && files.length > 0) {
+			handleImageFiles(files);
+			// Réinitialise la valeur de l'input pour permettre la même image à nouveau / reset input value
+			event.target.value = '';
+		}
+	}
+
+	/**
+	 * Supprime une image de la sélection / Remove an image from selection
+	 */
+	function removeSelectedImage(index) {
+		selectedImages = selectedImages.filter((_, i) => i !== index);
 	}
 
 	/**
@@ -172,6 +245,9 @@
 		}
 		
 		isModelSelectorOpen = false;
+		// Réinitialise les images sélectionnées si on change de modèle
+		// Reset selected images when changing model
+		selectedImages = [];
 		await llmStore.changeModel(modelId);
 	}
 
@@ -273,6 +349,14 @@
 <!-- Gestionnaire de clic global / Global click handler -->
 <svelte:window onclick={handleClickOutside} />
 
+{#if isSettingsModalOpen}
+	<div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onclick={() => isSettingsModalOpen = false}>
+		<div class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md" onclick={(event) => event.stopPropagation()}>
+			<Settings close={() => isSettingsModalOpen = false} />
+		</div>
+	</div>
+{/if}
+
 <div class="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden">
 	<!-- En-tête / Header - Fixé en haut / Fixed at top -->
 	<header class="flex-shrink-0 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700 p-4">
@@ -281,7 +365,7 @@
 				<div class="flex items-center gap-3">
 					<!-- Bouton nouveau mobile / New button mobile -->
 					<button
-						onclick={() => llmStore.startNewConversation()}
+						onclick={handleNewConversation}
 						class="lg:hidden flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white rounded-lg transition-all shadow-lg touch-manipulation"
 						aria-label={$_('header.newConversation')}
 						title={$_('header.startNewConversation')}
@@ -319,7 +403,7 @@
 				<div class="flex items-center gap-2">
 					<!-- Bouton nouvelle conversation / New conversation button -->
 					<button
-						onclick={() => llmStore.startNewConversation()}
+						onclick={handleNewConversation}
 						class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-4 py-2 rounded-lg transition-all shadow-lg hover:shadow-purple-500/50 touch-manipulation"
 						aria-label={$_('header.newConversation')}
 						title={$_('header.startNewConversation')}
@@ -372,6 +456,17 @@
 					{/if}
 					
 					<!-- Sélecteur de langue / Language selector -->
+					<button 
+						onclick={() => isSettingsModalOpen = true}
+						class="flex items-center justify-center w-10 h-10 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg transition-colors touch-manipulation"
+						aria-label="Paramètres / Settings"
+						title="Paramètres / Settings"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+						</svg>
+					</button>
 					<LanguageSelector bind:this={languageSelectorRef} />
 					
 					<!-- Sélecteur de modèle / Model selector -->
@@ -543,6 +638,9 @@
 							<p class="font-semibold">{$_('loading.loadingModel')}</p>
 							<p class="text-sm text-slate-300 mt-2">{llmStore.loadingProgress}</p>
 						</div>
+						<button onclick={() => llmStore.cancelLoading()} class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+							Annuler / Cancel
+						</button>
 					</div>
 				</div>
 			{/if}
@@ -610,7 +708,7 @@
 	<div class="flex-shrink-0 backdrop-blur-sm">
 		<div class="container mx-auto p-4 max-w-4xl">
 			<div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-slate-700">
-				<div class="flex gap-2">
+				<div class="flex gap-2 items-end">
 					<textarea
 						bind:value={messageInput}
 						onkeydown={handleKeydown}
@@ -622,19 +720,62 @@
 						autocapitalize="sentences"
 						class="flex-1 bg-slate-700/50 text-white rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-base"
 					></textarea>
+					<!-- Bouton d'ajout d'images / Add images button -->
+					{#if llmStore.isSelectedModelMultimodal()}
+						<button
+							onclick={() => imageInputEl && imageInputEl.click()}
+							disabled={llmStore.isLoading || llmStore.isGenerating}
+							aria-label="Ajouter des images / Add images"
+							class="px-3 py-2 bg-slate-700/60 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
+						>
+							<Image class="w-5 h-5" />
+						</button>
+					{/if}
 					<button
 						onclick={handleSend}
-						disabled={llmStore.isLoading || llmStore.isGenerating || !messageInput.trim()}
+						disabled={
+							llmStore.isLoading ||
+							llmStore.isGenerating ||
+							(
+								messageInput.trim().length === 0 &&
+								(!llmStore.isSelectedModelMultimodal() || selectedImages.length === 0)
+							)
+						}
 						aria-label={$_('chat.send')}
 						class="px-4 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
 					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-								d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-						</svg>
+						<Send class="w-5 h-5" />
 					</button>
 				</div>
-				
+				{#if llmStore.isSelectedModelMultimodal()}
+					<!-- Input fichier caché / Hidden file input -->
+					<input
+						type="file"
+						accept="image/*"
+						multiple
+						bind:this={imageInputEl}
+						onchange={handleImageSelect}
+						class="hidden"
+					/>
+
+					<!-- Aperçu des images sélectionnées / Selected images preview -->
+					{#if selectedImages.length > 0}
+						<div class="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2">
+							{#each selectedImages as img, idx}
+								<div class="relative group">
+									<img src={img} alt="Pièce jointe / Attachment" class="w-full h-20 object-cover rounded border border-slate-700" />
+									<button
+										onclick={() => removeSelectedImage(idx)}
+										class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+										aria-label="Supprimer l'image / Remove image"
+									>
+										×
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				{/if}
 				<!-- Bouton pour effacer la conversation / Button to clear conversation -->
 				{#if llmStore.messages.length > 0}
 					<button
@@ -644,6 +785,34 @@
 						{$_('chat.clearConversation')}
 					</button>
 				{/if}
+			</div>
+<!-- ... -->
+			<!-- Footer avec crédit BonoAI / Footer with BonoAI credit -->
+			<div class="mt-4 text-center">
+				<div class="flex items-center justify-center gap-2 text-sm text-slate-400">
+					<span>Built by</span>
+					<a 
+						href="https://bonoai.org" 
+						target="_blank" 
+						rel="noopener noreferrer"
+						class="font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+					>
+						BonoAI
+					</a>
+					<span>•</span>
+					<a
+						href="https://github.com/BonoAI-org/ohmyai"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
+						aria-label="View on GitHub"
+					>
+						<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+						</svg>
+						<span class="hidden sm:inline">Source</span>
+					</a>
+				</div>
 			</div>
 		</div>
 	</div>
