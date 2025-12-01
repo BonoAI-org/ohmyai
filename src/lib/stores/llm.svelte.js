@@ -68,14 +68,7 @@ export const AVAILABLE_MODELS = [
 		description: 'Modèle populaire et performant / Popular and powerful model',
 		recommended: false
 	},
-	{
-		id: 'Phi-3.5-vision-instruct-q4f16_1-MLC',
-		name: 'Phi-3.5 Vision',
-		size: '~4.7 GB',
-		description: 'Modèle vision multimodal (Microsoft) / Multimodal vision model (Microsoft)',
-		multimodal: true,
-		recommended: false
-	},
+
 
 ];
 
