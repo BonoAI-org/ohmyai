@@ -7,7 +7,7 @@ import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 // Configuration to support WebAssembly and WebLLM
 export default defineConfig({
 	plugins: [
-		tailwindcss(), 
+		tailwindcss(),
 		sveltekit(),
 		SvelteKitPWA({
 			srcDir: 'src',
@@ -96,7 +96,7 @@ export default defineConfig({
 			}
 		})
 	],
-	
+
 	// En-têtes de sécurité requis pour SharedArrayBuffer et WASM
 	// Security headers required for SharedArrayBuffer and WASM
 	server: {
@@ -106,7 +106,7 @@ export default defineConfig({
 			'Cross-Origin-Opener-Policy': 'same-origin',
 		}
 	},
-	
+
 	// Port pour le preview / Preview port
 	preview: {
 		port: 4242,
@@ -115,7 +115,7 @@ export default defineConfig({
 			'Cross-Origin-Opener-Policy': 'same-origin',
 		}
 	},
-	
+
 	// Optimisations pour les gros fichiers WASM
 	// Optimizations for large WASM files
 	build: {
@@ -126,7 +126,7 @@ export default defineConfig({
 			},
 		},
 	},
-	
+
 	// Augmente la limite de taille pour les warnings
 	// Increase size limit for warnings
 	optimizeDeps: {

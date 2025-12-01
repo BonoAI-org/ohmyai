@@ -89,3 +89,21 @@ export async function checkModelInOpfs(modelId, fileList) {
 		return false;
 	}
 }
+
+/**
+ * Supprime le répertoire d'un modèle de l'OPFS.
+ * Delete a model directory from OPFS.
+ * @param {string} modelId - L'ID du modèle / The model ID.
+ */
+export async function deleteModelDirectory(modelId) {
+	try {
+		const root = await getOpfsRoot();
+		await root.removeEntry(modelId, { recursive: true });
+		console.log(`Répertoire OPFS supprimé pour ${modelId} / OPFS directory deleted for ${modelId}`);
+	} catch (e) {
+		if (e.name !== 'NotFoundError') {
+			console.error(`Erreur lors de la suppression du répertoire OPFS pour ${modelId}:`, e);
+			throw e;
+		}
+	}
+}

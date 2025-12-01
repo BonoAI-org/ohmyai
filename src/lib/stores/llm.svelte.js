@@ -1,8 +1,9 @@
 import { CreateMLCEngine, hasModelInCache, prebuiltAppConfig } from '@mlc-ai/web-llm';
-import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs } from '$lib/opfs.js';
+import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory } from '$lib/opfs.js';
 import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
+
 
 /**
  * Configuration de l'application avec le modèle Gemma 2 ajouté manuellement
@@ -17,6 +18,17 @@ const appConfig = {
 			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0.2.48/Gemma-2-9B-Instruct-q4f16_1-MLC-webgpu.wasm",
 			"vram_required_MB": 6103.52,
 			"low_resource_required": false,
+		},
+		{
+			"model": "https://huggingface.co/mlc-ai/Phi-3.5-vision-instruct-q4f16_1-MLC",
+			"model_id": "Phi-3.5-vision-instruct-q4f16_1-MLC",
+			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_48/Phi-3.5-vision-instruct-q4f16_1-ctx4k_cs2k-webgpu.wasm",
+			"vram_required_MB": 3952.18,
+			"low_resource_required": true,
+			"overrides": {
+				"context_window_size": 4096
+			},
+			"model_type": 2
 		}
 	],
 	use_web_worker: true
@@ -57,13 +69,14 @@ export const AVAILABLE_MODELS = [
 		recommended: false
 	},
 	{
-		id: 'Phi-3-vision-128k-instruct-q4f16_1-MLC',
-		name: 'Phi-3 Vision (128k Instruct)',
-		size: '~2.8 GB',
-		description: 'Modèle vision multimodale / Multimodal vision model',
+		id: 'Phi-3.5-vision-instruct-q4f16_1-MLC',
+		name: 'Phi-3.5 Vision',
+		size: '~4.7 GB',
+		description: 'Modèle vision multimodal (Microsoft) / Multimodal vision model (Microsoft)',
 		multimodal: true,
 		recommended: false
-	}
+	},
+
 ];
 
 /**
@@ -170,9 +183,13 @@ class LLMStore {
 	 * Initialize the LLM engine with the selected model
 	 */
 	async initEngine() {
+		if (this.engine) return;
 
-		if (this.engine) return; // Déjà initialisé / Already initialized
+		const selectedModelConfig = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
 
+
+
+		// WebLLM Integration (existing code)
 		// Vérifie WebGPU / Check WebGPU
 		if (!this.isWebGPUAvailable()) {
 			// Utilise la traduction i18n pour le message d'erreur / Use i18n translation for error message
@@ -197,12 +214,11 @@ class LLMStore {
 
 			// Crée le moteur MLCEngine qui exécute le modèle en WASM + WebGPU
 			// Create the MLCEngine which runs the model in WASM + WebGPU
-			const selectedModelConfig = AVAILABLE_MODELS.find((m) => m.id === this.selectedModel);
 
 			const useOpfs = isOpfsSupported();
 			let opfsSuccess = false;
 
-			if (useOpfs && !selectedModelConfig.multimodal) {
+			if (useOpfs) {
 				try {
 					const t = get(_);
 					this.loadingProgress = t ? t('loading.checkingOpfs') : 'Checking local storage...';
@@ -275,7 +291,15 @@ class LLMStore {
 			// Utilise la traduction i18n pour le titre d'erreur / Use i18n translation for error title
 			const t = get(_);
 			const errorTitle = t ? t('error.title') : 'Error';
-			this.error = `❌ ${errorTitle}: ${err.message}`;
+
+			let errorMessage = err.message;
+			if (errorMessage === 'ExitStatus' || errorMessage.includes('Cannot find parameter in cache')) {
+				errorMessage += ' (Cache mismatch likely. Please clear cache and reload.)';
+				// Optionnel : on pourrait appeler this.clearCache() ici, mais attention aux boucles infinies
+				// Optional: we could call this.clearCache() here, but beware of infinite loops
+			}
+
+			this.error = `❌ ${errorTitle}: ${errorMessage}`;
 			console.error('Erreur lors du chargement du modèle / Error loading model:', err);
 			console.error('Stack trace:', err.stack);
 		} finally {
@@ -290,6 +314,8 @@ class LLMStore {
 	 * @param {string[]} imageDataUrls - Liste d'URLs d'images / List of image URLs
 	 */
 	async sendMessage(userMessage, imageDataUrls = []) {
+		const selectedModelConfig = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
+
 		if (!this.engine || this.isGenerating) return;
 
 		// Ajoute le message de l'utilisateur / Add user message
@@ -326,6 +352,9 @@ class LLMStore {
 			this.messages = [...this.messages, { role: 'assistant', content: '' }];
 
 			// Génère la réponse en streaming / Generate response with streaming
+			// Génère la réponse en streaming / Generate response with streaming
+			// Génère la réponse en streaming / Generate response with streaming
+
 			const asyncChunkGenerator = await this.engine.chat.completions.create({
 				messages: chatMessages,
 				temperature: 0.7,
@@ -378,7 +407,11 @@ class LLMStore {
 	async changeModel(modelName) {
 		this.selectedModel = modelName;
 		this.saveSelectedModel();
-		this.engine = null; // Force la réinitialisation / Force reinitialization
+
+		// Reset engines
+		this.engine = null;
+
+
 		await this.clearMessages();
 		await this.initEngine();
 	}
@@ -457,6 +490,12 @@ class LLMStore {
 			this.engine = await CreateMLCEngine(this.selectedModel, { appConfig, logLevel: 'SILENT' });
 		}
 		await this.engine.runtime.clear();
+
+		// Supprime aussi le cache OPFS manuel / Also delete manual OPFS cache
+		if (isOpfsSupported()) {
+			await deleteModelDirectory(this.selectedModel);
+		}
+
 		console.log('Cache WebLLM vidé.');
 		// Force le rechargement de la page pour repartir sur une base saine
 		window.location.reload();
@@ -488,6 +527,7 @@ class LLMStore {
 	 * @param {string} token - Le token d'accès / The access token.
 	 */
 	setHuggingFaceToken(token) {
+		console.log('Setting HF token:', token ? 'Token provided' : 'No token');
 		this.huggingFaceToken = token;
 		try {
 			localStorage.setItem('huggingFaceToken', token);
@@ -503,6 +543,7 @@ class LLMStore {
 	loadHuggingFaceToken() {
 		try {
 			const saved = localStorage.getItem('huggingFaceToken');
+			console.log('Loading HF token from storage:', saved ? 'Found' : 'Not found');
 			if (saved && typeof saved === 'string' && saved.length > 0) {
 				this.huggingFaceToken = saved;
 			}
