@@ -4,6 +4,20 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		%sveltekit.head%
+		<script>
+			// Pre-configure initial theme to avoid flash
+			const theme = localStorage.getItem("colorTheme") || "paper";
+			if (theme === "paper") {
+				document.documentElement.setAttribute('data-theme', 'paper');
+			} else {
+				if (localStorage.getItem("colorTheme") && localStorage.getItem("colorTheme") !== "purple") {
+					document.documentElement.setAttribute('data-theme', theme);
+				}
+				if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+					document.documentElement.classList.add("dark");
+				}
+			}
+		</script>
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>

@@ -20,6 +20,13 @@ const appConfig = {
 			"low_resource_required": false,
 		},
 		{
+			"model": "https://huggingface.co/mlc-ai/Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC",
+			"model_id": "Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC",
+			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0.2.48/Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC-webgpu.wasm",
+			"vram_required_MB": 4976.09,
+			"low_resource_required": false,
+		},
+		{
 			"model": "https://huggingface.co/mlc-ai/Phi-3.5-vision-instruct-q4f16_1-MLC",
 			"model_id": "Phi-3.5-vision-instruct-q4f16_1-MLC",
 			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_48/Phi-3.5-vision-instruct-q4f16_1-ctx4k_cs2k-webgpu.wasm",
@@ -40,10 +47,52 @@ const appConfig = {
  */
 export const AVAILABLE_MODELS = [
 	{
+		id: 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC',
+		name: 'Hermes 2 Pro - Llama 3 (8B)',
+		size: '4.7 GB',
+		description: 'Agentic, Function Calling, Reasoning',
+		recommended: true
+	},
+	{
+		id: 'Phi-3.5-vision-instruct-q4f16_1-MLC',
+		name: 'Phi-3.5 Vision (Multimodal)',
+		size: '~3.9 GB',
+		description: 'Modèle de vision capable d\'analyser des images.',
+		recommended: false
+	},
+	{
 		id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
 		name: 'Phi-3 Mini (4k Instruct)',
 		size: '~2.2 GB',
 		description: 'Excellent pour le code / Excellent for code',
+		recommended: false
+	},
+	{
+		id: 'Qwen3-0.6B-q4f16_1-MLC',
+		name: 'Qwen 3 (0.6B) - Quantisé',
+		size: '~400 MB',
+		description: 'Incroyablement léger. Idéal pour être le modèle par défaut ultra-rapide.',
+		recommended: true
+	},
+	{
+		id: 'Qwen3-0.6B-q0f32-MLC',
+		name: 'Qwen 3 (0.6B) - Non Quantisé',
+		size: '~2.4 GB',
+		description: 'Modèle pur non compressé (plus lourd en RAM).',
+		recommended: false
+	},
+	{
+		id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+		name: 'Llama 3.2 (1B)',
+		size: '~800 MB',
+		description: 'Ultra-léger et rapide. Parfait pour les petites configurations.',
+		recommended: true
+	},
+	{
+		id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
+		name: 'Qwen 2.5 (1.5B)',
+		size: '~1 GB',
+		description: 'Très performant pour sa taille (code, logique).',
 		recommended: true
 	},
 	{
@@ -52,7 +101,7 @@ export const AVAILABLE_MODELS = [
 		vram: '5.2 GB',
 		size: '4.4 GB',
 		description: 'Modèle Llama populaire et équilibré.',
-		recommended: true
+		recommended: false
 	},
 	{
 		id: 'gemma-2-9b-it-q4f16_1-MLC',
@@ -89,11 +138,14 @@ class LLMStore {
 	// Statut de la génération de texte / Text generation status
 	isGenerating = $state(false);
 
+	// Indique si le modèle nécessite un téléchargement explicite
+	needsDownload = $state(false);
+
 	// Progression du chargement / Loading progress
 	loadingProgress = $state('');
 
 	// Modèle sélectionné / Selected model
-	selectedModel = $state('Phi-3-mini-4k-instruct-q4f16_1-MLC');
+	selectedModel = $state('Qwen3-0.6B-q4f16_1-MLC');
 
 	// Liste des modèles personnalisés ajoutés par l'utilisateur
 	// List of custom models added by the user
@@ -152,7 +204,14 @@ class LLMStore {
 	 */
 	loadSelectedModel() {
 		try {
-			const saved = localStorage.getItem('selectedModel');
+			let saved = localStorage.getItem('selectedModel');
+
+			// Migration: Si l'utilisateur avait l'ancien gros modèle par défaut, on le force doucement sur le nouveau modèle léger
+			// Migration: If user had the old heavy default model, gently force them to the new lightweight default
+			if (saved === 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC') {
+				saved = 'Qwen3-0.6B-q4f16_1-MLC';
+			}
+
 			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
 			const modelExists = allModels.some(m => m.id === saved);
 
@@ -174,8 +233,9 @@ class LLMStore {
 	/**
 	 * Initialise le moteur LLM avec le modèle sélectionné
 	 * Initialize the LLM engine with the selected model
+	 * @param {boolean} forceDownload - Force le téléchargement si non mis en cache / Force download if not cached
 	 */
-	async initEngine() {
+	async initEngine(forceDownload = false) {
 		if (this.engine) return;
 
 		const selectedModelConfig = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
@@ -194,39 +254,79 @@ class LLMStore {
 
 		this.isLoading = true;
 		this.error = null;
+		this.needsDownload = false;
 
 		try {
-			// Callback pour suivre la progression du téléchargement
-			// Callback to track download progress
-			const progressCallback = (progress) => {
-				this.loadingProgress = progress.text;
-				// console.log('Loading progress:', progress.text);
-			};
-
-			// console.log('Initializing WebLLM with model:', this.selectedModel);
-
-			// Crée le moteur MLCEngine qui exécute le modèle en WASM + WebGPU
-			// Create the MLCEngine which runs the model in WASM + WebGPU
-
 			const useOpfs = isOpfsSupported();
 			let opfsSuccess = false;
+			let modelInOpfs = false;
+			let isCached = false;
+			let fileList = [];
+			const headers = new Headers();
+			if (this.huggingFaceToken) {
+				headers.append('Authorization', `Bearer ${this.huggingFaceToken}`);
+			}
+
+			// 1. Vérification du cache
+			if (!forceDownload) {
+				const t = get(_);
+				this.loadingProgress = t ? t('loading.checkingOpfs') : 'Checking cache...';
+
+				if (useOpfs) {
+					try {
+						const ndarrayCacheUrl = `https://huggingface.co/mlc-ai/${this.selectedModel}/resolve/main/ndarray-cache.json`;
+						const controller = new AbortController();
+						const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+						const response = await fetch(ndarrayCacheUrl, { headers, signal: controller.signal });
+						clearTimeout(timeoutId);
+
+						if (response.ok) {
+							const ndarrayCache = await response.json();
+							fileList = ndarrayCache.records.map(r => r.dataPath);
+							modelInOpfs = await checkModelInOpfs(this.selectedModel, fileList);
+							isCached = modelInOpfs;
+						}
+					} catch (e) {
+						console.warn('Erreur vérification OPFS:', e);
+					}
+				}
+
+				// Vérifie le Cache API standard de WebLLM
+				if (!isCached) {
+					try {
+						isCached = await hasModelInCache(this.selectedModel, appConfig);
+					} catch (e) {
+						console.warn('Erreur vérification Cache API:', e);
+					}
+				}
+
+				// Demande l'approbation de l'utilisateur
+				if (!isCached) {
+					this.isLoading = false;
+					this.needsDownload = true;
+					return;
+				}
+			}
+
+			// Callback pour suivre la progression du téléchargement
+			const progressCallback = (progress) => {
+				this.loadingProgress = progress.text;
+			};
 
 			if (useOpfs) {
 				try {
 					const t = get(_);
-					this.loadingProgress = t ? t('loading.checkingOpfs') : 'Checking local storage...';
 
-					const ndarrayCacheUrl = `https://huggingface.co/mlc-ai/${this.selectedModel}/resolve/main/ndarray-cache.json`;
-					const headers = new Headers();
-					if (this.huggingFaceToken) {
-						headers.append('Authorization', `Bearer ${this.huggingFaceToken}`);
+					// Si on force le téléchargement, on a besoin de fileList
+					if (forceDownload && fileList.length === 0) {
+						const ndarrayCacheUrl = `https://huggingface.co/mlc-ai/${this.selectedModel}/resolve/main/ndarray-cache.json`;
+						const response = await fetch(ndarrayCacheUrl, { headers });
+						if (response.ok) {
+							const ndarrayCache = await response.json();
+							fileList = ndarrayCache.records.map(r => r.dataPath);
+							modelInOpfs = await checkModelInOpfs(this.selectedModel, fileList);
+						}
 					}
-					const ndarrayCacheResponse = await fetch(ndarrayCacheUrl, { headers });
-					if (!ndarrayCacheResponse.ok) throw new Error(`Failed to fetch ndarray-cache for ${this.selectedModel}`);
-					const ndarrayCache = await ndarrayCacheResponse.json();
-					const fileList = ndarrayCache.records.map(r => r.dataPath);
-
-					const modelInOpfs = await checkModelInOpfs(this.selectedModel, fileList);
 
 					if (modelInOpfs) {
 						this.loadingProgress = t ? t('loading.loadingFromOpfs') : 'Loading from local storage...';
@@ -255,7 +355,9 @@ class LLMStore {
 									const data = await response.arrayBuffer();
 									await saveFileToOpfs(modelDir, fileName, data);
 								} catch (e) {
-									console.warn(`Échec de la sauvegarde du fichier ${fileName} dans OPFS:`, e);
+									if (e.name !== 'AbortError') {
+										console.warn(`Échec de la sauvegarde du fichier ${fileName} dans OPFS:`, e);
+									}
 								}
 							}
 							console.log('Sauvegarde OPFS en arrière-plan terminée.');
@@ -391,6 +493,7 @@ class LLMStore {
 
 		this.messages = [];
 		this.currentConversationId = null;
+		try { localStorage.removeItem('currentConversationId'); } catch (e) { }
 	}
 
 	/**
@@ -574,6 +677,7 @@ class LLMStore {
 		await db.saveConversation(conversation);
 
 		this.currentConversationId = conversationId;
+		try { localStorage.setItem('currentConversationId', conversationId); } catch (e) { }
 
 		// Recharge l'historique / Reload history
 		await this.loadConversationHistory();
@@ -612,6 +716,7 @@ class LLMStore {
 		if (conversation) {
 			this.messages = [...conversation.messages];
 			this.currentConversationId = conversationId;
+			try { localStorage.setItem('currentConversationId', conversationId); } catch (e) { }
 
 			// Change le modèle si différent / Change model if different
 			if (conversation.model !== this.selectedModel) {
@@ -635,6 +740,7 @@ class LLMStore {
 		this.messages = [];
 		this.currentConversationId = null;
 		this.error = null;
+		try { localStorage.removeItem('currentConversationId'); } catch (e) { }
 	}
 
 	/**
@@ -650,6 +756,7 @@ class LLMStore {
 		if (this.currentConversationId === conversationId) {
 			this.messages = [];
 			this.currentConversationId = null;
+			try { localStorage.removeItem('currentConversationId'); } catch (e) { }
 		}
 
 		// Recharge l'historique / Reload history
@@ -703,6 +810,16 @@ class LLMStore {
 
 			// Charge toutes les conversations depuis Dexie / Load all conversations from Dexie
 			this.conversationHistory = await db.getAllConversations();
+
+			// Restaure la conversation active si aucune n'est chargée / Restore active conversation if none loaded
+			if (this.messages.length === 0) {
+				try {
+					const activeId = localStorage.getItem('currentConversationId');
+					if (activeId && this.conversationHistory.some(c => c.id === activeId)) {
+						await this.loadConversation(activeId);
+					}
+				} catch (e) { }
+			}
 		} catch (err) {
 			console.error('Erreur lors du chargement de l\'historique / Error loading history:', err);
 			this.conversationHistory = [];

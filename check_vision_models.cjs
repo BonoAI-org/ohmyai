@@ -1,0 +1,1 @@
+const { prebuiltAppConfig } = require('@mlc-ai/web-llm'); console.log(JSON.stringify(prebuiltAppConfig.model_list.filter(m => m.model_id.toLowerCase().includes('11b') || m.model_id.toLowerCase().includes('minicpm') || m.model_id.toLowerCase().includes('vl')).map(m => m.model_id), null, 2))

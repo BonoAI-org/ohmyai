@@ -1,12 +1,15 @@
 <script>
 	import { onMount } from "svelte";
 	import { llmStore, AVAILABLE_MODELS } from "$lib/stores/llm.svelte.js";
+	import { themeStore } from "$lib/stores/theme.svelte.js";
 	import ChatMessage from "$lib/components/ChatMessage.svelte";
 	import AddCustomModelModal from "$lib/components/AddCustomModelModal.svelte";
 	import Settings from "$lib/components/Settings.svelte";
+	import RAGTest from "$lib/components/RAGTest.svelte";
 	import ConversationHistory from "$lib/components/ConversationHistory.svelte";
 	import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 	import logo from "$lib/assets/logo.svg";
+	import logoDark from "$lib/assets/logo-dark.svg";
 	import { _ } from "svelte-i18n";
 	import Image from "svelte-material-icons/Image.svelte";
 	import Send from "svelte-material-icons/Send.svelte";
@@ -35,6 +38,7 @@
 
 	// État du panneau d'historique / History panel state
 	let isHistoryOpen = $state(false);
+	let isRagTestOpen = $state(false);
 
 	// Prompt d'installation PWA / PWA install prompt
 	let deferredInstallPrompt = $state(null);
@@ -155,6 +159,42 @@
 		} catch (error) {
 			console.error("❌ handleNewConversation - Erreur:", error);
 		}
+	}
+
+	/**
+	 * Exporte la conversation en cours au format Markdown / Export current conversation to Markdown
+	 */
+	function handleExportMarkdown() {
+		if (!llmStore.messages || llmStore.messages.length === 0) return;
+
+		let mdContent = `# Oh my AI! - Export de Conversation / Conversation Export\n\n`;
+		const dateStr = new Date().toLocaleString();
+		mdContent += `*Date : ${dateStr}*\n\n---\n\n`;
+
+		llmStore.messages.forEach((msg) => {
+			const role =
+				msg.role === "user" ? "👤 **Vous / You**" : "🤖 **IA / AI**";
+			mdContent += `### ${role}\n\n${msg.content}\n\n---\n\n`;
+		});
+
+		const blob = new Blob([mdContent], {
+			type: "text/markdown;charset=utf-8;",
+		});
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+
+		const dateForFilename = new Date().toISOString().split("T")[0];
+		const timeForFilename =
+			new Date().toTimeString().split(":")[0] +
+			"-" +
+			new Date().toTimeString().split(":")[1];
+		link.download = `conversation-${dateForFilename}_${timeForFilename}.md`;
+
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
 	}
 
 	/**
@@ -389,12 +429,37 @@
 	</div>
 {/if}
 
+{#if isRagTestOpen}
+	<div
+		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
+		onclick={() => (isRagTestOpen = false)}
+	>
+		<div
+			class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4"
+			onclick={(event) => event.stopPropagation()}
+		>
+			<div class="flex justify-between items-center mb-4">
+				<h2 class="text-xl font-bold text-gray-900 dark:text-white">
+					Vector DB Test
+				</h2>
+				<button
+					onclick={() => (isRagTestOpen = false)}
+					class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+				>
+					✕
+				</button>
+			</div>
+			<RAGTest />
+		</div>
+	</div>
+{/if}
+
 <div
-	class="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden"
+	class="h-screen bg-gradient-to-br from-slate-100 dark:from-slate-900 via-purple-100 dark:via-purple-900 to-slate-100 dark:to-slate-900 flex flex-col overflow-hidden"
 >
 	<!-- En-tête / Header - Fixé en haut / Fixed at top -->
 	<header
-		class="flex-shrink-0 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700 p-4"
+		class="relative z-50 flex-shrink-0 bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 p-4"
 	>
 		<div class="container mx-auto">
 			<div class="flex items-center justify-between flex-wrap gap-4">
@@ -440,24 +505,27 @@
 							/>
 						</svg>
 					</button>
-					<div class="flex flex-row gap-3">
-						<div class="flex flex-col items-center">
+					<div class="flex items-center gap-3">
+						<a href="/" class="flex items-center gap-2 group">
 							<img
-								src={logo}
-								alt="Oh my AI! Logo"
-								class="h-16 w-auto"
+								src={!themeStore.isDark ||
+								themeStore.colorTheme === "paper"
+									? logoDark
+									: logo}
+								alt="Logo"
+								class="w-6 h-6 group-hover:scale-110 transition-transform"
 							/>
-						</div>
-						<div class="flex flex-col mt-4 -ml-2 justify-end">
-							<h1
-								class="text-3xl font-bold text-white flex items-center gap-1"
+							<span
+								class="text-lg font-bold text-slate-900 dark:text-white"
 							>
-								h my AI!
-							</h1>
-							<p class="text-slate-300 -mt-1 -ml-3">
-								{$_("app.tagline")}
-							</p>
-						</div>
+								Oh my AI!
+							</span>
+						</a>
+						<span
+							class="hidden md:inline-block text-sm text-slate-500 dark:text-slate-400 pl-1"
+						>
+							{$_("app.tagline")}
+						</span>
 					</div>
 				</div>
 
@@ -517,6 +585,30 @@
 						{/if}
 					</button>
 
+					<!-- Bouton Exporter Markdown / Export Markdown button -->
+					{#if llmStore.messages && llmStore.messages.length > 0}
+						<button
+							onclick={handleExportMarkdown}
+							class="hidden lg:flex items-center justify-center w-10 h-10 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg transition-colors touch-manipulation"
+							aria-label="Exporter en Markdown / Export to Markdown"
+							title="Exporter la conversation / Export conversation"
+						>
+							<svg
+								class="w-5 h-5 flex-shrink-0"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+								/>
+							</svg>
+						</button>
+					{/if}
+
 					<!-- Bouton installation PWA / PWA install button -->
 					{#if showInstallButton}
 						<button
@@ -563,50 +655,24 @@
 						</div>
 					{/if}
 
-					<!-- Sélecteur de langue / Language selector -->
-					<button
-						onclick={() => (isSettingsModalOpen = true)}
-						class="flex items-center justify-center w-10 h-10 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg transition-colors touch-manipulation"
-						aria-label="Paramètres / Settings"
-						title="Paramètres / Settings"
+					<!-- Settings + Language + Model Selector Container aligned to the right -->
+					<div
+						class="flex flex-wrap items-center gap-3 mt-2 sm:mt-0 ml-auto"
 					>
-						<svg
-							class="w-5 h-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-							></path>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-							></path>
-						</svg>
-					</button>
-					<LanguageSelector bind:this={languageSelectorRef} />
+						<!-- Composant de Langue / Language Selector -->
+						<div class="flex-shrink-0">
+							<LanguageSelector bind:this={languageSelectorRef} />
+						</div>
 
-					<!-- Sélecteur de modèle / Model selector -->
-					<div class="relative model-selector-container">
+						<!-- Bouton Paramètres / Settings button -->
 						<button
-							onclick={(e) => {
-								e.stopPropagation();
-								isModelSelectorOpen = !isModelSelectorOpen;
-							}}
-							disabled={llmStore.isLoading ||
-								llmStore.isGenerating}
-							class="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-							aria-label={$_("header.selectModel")}
-							aria-expanded={isModelSelectorOpen}
+							onclick={() => (isSettingsModalOpen = true)}
+							class="flex items-center justify-center w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-colors touch-manipulation hover:bg-slate-50 dark:hover:bg-slate-700/80 shadow-sm flex-shrink-0"
+							aria-label="Paramètres / Settings"
+							title="Paramètres / Settings"
 						>
 							<svg
-								class="w-5 h-5 flex-shrink-0"
+								class="w-4 h-4"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -614,112 +680,244 @@
 								<path
 									stroke-linecap="round"
 									stroke-linejoin="round"
-									stroke-width="2"
+									stroke-width="1.5"
 									d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-								/>
+								></path>
 								<path
 									stroke-linecap="round"
 									stroke-linejoin="round"
-									stroke-width="2"
+									stroke-width="1.5"
 									d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-								/>
-							</svg>
-							<span
-								class="text-sm truncate max-w-[120px] sm:max-w-none"
-							>
-								{getSelectedModelName()}
-							</span>
-							<svg
-								class="w-4 h-4 flex-shrink-0 transition-transform {isModelSelectorOpen
-									? 'rotate-180'
-									: ''}"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M19 9l-7 7-7-7"
-								/>
+								></path>
 							</svg>
 						</button>
 
-						<!-- Menu déroulant / Dropdown menu -->
-						{#if isModelSelectorOpen}
-							<div
-								class="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-0 mt-2 mx-4 sm:mx-0 sm:w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[100] max-h-[70vh] overflow-y-auto"
+						<!-- Sélecteur de modèle / Model selector -->
+						<div
+							class="relative model-selector-container flex-shrink-0"
+						>
+							<button
+								onclick={(e) => {
+									e.stopPropagation();
+									isModelSelectorOpen = !isModelSelectorOpen;
+								}}
+								disabled={llmStore.isLoading ||
+									llmStore.isGenerating}
+								class="flex items-center gap-2 px-3 py-1.5 bg-slate-100/80 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:active:bg-slate-600 text-slate-900 dark:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus:outline-none border border-transparent dark:border-slate-600/50 shadow-[0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-none"
+								aria-label={$_("header.selectModel")}
+								aria-expanded={isModelSelectorOpen}
 							>
-								<div class="p-2">
-									<div
-										class="text-xs text-slate-400 px-3 py-2 font-semibold uppercase"
-									>
-										{$_("header.chooseModel")}
-									</div>
-									{#each AVAILABLE_MODELS as model}
-										<button
-											onclick={() =>
-												handleModelChange(model.id)}
-											class="w-full text-left px-3 py-3 rounded hover:bg-slate-700/50 transition-colors {model.id ===
-											llmStore.selectedModel
-												? 'bg-purple-600/20 border border-purple-500/50'
-												: ''}"
+								<span
+									class="text-sm truncate max-w-[150px] sm:max-w-none font-medium"
+								>
+									{getSelectedModelName()}
+								</span>
+								<svg
+									class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 flex-shrink-0 transition-transform {isModelSelectorOpen
+										? 'rotate-180'
+										: ''}"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</button>
+
+							<!-- Menu déroulant / Dropdown menu -->
+							{#if isModelSelectorOpen}
+								<div
+									class="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-0 mt-2 mx-4 sm:mx-0 sm:w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-[100] max-h-[70vh] overflow-y-auto"
+								>
+									<div class="p-2">
+										<div
+											class="text-xs text-slate-500 dark:text-slate-400 px-3 py-2 font-semibold uppercase"
 										>
-											<div
-												class="flex items-start justify-between gap-2"
+											{$_("header.chooseModel")}
+										</div>
+										{#each AVAILABLE_MODELS as model}
+											<button
+												onclick={() =>
+													handleModelChange(model.id)}
+												class="w-full text-left px-3 py-3 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors {model.id ===
+												llmStore.selectedModel
+													? 'bg-purple-50 dark:bg-purple-600/20 border border-purple-200 dark:border-purple-500/50'
+													: ''}"
 											>
-												<div class="flex-1">
-													<div
-														class="flex items-center gap-2"
-													>
-														<span
-															class="font-semibold text-white"
-															>{model.name}</span
+												<div
+													class="flex items-start justify-between gap-2"
+												>
+													<div class="flex-1">
+														<div
+															class="flex items-center gap-2"
 														>
-														{#if model.recommended}
 															<span
-																class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded"
+																class="font-semibold text-slate-900 dark:text-white"
+																>{model.name}</span
 															>
-																{$_(
-																	"model.recommended",
-																)}
-															</span>
-														{/if}
-														{#if model.id === llmStore.selectedModel}
-															<svg
-																class="w-4 h-4 text-purple-400"
-																fill="currentColor"
-																viewBox="0 0 20 20"
-															>
-																<path
-																	fill-rule="evenodd"
-																	d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-																	clip-rule="evenodd"
-																/>
-															</svg>
-														{/if}
-													</div>
-													<div
-														class="text-xs text-slate-400 mt-1"
-													>
-														{model.size} • {model.description}
+															{#if model.recommended}
+																<span
+																	class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded"
+																>
+																	{$_(
+																		"model.recommended",
+																	)}
+																</span>
+															{/if}
+															{#if model.id === llmStore.selectedModel}
+																<svg
+																	class="w-4 h-4 text-purple-400"
+																	fill="currentColor"
+																	viewBox="0 0 20 20"
+																>
+																	<path
+																		fill-rule="evenodd"
+																		d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+																		clip-rule="evenodd"
+																	/>
+																</svg>
+															{/if}
+														</div>
+														<div
+															class="text-xs text-slate-500 dark:text-slate-400 mt-1"
+														>
+															{model.size} • {model.description}
+														</div>
 													</div>
 												</div>
-											</div>
-										</button>
-									{/each}
+											</button>
+										{/each}
 
-									<!-- Modèles personnalisés / Custom models -->
-									{#if llmStore.customModels.length > 0}
+										<!-- Modèles personnalisés / Custom models -->
+										{#if llmStore.customModels.length > 0}
+											<div
+												class="border-t border-slate-700 mt-2 pt-2"
+											>
+												<div
+													class="text-xs text-slate-400 px-3 py-2 font-semibold uppercase flex items-center gap-2"
+												>
+													<svg
+														class="w-4 h-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
+														/>
+													</svg>
+													{$_("model.customModels")}
+												</div>
+												{#each llmStore.customModels as model}
+													<div class="relative group">
+														<button
+															onclick={() =>
+																handleModelChange(
+																	model.id,
+																)}
+															class="w-full text-left px-3 py-3 rounded hover:bg-slate-700/50 transition-colors {model.id ===
+															llmStore.selectedModel
+																? 'bg-purple-600/20 border border-purple-500/50'
+																: ''}"
+														>
+															<div
+																class="flex items-start justify-between gap-2"
+															>
+																<div
+																	class="flex-1"
+																>
+																	<div
+																		class="flex items-center gap-2"
+																	>
+																		<span
+																			class="font-semibold text-white"
+																			>{model.name}</span
+																		>
+																		<span
+																			class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded"
+																		>
+																			Custom
+																		</span>
+																		{#if model.id === llmStore.selectedModel}
+																			<svg
+																				class="w-4 h-4 text-purple-400"
+																				fill="currentColor"
+																				viewBox="0 0 20 20"
+																			>
+																				<path
+																					fill-rule="evenodd"
+																					d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+																					clip-rule="evenodd"
+																				/>
+																			</svg>
+																		{/if}
+																	</div>
+																	<div
+																		class="text-xs text-slate-400 mt-1"
+																	>
+																		{model.size}
+																		• {model.description}
+																	</div>
+																</div>
+															</div>
+														</button>
+														<!-- Bouton supprimer / Delete button -->
+														<button
+															onclick={(e) => {
+																e.stopPropagation();
+																if (
+																	confirm(
+																		"Supprimer ce modèle personnalisé ? / Delete this custom model?",
+																	)
+																) {
+																	llmStore.removeCustomModel(
+																		model.id,
+																	);
+																}
+															}}
+															class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300"
+															aria-label="Supprimer / Delete"
+														>
+															<svg
+																class="w-4 h-4"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	stroke-linecap="round"
+																	stroke-linejoin="round"
+																	stroke-width="2"
+																	d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+																/>
+															</svg>
+														</button>
+													</div>
+												{/each}
+											</div>
+										{/if}
+
+										<!-- Bouton pour ajouter un modèle / Add model button -->
 										<div
 											class="border-t border-slate-700 mt-2 pt-2"
 										>
-											<div
-												class="text-xs text-slate-400 px-3 py-2 font-semibold uppercase flex items-center gap-2"
+											<button
+												onclick={() => {
+													isModelSelectorOpen = false;
+													isAddModelModalOpen = true;
+												}}
+												class="w-full text-left px-3 py-3 rounded hover:bg-green-500/10 transition-colors flex items-center gap-2 text-green-400 hover:text-green-300"
 											>
 												<svg
-													class="w-4 h-4"
+													class="w-5 h-5"
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"
@@ -728,132 +926,30 @@
 														stroke-linecap="round"
 														stroke-linejoin="round"
 														stroke-width="2"
-														d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
+														d="M12 4v16m8-8H4"
 													/>
 												</svg>
-												{$_("model.customModels")}
-											</div>
-											{#each llmStore.customModels as model}
-												<div class="relative group">
-													<button
-														onclick={() =>
-															handleModelChange(
-																model.id,
-															)}
-														class="w-full text-left px-3 py-3 rounded hover:bg-slate-700/50 transition-colors {model.id ===
-														llmStore.selectedModel
-															? 'bg-purple-600/20 border border-purple-500/50'
-															: ''}"
-													>
-														<div
-															class="flex items-start justify-between gap-2"
-														>
-															<div class="flex-1">
-																<div
-																	class="flex items-center gap-2"
-																>
-																	<span
-																		class="font-semibold text-white"
-																		>{model.name}</span
-																	>
-																	<span
-																		class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded"
-																	>
-																		Custom
-																	</span>
-																	{#if model.id === llmStore.selectedModel}
-																		<svg
-																			class="w-4 h-4 text-purple-400"
-																			fill="currentColor"
-																			viewBox="0 0 20 20"
-																		>
-																			<path
-																				fill-rule="evenodd"
-																				d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-																				clip-rule="evenodd"
-																			/>
-																		</svg>
-																	{/if}
-																</div>
-																<div
-																	class="text-xs text-slate-400 mt-1"
-																>
-																	{model.size}
-																	• {model.description}
-																</div>
-															</div>
-														</div>
-													</button>
-													<!-- Bouton supprimer / Delete button -->
-													<button
-														onclick={(e) => {
-															e.stopPropagation();
-															if (
-																confirm(
-																	"Supprimer ce modèle personnalisé ? / Delete this custom model?",
-																)
-															) {
-																llmStore.removeCustomModel(
-																	model.id,
-																);
-															}
-														}}
-														class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300"
-														aria-label="Supprimer / Delete"
-													>
-														<svg
-															class="w-4 h-4"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-															/>
-														</svg>
-													</button>
-												</div>
-											{/each}
+												<span class="font-semibold"
+													>{$_(
+														"model.addCustomModel",
+													)}</span
+												>
+											</button>
 										</div>
-									{/if}
-
-									<!-- Bouton pour ajouter un modèle / Add model button -->
-									<div
-										class="border-t border-slate-700 mt-2 pt-2"
-									>
-										<button
-											onclick={() => {
-												isModelSelectorOpen = false;
-												isAddModelModalOpen = true;
-											}}
-											class="w-full text-left px-3 py-3 rounded hover:bg-green-500/10 transition-colors flex items-center gap-2 text-green-400 hover:text-green-300"
-										>
-											<svg
-												class="w-5 h-5"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M12 4v16m8-8H4"
-												/>
-											</svg>
-											<span class="font-semibold"
-												>{$_(
-													"model.addCustomModel",
-												)}</span
-											>
-										</button>
 									</div>
 								</div>
-							</div>
-						{/if}
+							{/if}
+						</div>
+
+						<!-- Bouton RAG Test (Caché pour le moment)
+					<button
+						onclick={() => (isRagTestOpen = !isRagTestOpen)}
+						class="flex items-center justify-center w-10 h-10 bg-slate-200/50 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:active:bg-slate-600 text-slate-900 dark:text-white rounded-lg transition-colors touch-manipulation"
+						title="Test Vector DB"
+					>
+						<span class="text-xl">🧠</span>
+					</button>
+					-->
 					</div>
 				</div>
 			</div>
@@ -922,6 +1018,62 @@
 						>
 							Annuler / Cancel
 						</button>
+					</div>
+				</div>
+			{:else if llmStore.needsDownload}
+				<!-- Demande de téléchargement / Download prompt -->
+				<div
+					class="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 text-center mb-4 border border-purple-500/30"
+				>
+					<div class="flex flex-col items-center gap-4">
+						<svg
+							class="w-12 h-12 text-purple-500 dark:text-purple-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+							/>
+						</svg>
+						<div class="text-slate-900 dark:text-white text-lg">
+							<p class="font-semibold mb-2">
+								{$_("loading.downloadRequired", {
+									default:
+										"Téléchargement requis / Download required",
+								})}
+							</p>
+							<p
+								class="text-sm text-slate-600 dark:text-slate-300"
+							>
+								{$_("loading.notOnDevice", {
+									default:
+										"Le modèle sélectionné n'est pas encore sur cet appareil. / The selected model is not on this device yet.",
+								})}
+							</p>
+							<p
+								class="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto"
+							>
+								{$_("loading.downloadWarning", {
+									default:
+										"Le téléchargement peut prendre plusieurs minutes et consommer des données. Wi-Fi recommandé. / Download may take several minutes and use data. Wi-Fi recommended.",
+								})}
+							</p>
+						</div>
+						<div class="flex gap-4 mt-4">
+							<button
+								onclick={() => llmStore.initEngine(true)}
+								class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow"
+							>
+								{$_("loading.downloadNow", {
+									default:
+										"Télécharger maintenant / Download now",
+								})}
+							</button>
+						</div>
 					</div>
 				</div>
 			{/if}

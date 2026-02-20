@@ -88,62 +88,26 @@ function showUpdateNotification(registration) {
 	const banner = document.createElement('div');
 	banner.className = 'pwa-update-banner';
 	banner.innerHTML = `
-		<div style="
-			position: fixed;
-			bottom: 20px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
-			padding: 16px 24px;
-			border-radius: 12px;
-			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-			z-index: 9999;
-			display: flex;
-			align-items: center;
-			gap: 16px;
-			max-width: 90vw;
-			animation: slideUp 0.3s ease-out;
-		">
-			<div style="flex: 1;">
-				<div style="font-weight: 600; margin-bottom: 4px;">
+		<div style="animation: slideUp 0.3s ease-out;"
+			class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 py-4 px-6 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] z-[9999] flex items-center gap-4 max-w-[90vw]"
+		>
+			<div class="flex-1">
+				<div class="font-semibold mb-1">
 					🎉 Nouvelle version disponible !
 				</div>
-				<div style="font-size: 14px; opacity: 0.9;">
+				<div class="text-sm opacity-90">
 					New version available!
 				</div>
 			</div>
 			<button 
 				onclick="this.parentElement.remove(); window.location.reload();"
-				style="
-					background: white;
-					color: #667eea;
-					border: none;
-					padding: 8px 16px;
-					border-radius: 8px;
-					font-weight: 600;
-					cursor: pointer;
-					transition: transform 0.2s;
-				"
-				onmouseover="this.style.transform='scale(1.05)'"
-				onmouseout="this.style.transform='scale(1)'"
+				class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-transform hover:scale-105"
 			>
 				Actualiser / Refresh
 			</button>
 			<button 
 				onclick="this.parentElement.remove();"
-				style="
-					background: transparent;
-					color: white;
-					border: 1px solid rgba(255,255,255,0.3);
-					padding: 8px 16px;
-					border-radius: 8px;
-					font-weight: 600;
-					cursor: pointer;
-					transition: background 0.2s;
-				"
-				onmouseover="this.style.background='rgba(255,255,255,0.1)'"
-				onmouseout="this.style.background='transparent'"
+				class="bg-transparent text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold py-2 px-4 rounded-lg transition-colors"
 			>
 				Plus tard / Later
 			</button>
@@ -158,11 +122,11 @@ function showUpdateNotification(registration) {
 			@keyframes slideUp {
 				from {
 					opacity: 0;
-					transform: translateX(-50%) translateY(20px);
+					transform: translateY(20px);
 				}
 				to {
 					opacity: 1;
-					transform: translateX(-50%) translateY(0);
+					transform: translateY(0);
 				}
 			}
 		`;
@@ -247,7 +211,7 @@ export function setupInstallPrompt() {
  */
 function showInstallButton(deferredPrompt) {
 	console.log('🎨 PWA: showInstallButton appelé, deferredPrompt =', deferredPrompt ? 'disponible' : 'null');
-	
+
 	// Ne montre pas si déjà installé / Don't show if already installed
 	if (isInstalled()) {
 		console.log('⚠️ PWA: App déjà installée, toast non affiché');
@@ -259,44 +223,21 @@ function showInstallButton(deferredPrompt) {
 		console.log('⚠️ PWA: Toast déjà affiché');
 		return;
 	}
-	
+
 	console.log('✅ PWA: Création du toast...');
 
 	const button = document.createElement('button');
 	button.className = 'pwa-install-button';
 	button.innerHTML = `
-		<div style="
-			position: fixed;
-			bottom: 20px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
-			padding: 16px 24px;
-			border-radius: 16px;
-			box-shadow: 0 8px 32px rgba(102, 126, 234, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
-			border: none;
-			cursor: pointer;
-			z-index: 9998;
-			display: flex;
-			align-items: center;
-			gap: 12px;
-			font-weight: 600;
-			font-size: 15px;
-			transition: transform 0.2s, box-shadow 0.2s;
-			animation: toastSlideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-			backdrop-filter: blur(10px);
-			max-width: 90vw;
-		"
-		onmouseover="this.style.transform='translateX(-50%) scale(1.05)'; this.style.boxShadow='0 12px 40px rgba(102, 126, 234, 0.6), 0 6px 16px rgba(0, 0, 0, 0.4)'"
-		onmouseout="this.style.transform='translateX(-50%) scale(1)'; this.style.boxShadow='0 8px 32px rgba(102, 126, 234, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3)'"
+		<div style="animation: toastSlideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);"
+			class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 py-4 px-6 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] cursor-pointer z-[9998] flex items-center gap-3 font-semibold text-[15px] max-w-[90vw] transition-all hover:scale-105 backdrop-blur-md"
 		>
-			<svg style="width: 24px; height: 24px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-6 h-6 shrink-0 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
 			</svg>
-			<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-				<div style="font-weight: 700; font-size: 15px;">Installer l'app</div>
-				<div style="font-size: 12px; opacity: 0.9; font-weight: 400;">Install app</div>
+			<div class="flex flex-col items-start gap-0.5">
+				<div class="font-bold text-[15px]">Installer l'app</div>
+				<div class="text-[12px] opacity-90 font-normal">Install app</div>
 			</div>
 		</div>
 	`;
@@ -328,21 +269,21 @@ function showInstallButton(deferredPrompt) {
 			@keyframes toastSlideUp {
 				from {
 					opacity: 0;
-					transform: translateX(-50%) translateY(100px);
+					transform: translateY(100px);
 				}
 				to {
 					opacity: 1;
-					transform: translateX(-50%) translateY(0);
+					transform: translateY(0);
 				}
 			}
 			@keyframes toastSlideDown {
 				from {
 					opacity: 1;
-					transform: translateX(-50%) translateY(0);
+					transform: translateY(0);
 				}
 				to {
 					opacity: 0;
-					transform: translateX(-50%) translateY(100px);
+					transform: translateY(100px);
 				}
 			}
 		`;
