@@ -9,9 +9,25 @@
 	 */
 
 	// Props: message avec { role: 'user' | 'assistant', content: string }
-	let { message } = $props();
+	let { message, onreuse = null, onsave = null } = $props();
 
 	let copied = $state(false);
+	let saved = $state(false);
+	let thinkExpanded = $state(false);
+
+	/**
+	 * Sépare le contenu <think> du reste de la réponse
+	 */
+	function parseThinking(content) {
+		if (!content) return { thinking: '', answer: '', closed: true };
+		const thinkMatch = content.match(/^<think>([\s\S]*?)(<\/think>|$)([\s\S]*)$/);
+		if (!thinkMatch) {
+			const altMatch = content.match(/^\[THINK\]([\s\S]*?)(\[\/THINK\]|$)([\s\S]*)$/);
+			if (!altMatch) return { thinking: '', answer: content, closed: true };
+			return { thinking: altMatch[1].trim(), answer: altMatch[3].trim(), closed: altMatch[2] !== '' };
+		}
+		return { thinking: thinkMatch[1].trim(), answer: thinkMatch[3].trim(), closed: thinkMatch[2] === '</think>' };
+	}
 
 	async function copyText() {
 		try {
@@ -22,6 +38,20 @@
 			}, 2000);
 		} catch (err) {
 			console.error("Failed to copy text: ", err);
+		}
+	}
+
+	function reusePrompt() {
+		if (onreuse) onreuse(message.content);
+	}
+
+	function saveToMemory() {
+		if (onsave) {
+			onsave(message.content);
+			saved = true;
+			setTimeout(() => {
+				saved = false;
+			}, 2000);
 		}
 	}
 </script>
@@ -71,43 +101,108 @@
 				{/if}
 			</div>
 
-			<!-- Bouton Copier / Copy Button -->
-			{#if message.role === "assistant" && message.content}
-				<button
-					onclick={copyText}
-					class="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-[colors,transform] active:scale-95"
-					title="Copier la réponse / Copy response"
-				>
-					{#if copied}
-						<svg
-							class="w-4 h-4 text-green-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+			<!-- Action Buttons -->
+			{#if message.content}
+				<div class="flex items-center gap-0.5">
+					<!-- Bouton Copier / Copy Button -->
+					<button
+						onclick={copyText}
+						class="p-1 rounded {message.role === 'user' ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} transition-[colors,transform] active:scale-95"
+						title="Copier / Copy"
+					>
+						{#if copied}
+							<svg
+								class="w-4 h-4 text-green-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 13l4 4L19 7"
+								/>
+							</svg>
+						{:else}
+							<svg
+								class="w-4 h-4"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+								/>
+							</svg>
+						{/if}
+					</button>
+
+					<!-- Bouton Réutiliser / Reuse Prompt Button (user only) -->
+					{#if message.role === "user" && onreuse}
+						<button
+							onclick={reusePrompt}
+							class="p-1 rounded text-white/70 hover:text-white hover:bg-white/20 transition-[colors,transform] active:scale-95"
+							title="Réutiliser le prompt / Reuse prompt"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M5 13l4 4L19 7"
-							/>
-						</svg>
-					{:else}
-						<svg
-							class="w-4 h-4"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-							/>
-						</svg>
+							<svg
+								class="w-4 h-4"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"
+								/>
+							</svg>
+						</button>
 					{/if}
-				</button>
+
+					<!-- Bouton Sauvegarder / Save to Memory Button -->
+					{#if onsave}
+						<button
+							onclick={saveToMemory}
+							class="p-1 rounded {message.role === 'user' ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} transition-[colors,transform] active:scale-95"
+							title="Sauvegarder en mémoire / Save to memory"
+						>
+							{#if saved}
+								<svg
+									class="w-4 h-4 text-green-400"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 13l4 4L19 7"
+									/>
+								</svg>
+							{:else}
+								<svg
+									class="w-4 h-4"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+									/>
+								</svg>
+							{/if}
+						</button>
+					{/if}
+				</div>
 			{/if}
 		</div>
 
@@ -119,12 +214,41 @@
 				: ''}"
 		>
 			{#if message.content}
-				<!-- Affiche le contenu avec préservation des sauts de ligne / Display content with line breaks preserved -->
-				<p class="whitespace-pre-wrap break-words m-0">
-					{message.content}
-				</p>
+				{@const parsed = message.role === 'assistant' ? parseThinking(message.content) : null}
+				{#if parsed && parsed.thinking}
+					<!-- Section de raisonnement repliable / Collapsible thinking section -->
+					<div class="mb-3">
+						<button
+							onclick={() => thinkExpanded = !thinkExpanded}
+							class="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+						>
+							<svg
+								class="w-3.5 h-3.5 transition-transform {thinkExpanded ? 'rotate-90' : ''}"
+								fill="none" stroke="currentColor" viewBox="0 0 24 24"
+							><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+							{#if !parsed.closed}
+								<span class="animate-pulse">Raisonnement en cours...</span>
+							{:else}
+								Raisonnement
+							{/if}
+						</button>
+						{#if thinkExpanded}
+							<div class="mt-2 pl-3 border-l-2 border-slate-300 dark:border-slate-600 text-xs text-slate-500 dark:text-slate-400 italic">
+								<p class="whitespace-pre-wrap break-words m-0">{parsed.thinking}</p>
+							</div>
+						{/if}
+					</div>
+					{#if parsed.answer}
+						<p class="whitespace-pre-wrap break-words m-0">{parsed.answer}</p>
+					{:else if !parsed.closed}
+						<span class="text-slate-400 text-sm italic">...</span>
+					{/if}
+				{:else}
+					<p class="whitespace-pre-wrap break-words m-0">
+						{parsed ? parsed.answer : message.content}
+					</p>
+				{/if}
 			{:else}
-				<!-- Message vide pendant la génération / Empty message during generation -->
 				<span class="text-slate-400 text-sm italic">...</span>
 			{/if}
 		</div>

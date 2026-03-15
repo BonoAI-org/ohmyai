@@ -43,7 +43,7 @@ registerRoute(
 // Stratégie pour les ressources statiques (CSS, JS, fonts)
 // Strategy for static resources (CSS, JS, fonts)
 registerRoute(
-	({ request }) => 
+	({ request }) =>
 		request.destination === 'style' ||
 		request.destination === 'script' ||
 		request.destination === 'font',
@@ -78,16 +78,73 @@ registerRoute(
 	})
 );
 
-// NE PAS CACHER les fichiers des modèles LLM et ressources WebLLM
-// DON'T CACHE LLM model files and WebLLM resources
-// WebLLM gère son propre cache via IndexedDB et Cache API
-// WebLLM manages its own cache via IndexedDB and Cache API
+// Fonction pour lire un fichier depuis l'OPFS
+// Function to read a file from OPFS
+async function getFileFromOPFS(modelId, fileName) {
+	if (!('storage' in navigator) || !navigator.storage.getDirectory) return null;
+	try {
+		const root = await navigator.storage.getDirectory();
+		const modelDir = await root.getDirectoryHandle(modelId);
+		const fileHandle = await modelDir.getFileHandle(fileName);
+		const file = await fileHandle.getFile();
+		return new Response(file, {
+			status: 200,
+			headers: {
+				'Content-Type': fileName.endsWith('.json') ? 'application/json' : 'application/octet-stream',
+				'Cache-Control': 'public, max-age=31536000, immutable',
+				'Access-Control-Allow-Origin': '*'
+			}
+		});
+	} catch (e) {
+		return null;
+	}
+}
+
+// Intercepteur pour charger les modèles hébergés sur HuggingFace ou en cache local via '/opfs/' depuis l'OPFS
+// Intercept HuggingFace or '/opfs/' model requests to serve them from local OPFS if cached
 registerRoute(
 	({ url }) => {
-		// Exclure tous les fichiers de modèles et ressources WebLLM
-		// Exclude all model files and WebLLM resources
+		return (url.hostname === 'huggingface.co' && url.pathname.includes('/resolve/main/')) ||
+			url.pathname.startsWith('/opfs/');
+	},
+	async ({ request, url }) => {
+		let modelId, fileName;
+
+		// Cas 1: HuggingFace URL / Example: /mlc-ai/Qwen3-0.6B-q4f16_1-MLC/resolve/main/ndarray-cache.json
+		const hfMatch = url.pathname.match(/\/mlc-ai\/([^\/]+)\/resolve\/main\/(.+)/);
+		if (hfMatch) {
+			modelId = hfMatch[1];
+			fileName = decodeURIComponent(hfMatch[2]);
+		}
+		// Cas 2: URL de cache WebLLM (/opfs/) / Example: /opfs/Qwen3-0.6B-q4f16_1-MLC/ndarray-cache.json
+		else {
+			const opfsMatch = url.pathname.match(/^\/opfs\/([^\/]+)\/(.+)/);
+			if (opfsMatch) {
+				modelId = opfsMatch[1];
+				fileName = decodeURIComponent(opfsMatch[2]);
+			}
+		}
+
+		if (modelId && fileName) {
+			const opfsResponse = await getFileFromOPFS(modelId, fileName);
+			if (opfsResponse) {
+				console.log(`[SW] Servir depuis OPFS: ${modelId}/${fileName}`);
+				return opfsResponse;
+			}
+		}
+		// Fallback réseau standard si non trouvé / Standard network fallback if not found
+		return fetch(request);
+	}
+);
+
+// NE PAS CACHER les fichiers des modèles LLM et ressources WebLLM
+// DON'T CACHE LLM model files and WebLLM resources
+// WebLLM gère son propre cache via IndexedDB et Cache API (ou OPFS)
+registerRoute(
+	({ url }) => {
+		// Exclure tous les fichiers de modèles (sauf l'interception OPFS ci-dessus)
+		// Exclude all model files (except for the OPFS interception above)
 		return (
-			url.hostname.includes('huggingface.co') ||
 			url.hostname.includes('cdn.jsdelivr.net') ||
 			url.hostname.includes('unpkg.com') ||
 			url.pathname.includes('mlc-llm') ||
@@ -104,7 +161,7 @@ registerRoute(
 // Installation du service worker / Service worker installation
 self.addEventListener('install', (event) => {
 	// console.log('[SW] Installation...', VERSION);
-	
+
 	event.waitUntil(
 		caches.open(CACHE_NAME).then((cache) => {
 			// console.log('[SW] Cache ouvert / Cache opened');
@@ -112,7 +169,7 @@ self.addEventListener('install', (event) => {
 			// Precaching is handled by Workbox
 		})
 	);
-	
+
 	// Active immédiatement / Activate immediately
 	self.skipWaiting();
 });
@@ -120,7 +177,7 @@ self.addEventListener('install', (event) => {
 // Activation du service worker / Service worker activation
 self.addEventListener('activate', (event) => {
 	// console.log('[SW] Activation...', VERSION);
-	
+
 	event.waitUntil(
 		caches.keys().then((cacheNames) => {
 			return Promise.all(
@@ -133,7 +190,7 @@ self.addEventListener('activate', (event) => {
 			);
 		})
 	);
-	
+
 	// Prend le contrôle immédiatement / Take control immediately
 	return self.clients.claim();
 });
@@ -144,11 +201,11 @@ self.addEventListener('message', (event) => {
 		// console.log('[SW] Message reçu / Message received: SKIP_WAITING');
 		self.skipWaiting();
 	}
-	
+
 	if (event.data && event.data.type === 'GET_VERSION') {
 		event.ports[0].postMessage({ version: VERSION });
 	}
-	
+
 	if (event.data && event.data.type === 'ABORT_DOWNLOADS') {
 		console.log('SW: Message ABORT_DOWNLOADS reçu. Nettoyage des caches...');
 		// Supprime tous les caches gérés par ce service worker
@@ -169,7 +226,7 @@ self.addEventListener('message', (event) => {
 // Background sync (if supported)
 self.addEventListener('sync', (event) => {
 	// console.log('[SW] Sync event:', event.tag);
-	
+
 	if (event.tag === 'sync-conversations') {
 		event.waitUntil(
 			// Ici on pourrait synchroniser les conversations si nécessaire
@@ -183,14 +240,14 @@ self.addEventListener('sync', (event) => {
 // Handle push notifications (if implemented later)
 self.addEventListener('push', (event) => {
 	// console.log('[SW] Push reçu / Push received');
-	
+
 	const options = {
 		body: event.data ? event.data.text() : 'Nouvelle notification',
 		icon: '/icon-192x192.png',
 		badge: '/icon-96x96.png',
 		vibrate: [200, 100, 200]
 	};
-	
+
 	event.waitUntil(
 		self.registration.showNotification('Oh my AI!', options)
 	);
@@ -200,9 +257,9 @@ self.addEventListener('push', (event) => {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
 	// console.log('[SW] Notification cliquée / Notification clicked');
-	
+
 	event.notification.close();
-	
+
 	event.waitUntil(
 		clients.openWindow('/')
 	);

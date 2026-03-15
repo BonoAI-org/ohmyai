@@ -3,7 +3,7 @@
 	import { llmStore, AVAILABLE_MODELS } from "$lib/stores/llm.svelte.js";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
 	import ChatMessage from "$lib/components/ChatMessage.svelte";
-	import AddCustomModelModal from "$lib/components/AddCustomModelModal.svelte";
+	import ManageModelsModal from "$lib/components/ManageModelsModal.svelte";
 	import Settings from "$lib/components/Settings.svelte";
 	import RAGTest from "$lib/components/RAGTest.svelte";
 	import ConversationHistory from "$lib/components/ConversationHistory.svelte";
@@ -31,6 +31,8 @@
 
 	// État du menu de sélection de modèle / Model selection menu state
 	let isModelSelectorOpen = $state(false);
+	let showAllModels = $state(false);
+	const VISIBLE_MODEL_COUNT = 3;
 
 	// État du modal d'ajout de modèle / Add model modal state
 	let isAddModelModalOpen = $state(false);
@@ -91,6 +93,8 @@
 		// Charge le dernier modèle sélectionné / Load last selected model
 		llmStore.loadSelectedModel();
 		llmStore.loadHuggingFaceToken();
+		llmStore.loadSystemPrompt();
+		llmStore.loadUserProfile();
 
 		// Charge l'historique des conversations / Load conversation history
 		llmStore.loadConversationHistory();
@@ -227,6 +231,31 @@
 				textareaEl.focus();
 			}
 		}, 100);
+	}
+
+	/**
+	 * Réutilise un prompt utilisateur / Reuse a user prompt
+	 */
+	function handleReusePrompt(content) {
+		messageInput = content;
+		if (textareaEl) textareaEl.focus();
+	}
+
+	/**
+	 * Sauvegarde un message en mémoire locale / Save a message to local memory
+	 */
+	function handleSaveToMemory(content) {
+		try {
+			const savedNotes = JSON.parse(localStorage.getItem('savedNotes') || '[]');
+			savedNotes.push({
+				id: Date.now(),
+				content: content,
+				timestamp: new Date().toISOString()
+			});
+			localStorage.setItem('savedNotes', JSON.stringify(savedNotes));
+		} catch (err) {
+			console.error('Error saving note:', err);
+		}
 	}
 
 	/**
@@ -379,6 +408,7 @@
 			!event.target.closest(".model-selector-container")
 		) {
 			isModelSelectorOpen = false;
+			showAllModels = false;
 		}
 
 		// Ferme le sélecteur de langue / Close language selector
@@ -700,6 +730,7 @@
 								onclick={(e) => {
 									e.stopPropagation();
 									isModelSelectorOpen = !isModelSelectorOpen;
+									if (!isModelSelectorOpen) showAllModels = false;
 								}}
 								disabled={llmStore.isLoading ||
 									llmStore.isGenerating}
@@ -740,7 +771,7 @@
 										>
 											{$_("header.chooseModel")}
 										</div>
-										{#each AVAILABLE_MODELS as model}
+										{#each showAllModels ? AVAILABLE_MODELS : AVAILABLE_MODELS.slice(0, VISIBLE_MODEL_COUNT) as model}
 											<button
 												onclick={() =>
 													handleModelChange(model.id)}
@@ -754,21 +785,81 @@
 												>
 													<div class="flex-1">
 														<div
-															class="flex items-center gap-2"
+															class="flex items-center gap-2 flex-wrap gap-y-1"
 														>
 															<span
-																class="font-semibold text-slate-900 dark:text-white"
+																class="font-semibold text-slate-900 dark:text-white break-words"
 																>{model.name}</span
 															>
 															{#if model.recommended}
 																<span
-																	class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded"
+																	class="text-[10px] bg-green-500/20 text-green-500 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-500/30"
 																>
 																	{$_(
 																		"model.recommended",
 																	)}
 																</span>
 															{/if}
+
+															<!-- Status Indicator -->
+															{#if llmStore.isLoading && llmStore.selectedModel === model.id}
+																<span
+																	class="text-[10px] bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/30 flex items-center gap-1 truncate"
+																>
+																	<svg
+																		class="w-3 h-3 animate-spin flex-shrink-0"
+																		viewBox="0 0 24 24"
+																		fill="none"
+																		stroke="currentColor"
+																		><path
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																			stroke-width="2"
+																			d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+																		/></svg
+																	>
+																	En cours
+																</span>
+															{:else if llmStore.downloadedModels[model.id]}
+																<span
+																	class="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1 truncate"
+																	title="Modèle téléchargé sur cet appareil"
+																>
+																	<svg
+																		class="w-3 h-3 flex-shrink-0"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																		><path
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																			stroke-width="2"
+																			d="M5 13l4 4L19 7"
+																		/></svg
+																	>
+																	Local
+																</span>
+															{:else}
+																<span
+																	class="text-[10px] bg-slate-500/10 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-500/20 flex items-center gap-1 truncate"
+																	title="Nécessite un téléchargement"
+																>
+																	<svg
+																		class="w-3 h-3 flex-shrink-0"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																		><path
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																			stroke-width="2"
+																			d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+																		/></svg
+																	>
+																	À télécharger
+																</span>
+															{/if}
+
 															{#if model.id === llmStore.selectedModel}
 																<svg
 																	class="w-4 h-4 text-purple-400"
@@ -792,6 +883,22 @@
 												</div>
 											</button>
 										{/each}
+
+										{#if !showAllModels && AVAILABLE_MODELS.length > VISIBLE_MODEL_COUNT}
+											<button
+												onclick={(e) => { e.stopPropagation(); showAllModels = true; }}
+												class="w-full text-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded transition-colors font-medium"
+											>
+												Voir plus ({AVAILABLE_MODELS.length - VISIBLE_MODEL_COUNT} autres)
+											</button>
+										{:else if showAllModels && AVAILABLE_MODELS.length > VISIBLE_MODEL_COUNT}
+											<button
+												onclick={(e) => { e.stopPropagation(); showAllModels = false; }}
+												class="w-full text-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded transition-colors font-medium"
+											>
+												Voir moins
+											</button>
+										{/if}
 
 										<!-- Modèles personnalisés / Custom models -->
 										{#if llmStore.customModels.length > 0}
@@ -832,20 +939,82 @@
 																class="flex items-start justify-between gap-2"
 															>
 																<div
-																	class="flex-1"
+																	class="flex-1 min-w-0"
 																>
 																	<div
-																		class="flex items-center gap-2"
+																		class="flex items-center gap-2 flex-wrap gap-y-1"
 																	>
 																		<span
-																			class="font-semibold text-white"
+																			class="font-semibold text-white break-words"
 																			>{model.name}</span
 																		>
 																		<span
-																			class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded"
+																			class="text-[10px] bg-purple-500/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30"
 																		>
 																			Custom
 																		</span>
+
+																		<!-- Status Indicator -->
+																		{#if llmStore.isLoading && llmStore.selectedModel === model.id}
+																			<span
+																				class="text-[10px] bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/30 flex items-center gap-1 truncate"
+																			>
+																				<svg
+																					class="w-3 h-3 animate-spin flex-shrink-0"
+																					viewBox="0 0 24 24"
+																					fill="none"
+																					stroke="currentColor"
+																					><path
+																						stroke-linecap="round"
+																						stroke-linejoin="round"
+																						stroke-width="2"
+																						d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+																					/></svg
+																				>
+																				En
+																				cours
+																			</span>
+																		{:else if llmStore.downloadedModels[model.id]}
+																			<span
+																				class="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1 truncate"
+																				title="Modèle téléchargé sur cet appareil"
+																			>
+																				<svg
+																					class="w-3 h-3 flex-shrink-0"
+																					fill="none"
+																					stroke="currentColor"
+																					viewBox="0 0 24 24"
+																					><path
+																						stroke-linecap="round"
+																						stroke-linejoin="round"
+																						stroke-width="2"
+																						d="M5 13l4 4L19 7"
+																					/></svg
+																				>
+																				Local
+																			</span>
+																		{:else}
+																			<span
+																				class="text-[10px] bg-slate-500/10 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-500/20 flex items-center gap-1 truncate"
+																				title="Nécessite un téléchargement"
+																			>
+																				<svg
+																					class="w-3 h-3 flex-shrink-0"
+																					fill="none"
+																					stroke="currentColor"
+																					viewBox="0 0 24 24"
+																					><path
+																						stroke-linecap="round"
+																						stroke-linejoin="round"
+																						stroke-width="2"
+																						d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+																					/></svg
+																				>
+																				À
+																				télécharger
+																			</span>
+																		{/if}
+
 																		{#if model.id === llmStore.selectedModel}
 																			<svg
 																				class="w-4 h-4 text-purple-400"
@@ -905,16 +1074,16 @@
 											</div>
 										{/if}
 
-										<!-- Bouton pour ajouter un modèle / Add model button -->
+										<!-- Bouton pour gérer les modèles / Manage models button -->
 										<div
-											class="border-t border-slate-700 mt-2 pt-2"
+											class="border-t border-slate-200 dark:border-slate-700 mt-2 pt-2"
 										>
 											<button
 												onclick={() => {
 													isModelSelectorOpen = false;
 													isAddModelModalOpen = true;
 												}}
-												class="w-full text-left px-3 py-3 rounded hover:bg-green-500/10 transition-colors flex items-center gap-2 text-green-400 hover:text-green-300"
+												class="w-full text-left px-3 py-3 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
 											>
 												<svg
 													class="w-5 h-5"
@@ -926,13 +1095,18 @@
 														stroke-linecap="round"
 														stroke-linejoin="round"
 														stroke-width="2"
-														d="M12 4v16m8-8H4"
-													/>
+														d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+													></path>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+													></path>
 												</svg>
 												<span class="font-semibold"
-													>{$_(
-														"model.addCustomModel",
-													)}</span
+													>Gérer les modèles / Manage
+													models</span
 												>
 											</button>
 										</div>
@@ -1113,7 +1287,11 @@
 				{/if}
 
 				{#each llmStore.messages as message, index (index)}
-					<ChatMessage {message} />
+					<ChatMessage
+					{message}
+					onreuse={(content) => handleReusePrompt(content)}
+					onsave={(content) => handleSaveToMemory(content)}
+				/>
 				{/each}
 
 				{#if llmStore.isGenerating && llmStore.messages[llmStore.messages.length - 1]?.content === ""}
@@ -1176,7 +1354,7 @@
 	<div class="flex-shrink-0 backdrop-blur-sm">
 		<div class="container mx-auto p-4 max-w-4xl">
 			<div
-				class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-slate-700"
+				class="bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-slate-300 dark:border-slate-700"
 			>
 				<div class="flex gap-2 items-end">
 					<textarea
@@ -1189,7 +1367,7 @@
 						autocomplete="off"
 						autocorrect="on"
 						autocapitalize="sentences"
-						class="flex-1 bg-slate-700/50 text-white rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+						class="flex-1 bg-slate-100 dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-base"
 					></textarea>
 					<!-- Bouton d'ajout d'images / Add images button -->
 					{#if llmStore.isSelectedModelMultimodal()}
@@ -1198,23 +1376,34 @@
 							disabled={llmStore.isLoading ||
 								llmStore.isGenerating}
 							aria-label="Ajouter des images / Add images"
-							class="px-3 py-2 bg-slate-700/60 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
+							class="px-3 py-2 bg-slate-200 dark:bg-slate-700/60 hover:bg-slate-300 dark:hover:bg-slate-700 active:bg-slate-400 dark:active:bg-slate-600 text-slate-700 dark:text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
 						>
 							<Image class="w-5 h-5" />
 						</button>
 					{/if}
-					<button
-						onclick={handleSend}
-						disabled={llmStore.isLoading ||
-							llmStore.isGenerating ||
-							(messageInput.trim().length === 0 &&
-								(!llmStore.isSelectedModelMultimodal() ||
-									selectedImages.length === 0))}
-						aria-label={$_("chat.send")}
-						class="px-4 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
-					>
-						<Send class="w-5 h-5" />
-					</button>
+					{#if llmStore.isGenerating}
+						<button
+							onclick={() => llmStore.stopGeneration()}
+							aria-label="Stop"
+							class="px-4 sm:px-6 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg font-semibold transition-colors self-end touch-manipulation animate-pulse"
+						>
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+								<rect x="6" y="6" width="12" height="12" rx="2" />
+							</svg>
+						</button>
+					{:else}
+						<button
+							onclick={handleSend}
+							disabled={llmStore.isLoading ||
+								(messageInput.trim().length === 0 &&
+									(!llmStore.isSelectedModelMultimodal() ||
+										selectedImages.length === 0))}
+							aria-label={$_("chat.send")}
+							class="px-4 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
+						>
+							<Send class="w-5 h-5" />
+						</button>
+					{/if}
 				</div>
 				{#if llmStore.isSelectedModelMultimodal()}
 					<!-- Input fichier caché / Hidden file input -->
@@ -1253,7 +1442,7 @@
 				{#if llmStore.messages.length > 0}
 					<button
 						onclick={() => llmStore.clearMessages()}
-						class="mt-2 text-sm text-slate-400 hover:text-white transition-colors"
+						class="mt-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
 					>
 						{$_("chat.clearConversation")}
 					</button>
@@ -1263,14 +1452,14 @@
 			<!-- Footer avec crédit BonoAI / Footer with BonoAI credit -->
 			<div class="mt-4 text-center">
 				<div
-					class="flex items-center justify-center gap-2 text-sm text-slate-400"
+					class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400"
 				>
 					<span>Built by</span>
 					<a
 						href="https://bonoai.org"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+						class="font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 transition-colors"
 					>
 						BonoAI
 					</a>
@@ -1279,7 +1468,7 @@
 						href="https://github.com/BonoAI-org/ohmyai"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
+						class="flex items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
 						aria-label="View on GitHub"
 					>
 						<svg
@@ -1299,8 +1488,8 @@
 	</div>
 </div>
 
-<!-- Modal pour ajouter un modèle personnalisé / Modal to add custom model -->
-<AddCustomModelModal bind:isOpen={isAddModelModalOpen} />
+<!-- Modals de configuration / Config modals -->
+<ManageModelsModal bind:isOpen={isAddModelModalOpen} />
 
 <!-- Panneau d'historique des conversations / Conversation history panel -->
 <ConversationHistory bind:isOpen={isHistoryOpen} />

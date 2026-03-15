@@ -107,3 +107,30 @@ export async function deleteModelDirectory(modelId) {
 		}
 	}
 }
+
+/**
+ * Vérifie si un modèle est entièrement présent dans OPFS en lisant le fichier ndarray-cache.json local.
+ * Check if a model is fully present in OPFS by reading the local ndarray-cache.json file.
+ * @param {string} modelId - L'ID du modèle / The model ID.
+ * @returns {Promise<boolean>} - True si le modèle est entièrement dans OPFS / True if the model is fully in OPFS.
+ */
+export async function isModelFullyInOpfs(modelId) {
+	if (!isOpfsSupported()) return false;
+	try {
+		const modelDir = await getModelDirectory(modelId);
+		const cacheFile = await getFileFromOpfs(modelDir, 'ndarray-cache.json');
+		if (!cacheFile) return false;
+
+		const text = await cacheFile.text();
+		const json = JSON.parse(text);
+		const fileList = json.records.map((r) => r.dataPath);
+
+		for (const fileName of fileList) {
+			const file = await getFileFromOpfs(modelDir, fileName);
+			if (!file) return false;
+		}
+		return true;
+	} catch (e) {
+		return false;
+	}
+}

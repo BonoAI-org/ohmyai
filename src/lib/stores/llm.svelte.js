@@ -1,5 +1,5 @@
 import { CreateMLCEngine, hasModelInCache, prebuiltAppConfig } from '@mlc-ai/web-llm';
-import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory } from '$lib/opfs.js';
+import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
 import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
@@ -17,13 +17,6 @@ const appConfig = {
 			"model_id": "gemma-2-9b-it-q4f16_1-MLC",
 			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0.2.48/Gemma-2-9B-Instruct-q4f16_1-MLC-webgpu.wasm",
 			"vram_required_MB": 6103.52,
-			"low_resource_required": false,
-		},
-		{
-			"model": "https://huggingface.co/mlc-ai/Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC",
-			"model_id": "Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC",
-			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0.2.48/Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC-webgpu.wasm",
-			"vram_required_MB": 4976.09,
 			"low_resource_required": false,
 		},
 		{
@@ -47,17 +40,17 @@ const appConfig = {
  */
 export const AVAILABLE_MODELS = [
 	{
-		id: 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC',
-		name: 'Hermes 2 Pro - Llama 3 (8B)',
-		size: '4.7 GB',
-		description: 'Agentic, Function Calling, Reasoning',
+		id: 'Qwen3-4B-q4f16_1-MLC',
+		name: 'Qwen 3 (4B) - Reasoning',
+		size: '~2.4 GB',
+		description: 'Raisonnement avancé avec mode thinking intégré.',
 		recommended: true
 	},
 	{
-		id: 'Phi-3.5-vision-instruct-q4f16_1-MLC',
-		name: 'Phi-3.5 Vision (Multimodal)',
-		size: '~3.9 GB',
-		description: 'Modèle de vision capable d\'analyser des images.',
+		id: 'Qwen3-8B-q4f16_1-MLC',
+		name: 'Qwen 3 (8B) - Reasoning',
+		size: '~4.5 GB',
+		description: 'Meilleur raisonnement, nécessite ~8 GB de RAM.',
 		recommended: false
 	},
 	{
@@ -75,7 +68,7 @@ export const AVAILABLE_MODELS = [
 		recommended: true
 	},
 	{
-		id: 'Qwen3-0.6B-q0f32-MLC',
+		id: 'Qwen3-0.6B-q0f16-MLC',
 		name: 'Qwen 3 (0.6B) - Non Quantisé',
 		size: '~2.4 GB',
 		description: 'Modèle pur non compressé (plus lourd en RAM).',
@@ -157,9 +150,27 @@ class LLMStore {
 	// ID de la conversation actuelle / Current conversation ID
 	currentConversationId = $state(null);
 
+	// Modèles actuellement en cache / Currently cached models
+	downloadedModels = $state({});
+
+	// Contrôleur d'annulation de la génération / Generation abort controller
+	_abortController = null;
+
 	// Erreur éventuelle / Potential error
 	error = $state(null);
 	huggingFaceToken = $state(null);
+
+	// Règles globales de l'IA (System Prompt) / Global AI rules (System Prompt)
+	systemPrompt = $state('');
+
+	// Profil utilisateur accessible aux LLMs / User profile accessible to LLMs
+	userProfile = $state({
+		name: '',
+		role: '',
+		expertise: '',
+		preferences: '',
+		language: ''
+	});
 
 	/**
 	 * Vérifie si WebGPU est disponible / Check if WebGPU is available
@@ -225,8 +236,91 @@ class LLMStore {
 				this.selectedModel = AVAILABLE_MODELS.find(m => m.recommended)?.id || AVAILABLE_MODELS[0].id;
 				this.saveSelectedModel();
 			}
+
+			// Met à jour la liste des modèles téléchargés / Update list of downloaded models
+			this.updateModelsCacheStatus();
 		} catch (err) {
 			console.error('Erreur chargement modèle / Error loading model:', err);
+		}
+	}
+
+	/**
+	 * Met à jour le statut de cache de tous les modèles
+	 * Updates the cache status of all models
+	 */
+	async updateModelsCacheStatus() {
+		try {
+			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
+			for (const model of allModels) {
+				try {
+					let isCached = await hasModelInCache(model.id, appConfig);
+					if (!isCached) {
+						isCached = await isModelFullyInOpfs(model.id);
+					}
+					this.downloadedModels[model.id] = isCached;
+				} catch (e) {
+					this.downloadedModels[model.id] = false;
+				}
+			}
+		} catch (err) {
+			console.error("Erreur mise à jour statut cache:", err);
+		}
+	}
+
+	/**
+	 * Charge le System Prompt (AI Rules) depuis localStorage
+	 * Load System Prompt (AI Rules) from localStorage
+	 */
+	loadSystemPrompt() {
+		try {
+			const saved = localStorage.getItem('systemPrompt');
+			if (saved) {
+				this.systemPrompt = saved;
+			}
+		} catch (err) {
+			console.error('Erreur chargement system prompt:', err);
+		}
+	}
+
+	/**
+	 * Charge le profil utilisateur depuis localStorage
+	 * Load user profile from localStorage
+	 */
+	loadUserProfile() {
+		try {
+			const saved = localStorage.getItem('userProfile');
+			if (saved) {
+				this.userProfile = JSON.parse(saved);
+			}
+		} catch (err) {
+			console.error('Error loading user profile:', err);
+		}
+	}
+
+	/**
+	 * Met à jour et sauvegarde le profil utilisateur
+	 * Update and save the user profile
+	 * @param {Object} profile - Le profil utilisateur / The user profile
+	 */
+	updateUserProfile(profile) {
+		this.userProfile = { ...profile };
+		try {
+			localStorage.setItem('userProfile', JSON.stringify(this.userProfile));
+		} catch (err) {
+			console.error('Error saving user profile:', err);
+		}
+	}
+
+	/**
+	 * Sauvegarde le System Prompt
+	 * @param {string} newPrompt
+	 */
+	updateSystemPrompt(newPrompt) {
+		this.systemPrompt = newPrompt;
+		try {
+			localStorage.setItem('systemPrompt', newPrompt);
+		} catch (err) {
+			console.error('Erreur sauvegarde system prompt:', err);
 		}
 	}
 
@@ -274,18 +368,8 @@ class LLMStore {
 
 				if (useOpfs) {
 					try {
-						const ndarrayCacheUrl = `https://huggingface.co/mlc-ai/${this.selectedModel}/resolve/main/ndarray-cache.json`;
-						const controller = new AbortController();
-						const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-						const response = await fetch(ndarrayCacheUrl, { headers, signal: controller.signal });
-						clearTimeout(timeoutId);
-
-						if (response.ok) {
-							const ndarrayCache = await response.json();
-							fileList = ndarrayCache.records.map(r => r.dataPath);
-							modelInOpfs = await checkModelInOpfs(this.selectedModel, fileList);
-							isCached = modelInOpfs;
-						}
+						modelInOpfs = await isModelFullyInOpfs(this.selectedModel);
+						isCached = modelInOpfs;
 					} catch (e) {
 						console.warn('Erreur vérification OPFS:', e);
 					}
@@ -317,8 +401,13 @@ class LLMStore {
 				try {
 					const t = get(_);
 
-					// Si on force le téléchargement, on a besoin de fileList
-					if (forceDownload && fileList.length === 0) {
+					// Vérifie d'abord si le modèle est déjà complet dans OPFS
+					if (forceDownload) {
+						modelInOpfs = await isModelFullyInOpfs(this.selectedModel);
+					}
+
+					// Si on force le téléchargement et qu'il n'est pas dans OPFS, on a besoin de fileList
+					if (forceDownload && !modelInOpfs && fileList.length === 0) {
 						const ndarrayCacheUrl = `https://huggingface.co/mlc-ai/${this.selectedModel}/resolve/main/ndarray-cache.json`;
 						const response = await fetch(ndarrayCacheUrl, { headers });
 						if (response.ok) {
@@ -368,9 +457,10 @@ class LLMStore {
 					console.warn(`OPFS caching failed for ${this.selectedModel}, falling back to standard loading. Error:`, opfsError);
 					opfsSuccess = false;
 				}
-			}
-
-			if (!opfsSuccess) {
+			} else {
+				// Fallback si OPFS non supporté
+				const t = get(_); // Define t here for this block
+				this.loadingProgress = t ? t('loading.loadingStandard') : 'Loading model...';
 				this.engine = await CreateMLCEngine(this.selectedModel, {
 					appConfig,
 					initProgressCallback: progressCallback,
@@ -382,6 +472,14 @@ class LLMStore {
 			const t = get(_);
 			this.loadingProgress = t ? t('loading.modelLoaded') : 'Model loaded successfully!';
 			console.log('WebLLM engine initialized successfully');
+
+			this.isLoading = false;
+			this.loadingProgress = '';
+			this.needsDownload = false;
+
+			// Le modèle vient d'être chargé/téléchargé, on met à jour le statut
+			this.updateModelsCacheStatus(); // Called: updateModelsCacheStatus
+
 		} catch (err) {
 			// Utilise la traduction i18n pour le titre d'erreur / Use i18n translation for error title
 			const t = get(_);
@@ -422,6 +520,7 @@ class LLMStore {
 
 		this.isGenerating = true;
 		this.error = null;
+		this._abortController = new AbortController();
 
 		try {
 			// Prépare le contexte de conversation / Prepare conversation context
@@ -441,6 +540,29 @@ class LLMStore {
 				return { role: msg.role, content: msg.content };
 			});
 
+			// Injection des règles (System Prompt) au tout début du contexte
+			// Injecting the rules (System Prompt) at the very beginning of the context
+			if (this.systemPrompt && this.systemPrompt.trim().length > 0) {
+				chatMessages.unshift({ role: 'system', content: this.systemPrompt.trim() });
+			}
+
+			// Injection du profil utilisateur / Inject user profile
+			const profileParts = [];
+			if (this.userProfile.name) profileParts.push(`Name: ${this.userProfile.name}`);
+			if (this.userProfile.role) profileParts.push(`Role: ${this.userProfile.role}`);
+			if (this.userProfile.expertise) profileParts.push(`Expertise: ${this.userProfile.expertise}`);
+			if (this.userProfile.preferences) profileParts.push(`Preferences: ${this.userProfile.preferences}`);
+			if (this.userProfile.language) profileParts.push(`Preferred language: ${this.userProfile.language}`);
+			if (profileParts.length > 0) {
+				const profileContext = `\n\n[User Profile]\n${profileParts.join('\n')}`;
+				// Append to existing system message or create new one
+				if (chatMessages.length > 0 && chatMessages[0].role === 'system') {
+					chatMessages[0].content += profileContext;
+				} else {
+					chatMessages.unshift({ role: 'system', content: profileContext });
+				}
+			}
+
 			// Ajoute un message assistant vide pour la réponse
 			// Add an empty assistant message for the response
 			const assistantMessageIndex = this.messages.length;
@@ -459,6 +581,11 @@ class LLMStore {
 
 			// Traite chaque chunk de la réponse / Process each response chunk
 			for await (const chunk of asyncChunkGenerator) {
+				// Vérifie si l'utilisateur a demandé l'arrêt / Check if user requested stop
+				if (this._abortController?.signal.aborted) {
+					break;
+				}
+
 				const newContent = chunk.choices[0]?.delta?.content || '';
 
 				// Met à jour le message assistant avec le nouveau contenu
@@ -470,14 +597,29 @@ class LLMStore {
 				);
 			}
 		} catch (err) {
-			this.error = err.message;
-			console.error('Erreur lors de la génération / Error during generation:', err);
+			if (err.name !== 'AbortError') {
+				this.error = err.message;
+				console.error('Erreur lors de la génération / Error during generation:', err);
+			}
 		} finally {
 			this.isGenerating = false;
+			this._abortController = null;
 
 			// Sauvegarde automatiquement la conversation après chaque échange
 			// Automatically save conversation after each exchange
 			await this.saveCurrentConversation();
+		}
+	}
+
+	/**
+	 * Arrête la génération en cours / Stop the ongoing generation
+	 */
+	stopGeneration() {
+		if (this._abortController) {
+			this._abortController.abort();
+		}
+		if (this.engine) {
+			this.engine.interruptGenerate();
 		}
 	}
 
