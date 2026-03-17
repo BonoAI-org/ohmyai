@@ -1383,6 +1383,7 @@
 					{/if}
 					{#if llmStore.isGenerating}
 						<button
+							type="button"
 							onclick={() => llmStore.stopGeneration()}
 							aria-label="Stop"
 							class="px-4 sm:px-6 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg font-semibold transition-colors self-end touch-manipulation animate-pulse"
@@ -1393,6 +1394,7 @@
 						</button>
 					{:else}
 						<button
+							type="button"
 							onclick={handleSend}
 							disabled={llmStore.isLoading ||
 								(messageInput.trim().length === 0 &&
