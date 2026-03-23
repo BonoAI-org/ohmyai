@@ -36,6 +36,22 @@ export async function getModelDirectory(modelId) {
 }
 
 /**
+ * Récupère le répertoire d'un modèle sans le créer.
+ * Get the directory for a model without creating it.
+ * @param {string} modelId - L'ID du modèle / The model ID.
+ * @returns {Promise<FileSystemDirectoryHandle|null>} - Le handle ou null si inexistant / The handle or null if not found.
+ */
+async function getExistingModelDirectory(modelId) {
+	try {
+		const root = await getOpfsRoot();
+		return await root.getDirectoryHandle(modelId, { create: false });
+	} catch (e) {
+		if (e.name === 'NotFoundError') return null;
+		throw e;
+	}
+}
+
+/**
  * Sauvegarde un fichier dans un répertoire de l'OPFS.
  * Save a file to a directory in OPFS.
  * @param {FileSystemDirectoryHandle} directoryHandle - Le répertoire où sauvegarder / The directory to save to.
@@ -77,7 +93,8 @@ export async function getFileFromOpfs(directoryHandle, fileName) {
  */
 export async function checkModelInOpfs(modelId, fileList) {
 	try {
-		const modelDir = await getModelDirectory(modelId);
+		const modelDir = await getExistingModelDirectory(modelId);
+		if (!modelDir) return false;
 		for (const fileName of fileList) {
 			const file = await getFileFromOpfs(modelDir, fileName);
 			if (!file) {
@@ -117,7 +134,9 @@ export async function deleteModelDirectory(modelId) {
 export async function isModelFullyInOpfs(modelId) {
 	if (!isOpfsSupported()) return false;
 	try {
-		const modelDir = await getModelDirectory(modelId);
+		const modelDir = await getExistingModelDirectory(modelId);
+		if (!modelDir) return false;
+
 		const cacheFile = await getFileFromOpfs(modelDir, 'ndarray-cache.json');
 		if (!cacheFile) return false;
 

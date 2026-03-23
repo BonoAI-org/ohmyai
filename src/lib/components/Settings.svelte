@@ -2,8 +2,12 @@
 	import { onMount } from "svelte";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
+	import { mcpStore } from "$lib/stores/mcp.svelte.js";
+	import { _ } from "svelte-i18n";
+	import MCPConfigModal from "./MCPConfigModal.svelte";
 
 	let { close = () => {} } = $props();
+	let isMCPModalOpen = $state(false);
 	let huggingFaceToken = $state("");
 
 	// Profile state
@@ -19,16 +23,16 @@
 	let rulesSaved = $state(false);
 
 	const colorThemes = [
-		{ id: "purple", name: "Amethyst", color: "bg-[#a855f7]" }, // purple-500
-		{ id: "blue", name: "Ocean", color: "bg-[#3b82f6]" }, // blue-500
-		{ id: "emerald", name: "Emerald", color: "bg-[#10b981]" }, // emerald-500
-		{ id: "rose", name: "Rose", color: "bg-[#f43f5e]" }, // rose-500
-		{ id: "amber", name: "Amber", color: "bg-[#f59e0b]" }, // amber-500
+		{ id: "purple", name: "Amethyst", color: "bg-[#a855f7]" },
+		{ id: "blue", name: "Ocean", color: "bg-[#3b82f6]" },
+		{ id: "emerald", name: "Emerald", color: "bg-[#10b981]" },
+		{ id: "rose", name: "Rose", color: "bg-[#f43f5e]" },
+		{ id: "amber", name: "Amber", color: "bg-[#f59e0b]" },
 		{
 			id: "paper",
 			name: "Paper",
 			color: "bg-white border-2 border-slate-900",
-		}, // B&W Notion style
+		},
 	];
 
 	function saveToken() {
@@ -55,12 +59,9 @@
 	}
 
 	onMount(() => {
-		// Pré-remplit le champ avec le token existant
-		// Pre-fill the input with the existing token
 		if (llmStore.huggingFaceToken) {
 			huggingFaceToken = llmStore.huggingFaceToken;
 		}
-		// Load profile
 		if (llmStore.userProfile) {
 			profileName = llmStore.userProfile.name || '';
 			profileRole = llmStore.userProfile.role || '';
@@ -68,20 +69,18 @@
 			profilePreferences = llmStore.userProfile.preferences || '';
 			profileLanguage = llmStore.userProfile.language || '';
 		}
-		// Load global rules
 		globalRules = llmStore.systemPrompt || '';
 	});
 </script>
 
 <div
-	class="p-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg max-h-[85vh] overflow-y-auto"
+	class="p-5 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg max-h-[85vh] overflow-y-auto"
 >
-	<h2 class="text-lg font-bold mb-4">Paramètres / Settings</h2>
+	<h2 class="text-lg font-bold mb-5">{$_('settings.title')}</h2>
 
+	<!-- Color Theme -->
 	<div class="mb-6">
-		<label class="block font-medium mb-3"
-			>Thème de couleur / Color Theme</label
-		>
+		<p class="block font-medium mb-3">{$_('settings.colorTheme')}</p>
 		<div class="flex gap-3">
 			{#each colorThemes as theme}
 				<button
@@ -97,98 +96,119 @@
 		</div>
 	</div>
 
+	<!-- Hugging Face Token -->
 	<div class="mb-6">
 		<div class="flex justify-between items-center mb-2">
-			<label for="hf-token" class="block font-medium"
-				>Token Hugging Face</label
-			>
+			<label for="hf-token" class="block font-medium">{$_('settings.hfToken')}</label>
 			<a
 				href="https://huggingface.co/settings/tokens"
 				target="_blank"
 				rel="noopener noreferrer"
 				class="text-sm text-purple-500 dark:text-purple-400 hover:underline"
 			>
-				Obtenir un token
+				{$_('settings.hfGetToken')}
 			</a>
 		</div>
 		<p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
-			Un token est requis pour télécharger certains modèles.
+			{$_('settings.hfDescription')}
 		</p>
 		<input
 			type="password"
 			id="hf-token"
 			bind:value={huggingFaceToken}
-			class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+			class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
 			placeholder="hf_..."
 		/>
 	</div>
 
-	<!-- Section Profil / Profile Section -->
+	<!-- User Profile -->
 	<div class="mb-6 border-t border-slate-200 dark:border-slate-700 pt-6">
-		<label class="block font-medium mb-3">Profil Utilisateur / User Profile</label>
+		<p class="block font-medium mb-3">{$_('settings.profileTitle')}</p>
 		<p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
-			Ces informations sont partagées avec les modèles pour personnaliser les réponses.
+			{$_('settings.profileDescription')}
 		</p>
 		<div class="space-y-3">
 			<div>
-				<label for="profile-name" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Nom / Name</label>
-				<input type="text" id="profile-name" bind:value={profileName} placeholder="Votre nom..."
-					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
+				<label for="profile-name" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{$_('settings.profileName')}</label>
+				<input type="text" id="profile-name" bind:value={profileName} placeholder={$_('settings.profileNamePlaceholder')}
+					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
 			</div>
 			<div>
-				<label for="profile-role" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Rôle / Role</label>
-				<input type="text" id="profile-role" bind:value={profileRole} placeholder="Ex: Développeur, Designer, Étudiant..."
-					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
+				<label for="profile-role" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{$_('settings.profileRole')}</label>
+				<input type="text" id="profile-role" bind:value={profileRole} placeholder={$_('settings.profileRolePlaceholder')}
+					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
 			</div>
 			<div>
-				<label for="profile-expertise" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Expertise</label>
-				<input type="text" id="profile-expertise" bind:value={profileExpertise} placeholder="Ex: Python, React, Data Science..."
-					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
+				<label for="profile-expertise" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{$_('settings.profileExpertise')}</label>
+				<input type="text" id="profile-expertise" bind:value={profileExpertise} placeholder={$_('settings.profileExpertisePlaceholder')}
+					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
 			</div>
 			<div>
-				<label for="profile-preferences" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Préférences / Preferences</label>
-				<input type="text" id="profile-preferences" bind:value={profilePreferences} placeholder="Ex: Réponses concises, exemples de code..."
-					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
+				<label for="profile-preferences" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{$_('settings.profilePreferences')}</label>
+				<input type="text" id="profile-preferences" bind:value={profilePreferences} placeholder={$_('settings.profilePreferencesPlaceholder')}
+					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
 			</div>
 			<div>
-				<label for="profile-language" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Langue préférée / Preferred Language</label>
-				<input type="text" id="profile-language" bind:value={profileLanguage} placeholder="Ex: Français, English..."
-					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
+				<label for="profile-language" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{$_('settings.profileLanguage')}</label>
+				<input type="text" id="profile-language" bind:value={profileLanguage} placeholder={$_('settings.profileLanguagePlaceholder')}
+					class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm" />
 			</div>
 			<button onclick={saveProfile}
-				class="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-sm text-sm {profileSaved ? 'bg-green-600 hover:bg-green-600' : ''}">
-				{profileSaved ? 'Profil sauvegardé !' : 'Sauvegarder le profil / Save Profile'}
+				class="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm {profileSaved
+					? 'bg-green-600 hover:bg-green-600 text-white'
+					: 'bg-purple-600 hover:bg-purple-700 text-white active:scale-[0.98]'}">
+				{profileSaved ? $_('settings.profileSaved') : $_('settings.saveProfile')}
 			</button>
 		</div>
 	</div>
 
-	<!-- Section Règles Globales / Global Rules Section -->
+	<!-- Global Rules -->
 	<div class="mb-6 border-t border-slate-200 dark:border-slate-700 pt-6">
-		<label class="block font-medium mb-3">Règles Globales / Global Rules</label>
+		<p class="block font-medium mb-3">{$_('settings.rulesTitle')}</p>
 		<p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
-			Instructions que tous les modèles doivent suivre. Injecté comme System Prompt.
+			{$_('settings.rulesDescription')}
 		</p>
 		<textarea bind:value={globalRules}
-			placeholder="Ex: Réponds toujours en français. Utilise un ton professionnel..."
+			placeholder={$_('settings.rulesPlaceholder')}
 			rows="5"
-			class="w-full p-3 border border-slate-300 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm font-mono resize-none"
+			class="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm font-mono resize-none"
 		></textarea>
 		<button onclick={saveGlobalRules}
-			class="w-full mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-sm text-sm {rulesSaved ? 'bg-green-600 hover:bg-green-600' : ''}">
-			{rulesSaved ? 'Règles sauvegardées !' : 'Sauvegarder les règles / Save Rules'}
+			class="w-full mt-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm {rulesSaved
+				? 'bg-green-600 hover:bg-green-600 text-white'
+				: 'bg-purple-600 hover:bg-purple-700 text-white active:scale-[0.98]'}">
+			{rulesSaved ? $_('settings.rulesSaved') : $_('settings.saveRules')}
 		</button>
 	</div>
 
-	<div class="flex justify-between items-center">
+	<!-- MCP Servers -->
+	<div class="mb-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+		<p class="block font-medium mb-3">{$_('mcp.title')}</p>
+		<p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+			{$_('mcp.description')}
+		</p>
+		<button onclick={() => isMCPModalOpen = true}
+			class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-sm font-medium active:scale-[0.98]">
+			{$_('mcp.configure')}
+		</button>
+		{#if mcpStore.availableTools.length > 0}
+			<p class="text-xs text-green-600 dark:text-green-400 mt-2">
+				{$_('mcp.toolsAvailable', { values: { count: mcpStore.availableTools.length } })}
+			</p>
+		{/if}
+	</div>
+
+	<MCPConfigModal bind:isOpen={isMCPModalOpen} />
+
+	<!-- Bottom action buttons -->
+	<div class="flex gap-3 border-t border-slate-200 dark:border-slate-700 pt-5">
 		<button
 			onclick={saveToken}
-			class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-sm"
-			>Sauvegarder / Save</button
-		>
+			class="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all shadow-sm font-medium text-sm active:scale-[0.98]"
+		>{$_('settings.save')}</button>
 		<button
 			onclick={() => llmStore.clearCache()}
-			class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors shadow-sm"
-			>Vider le cache / Clear Cache</button
-		>
+			class="flex-1 px-4 py-2.5 border border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-all font-medium text-sm active:scale-[0.98]"
+		>{$_('settings.clearCache')}</button>
 	</div>
 </div>

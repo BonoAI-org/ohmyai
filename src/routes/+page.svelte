@@ -11,6 +11,7 @@
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
 	import { _ } from "svelte-i18n";
+	import { mcpStore } from "$lib/stores/mcp.svelte.js";
 	import Image from "svelte-material-icons/Image.svelte";
 	import Send from "svelte-material-icons/Send.svelte";
 
@@ -98,6 +99,12 @@
 
 		// Charge l'historique des conversations / Load conversation history
 		llmStore.loadConversationHistory();
+
+		// Charge les serveurs MCP / Load MCP servers
+		mcpStore.loadServers();
+		if (mcpStore.servers.some(s => s.enabled)) {
+			mcpStore.discoverTools();
+		}
 
 		// Vérifie la RAM disponible / Check available RAM
 		checkRAM();
@@ -448,12 +455,14 @@
 {#if isSettingsModalOpen}
 	<div
 		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-		onclick={() => (isSettingsModalOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Paramètres / Settings"
+		tabindex="-1"
+		onclick={(e) => e.target === e.currentTarget && (isSettingsModalOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (isSettingsModalOpen = false)}
 	>
-		<div
-			class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md"
-			onclick={(event) => event.stopPropagation()}
-		>
+		<div class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md">
 			<Settings close={() => (isSettingsModalOpen = false)} />
 		</div>
 	</div>
@@ -462,14 +471,16 @@
 {#if isRagTestOpen}
 	<div
 		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-		onclick={() => (isRagTestOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="rag-test-title"
+		tabindex="-1"
+		onclick={(e) => e.target === e.currentTarget && (isRagTestOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (isRagTestOpen = false)}
 	>
-		<div
-			class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4"
-			onclick={(event) => event.stopPropagation()}
-		>
+		<div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4">
 			<div class="flex justify-between items-center mb-4">
-				<h2 class="text-xl font-bold text-gray-900 dark:text-white">
+			<h2 id="rag-test-title" class="text-xl font-bold text-gray-900 dark:text-white">
 					Vector DB Test
 				</h2>
 				<button
@@ -798,6 +809,13 @@
 																	{$_(
 																		"model.recommended",
 																	)}
+																</span>
+															{/if}
+															{#if model.supportsTools}
+																<span
+																	class="text-[10px] bg-purple-500/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30"
+																>
+																	Tools
 																</span>
 															{/if}
 

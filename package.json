@@ -12,10 +12,13 @@
 		"deploy:prod": "bun run build && wrangler pages deploy .svelte-kit/cloudflare --branch=main",
 		"cf:dev": "wrangler pages dev .svelte-kit/cloudflare",
 		"generate:icons": "bun run scripts/generate-icons.js",
-		"svg-to-png": "bun run scripts/svg-to-png.js"
+		"svg-to-png": "bun run scripts/svg-to-png.js",
+		"test": "playwright test",
+		"test:ui": "playwright test --ui"
 	},
 	"devDependencies": {
 		"@capacitor/cli": "^7.4.4",
+		"@playwright/test": "^1.58.2",
 		"@sveltejs/adapter-auto": "^6.1.0",
 		"@sveltejs/adapter-cloudflare": "^7.2.4",
 		"@sveltejs/kit": "^2.43.2",
