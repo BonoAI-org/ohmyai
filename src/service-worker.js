@@ -170,8 +170,9 @@ self.addEventListener('install', (event) => {
 		})
 	);
 
-	// Active immédiatement / Activate immediately
-	self.skipWaiting();
+	// Don't call skipWaiting() automatically - it causes the new SW to take control
+	// mid-session which triggers controllerchange and can reload the page on mobile.
+	// Instead, the update banner sends SKIP_WAITING when the user explicitly clicks refresh.
 });
 
 // Activation du service worker / Service worker activation

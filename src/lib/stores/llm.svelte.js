@@ -580,6 +580,25 @@ class LLMStore {
 			});
 
 			// Traite chaque chunk de la réponse / Process each response chunk
+			// On mobile, updating the reactive messages array on every single token
+			// causes massive GC pressure and can trigger the browser to reload the tab.
+			// We batch updates using requestAnimationFrame to reduce reactivity churn.
+			let pendingContent = '';
+			let rafScheduled = false;
+
+			const flushContent = () => {
+				if (pendingContent) {
+					const content = pendingContent;
+					pendingContent = '';
+					this.messages = this.messages.map((msg, idx) =>
+						idx === assistantMessageIndex
+							? { ...msg, content: msg.content + content }
+							: msg
+					);
+				}
+				rafScheduled = false;
+			};
+
 			for await (const chunk of asyncChunkGenerator) {
 				// Vérifie si l'utilisateur a demandé l'arrêt / Check if user requested stop
 				if (this._abortController?.signal.aborted) {
@@ -587,15 +606,17 @@ class LLMStore {
 				}
 
 				const newContent = chunk.choices[0]?.delta?.content || '';
+				pendingContent += newContent;
 
-				// Met à jour le message assistant avec le nouveau contenu
-				// Update assistant message with new content
-				this.messages = this.messages.map((msg, idx) =>
-					idx === assistantMessageIndex
-						? { ...msg, content: msg.content + newContent }
-						: msg
-				);
+				// Schedule a batched UI update via rAF to avoid per-token reactivity
+				if (!rafScheduled) {
+					rafScheduled = true;
+					requestAnimationFrame(flushContent);
+				}
 			}
+
+			// Flush any remaining content after streaming ends
+			flushContent();
 		} catch (err) {
 			if (err.name !== 'AbortError') {
 				this.error = err.message;
