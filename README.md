@@ -15,7 +15,8 @@ A modern web application that runs a Large Language Model (LLM) entirely in your
 - **SvelteKit**: Modern and performant web framework
 - **Bun**: Ultra-fast JavaScript runtime
 - **TailwindCSS**: Utility-first CSS framework
-- **WebLLM**: Library to run LLMs in WASM
+- **WebLLM**: Library to run LLMs in WASM (default engine, MLC models)
+- **Transformers.js**: ONNX Runtime Web engine, used for models not yet supported by WebLLM (e.g. **Gemma 4 E2B** on WebGPU, text-only, experimental)
 - **WebAssembly**: Compilation for native performance
 
 ## 📋 Prerequisites
@@ -115,6 +116,7 @@ Available models:
 - `Llama-3.2-1B-Instruct-q4f32_1-MLC` (lightweight)
 - `Llama-3.2-3B-Instruct-q4f32_1-MLC` (balanced)
 - `Phi-3.5-mini-instruct-q4f16_1-MLC` (fast)
+- `onnx-community/gemma-4-e2b-it-ONNX` (Gemma 4 E2B, WebGPU via Transformers.js, text-only, experimental 🧪)
 - See full list at: https://github.com/mlc-ai/web-llm
 
 ### Adjust generation parameters

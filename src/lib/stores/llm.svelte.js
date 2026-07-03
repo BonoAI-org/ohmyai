@@ -1,5 +1,6 @@
 import { CreateMLCEngine, hasModelInCache, prebuiltAppConfig } from '@mlc-ai/web-llm';
 import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
+import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/transformersEngine.js';
 import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
@@ -104,6 +105,21 @@ export const AVAILABLE_MODELS = [
 		description: 'Modèle de Google, nouvelle génération.'
 	},
 	{
+		// Gemma 4 n'est PAS supporté par WebLLM/MLC (architecture "gemma4" inconnue).
+		// On le fait tourner via Transformers.js (ONNX Runtime Web) sur WebGPU.
+		// Gemma 4 is NOT supported by WebLLM/MLC (unknown "gemma4" architecture).
+		// We run it via Transformers.js (ONNX Runtime Web) on WebGPU.
+		id: 'onnx-community/gemma-4-e2b-it-ONNX',
+		name: 'Gemma 4 (E2B) — WebGPU',
+		size: '~2.4 GB',
+		vram: '~4 GB',
+		description: 'Google Gemma 4 (variante E2B, texte) via Transformers.js. Expérimental.',
+		engine: 'transformers',
+		dtype: 'q4',
+		experimental: true,
+		recommended: false
+	},
+	{
 		id: 'Mistral-7B-Instruct-v0.3-q4f16_1-MLC',
 		name: 'Mistral 7B Instruct v0.3',
 		size: '~3.8 GB',
@@ -139,6 +155,9 @@ class LLMStore {
 
 	// Modèle sélectionné / Selected model
 	selectedModel = $state('Qwen3-0.6B-q4f16_1-MLC');
+
+	// Type de moteur actif ('webllm' | 'transformers') / Active engine type
+	engineType = $state('webllm');
 
 	// Liste des modèles personnalisés ajoutés par l'utilisateur
 	// List of custom models added by the user
@@ -253,9 +272,16 @@ class LLMStore {
 			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
 			for (const model of allModels) {
 				try {
-					let isCached = await hasModelInCache(model.id, appConfig);
-					if (!isCached) {
-						isCached = await isModelFullyInOpfs(model.id);
+					let isCached;
+					if (model.engine === 'transformers') {
+						// Modèle Transformers.js : cache navigateur (Cache API), pas WebLLM/OPFS.
+						// Transformers.js model: browser Cache API, not WebLLM/OPFS.
+						isCached = await isTransformersModelCached(model.id);
+					} else {
+						isCached = await hasModelInCache(model.id, appConfig);
+						if (!isCached) {
+							isCached = await isModelFullyInOpfs(model.id);
+						}
 					}
 					this.downloadedModels[model.id] = isCached;
 				} catch (e) {
@@ -336,8 +362,7 @@ class LLMStore {
 
 
 
-		// WebLLM Integration (existing code)
-		// Vérifie WebGPU / Check WebGPU
+		// Vérifie WebGPU (requis pour les deux moteurs) / Check WebGPU (required by both engines)
 		if (!this.isWebGPUAvailable()) {
 			// Utilise la traduction i18n pour le message d'erreur / Use i18n translation for error message
 			const t = get(_);
@@ -346,6 +371,16 @@ class LLMStore {
 			return;
 		}
 
+		// Aiguillage vers le bon moteur / Route to the appropriate engine.
+		// Les modèles sans champ `engine` (dont les modèles personnalisés) utilisent WebLLM.
+		// Models without an `engine` field (including custom models) use WebLLM.
+		const engineKind = selectedModelConfig?.engine || 'webllm';
+		if (engineKind === 'transformers') {
+			await this._initTransformersEngine(selectedModelConfig, forceDownload);
+			return;
+		}
+
+		// --- Chemin WebLLM / MLC (inchangé) / WebLLM / MLC path (unchanged) ---
 		this.isLoading = true;
 		this.error = null;
 		this.needsDownload = false;
@@ -473,6 +508,7 @@ class LLMStore {
 			this.loadingProgress = t ? t('loading.modelLoaded') : 'Model loaded successfully!';
 			console.log('WebLLM engine initialized successfully');
 
+			this.engineType = 'webllm';
 			this.isLoading = false;
 			this.loadingProgress = '';
 			this.needsDownload = false;
@@ -494,6 +530,74 @@ class LLMStore {
 
 			this.error = `❌ ${errorTitle}: ${errorMessage}`;
 			console.error('Erreur lors du chargement du modèle / Error loading model:', err);
+			console.error('Stack trace:', err.stack);
+		} finally {
+			this.isLoading = false;
+		}
+	}
+
+	/**
+	 * Initialise le moteur Transformers.js (ONNX Runtime Web) sur WebGPU.
+	 * Initialize the Transformers.js engine (ONNX Runtime Web) on WebGPU.
+	 *
+	 * Le téléchargement des fichiers ONNX est géré par la librairie via la
+	 * Cache API du navigateur. On conserve la même UX de confirmation que WebLLM :
+	 * si le modèle n'est pas déjà en cache et qu'on ne force pas, on demande
+	 * d'abord l'approbation de l'utilisateur (`needsDownload`).
+	 * The download of the ONNX files is handled by the library via the browser
+	 * Cache API. We keep the same confirmation UX as WebLLM: if the model is not
+	 * already cached and download is not forced, we first ask for user approval
+	 * (`needsDownload`).
+	 *
+	 * @param {Object} modelConfig - Configuration du modèle sélectionné / Selected model config.
+	 * @param {boolean} forceDownload - Force le téléchargement / Force the download.
+	 */
+	async _initTransformersEngine(modelConfig, forceDownload = false) {
+		this.isLoading = true;
+		this.error = null;
+		this.needsDownload = false;
+
+		try {
+			// 1. Vérification du cache et approbation utilisateur / Cache check and user approval.
+			if (!forceDownload) {
+				const cached = await isTransformersModelCached(this.selectedModel);
+				this.downloadedModels[this.selectedModel] = cached;
+				if (!cached) {
+					this.isLoading = false;
+					this.needsDownload = true;
+					return;
+				}
+			}
+
+			// 2. Import dynamique du moteur (garde le bundle principal léger).
+			//    Dynamic import of the engine (keeps the main bundle light).
+			const { TransformersEngine } = await import('$lib/engines/transformersEngine.js');
+
+			const t = get(_);
+			this.loadingProgress = t ? t('loading.loadingModel') : 'Loading model...';
+
+			this.engine = await TransformersEngine.create(this.selectedModel, {
+				dtype: modelConfig?.dtype || 'q4',
+				device: 'webgpu',
+				progressCallback: (progress) => {
+					this.loadingProgress = progress.text;
+				}
+			});
+			this.engineType = 'transformers';
+
+			this.loadingProgress = t ? t('loading.modelLoaded') : 'Model loaded successfully!';
+			console.log('Transformers.js engine initialized successfully');
+
+			this.isLoading = false;
+			this.loadingProgress = '';
+			this.needsDownload = false;
+			this.downloadedModels[this.selectedModel] = true;
+			this.updateModelsCacheStatus();
+		} catch (err) {
+			const t = get(_);
+			const errorTitle = t ? t('error.title') : 'Error';
+			this.error = `❌ ${errorTitle}: ${err.message}`;
+			console.error('Erreur chargement Transformers.js / Transformers.js loading error:', err);
 			console.error('Stack trace:', err.stack);
 		} finally {
 			this.isLoading = false;
@@ -568,18 +672,8 @@ class LLMStore {
 			const assistantMessageIndex = this.messages.length;
 			this.messages = [...this.messages, { role: 'assistant', content: '' }];
 
-			// Génère la réponse en streaming / Generate response with streaming
-			// Génère la réponse en streaming / Generate response with streaming
-			// Génère la réponse en streaming / Generate response with streaming
-
-			const asyncChunkGenerator = await this.engine.chat.completions.create({
-				messages: chatMessages,
-				temperature: 0.7,
-				max_tokens: 2048, // Limite de tokens pour la réponse / Token limit for response
-				stream: true,
-			});
-
-			// Traite chaque chunk de la réponse / Process each response chunk
+			// Mécanisme de streaming batché partagé par les deux moteurs.
+			// Streaming batching mechanism shared by both engines.
 			// On mobile, updating the reactive messages array on every single token
 			// causes massive GC pressure and can trigger the browser to reload the tab.
 			// We batch updates using requestAnimationFrame to reduce reactivity churn.
@@ -599,19 +693,41 @@ class LLMStore {
 				rafScheduled = false;
 			};
 
-			for await (const chunk of asyncChunkGenerator) {
-				// Vérifie si l'utilisateur a demandé l'arrêt / Check if user requested stop
-				if (this._abortController?.signal.aborted) {
-					break;
-				}
-
-				const newContent = chunk.choices[0]?.delta?.content || '';
-				pendingContent += newContent;
-
+			const pushDelta = (delta) => {
+				if (!delta) return;
+				pendingContent += delta;
 				// Schedule a batched UI update via rAF to avoid per-token reactivity
 				if (!rafScheduled) {
 					rafScheduled = true;
 					requestAnimationFrame(flushContent);
+				}
+			};
+
+			if (this.engineType === 'transformers') {
+				// --- Génération via Transformers.js / Generation via Transformers.js ---
+				await this.engine.generate(chatMessages, {
+					temperature: 0.7,
+					max_new_tokens: 2048,
+					onToken: (delta) => {
+						if (this._abortController?.signal.aborted) return;
+						pushDelta(delta);
+					}
+				});
+			} else {
+				// --- Génération en streaming via WebLLM / Streaming generation via WebLLM ---
+				const asyncChunkGenerator = await this.engine.chat.completions.create({
+					messages: chatMessages,
+					temperature: 0.7,
+					max_tokens: 2048, // Limite de tokens pour la réponse / Token limit for response
+					stream: true,
+				});
+
+				for await (const chunk of asyncChunkGenerator) {
+					// Vérifie si l'utilisateur a demandé l'arrêt / Check if user requested stop
+					if (this._abortController?.signal.aborted) {
+						break;
+					}
+					pushDelta(chunk.choices[0]?.delta?.content || '');
 				}
 			}
 
@@ -639,7 +755,10 @@ class LLMStore {
 		if (this._abortController) {
 			this._abortController.abort();
 		}
-		if (this.engine) {
+		if (!this.engine) return;
+		if (this.engineType === 'transformers') {
+			this.engine.interrupt?.();
+		} else {
 			this.engine.interruptGenerate();
 		}
 	}
@@ -667,8 +786,15 @@ class LLMStore {
 		this.selectedModel = modelName;
 		this.saveSelectedModel();
 
+		// Libère l'ancien moteur (surtout les ressources GPU de Transformers.js)
+		// Release the previous engine (especially Transformers.js GPU resources)
+		if (this.engineType === 'transformers' && this.engine?.dispose) {
+			try { await this.engine.dispose(); } catch (e) { /* non bloquant */ }
+		}
+
 		// Reset engines
 		this.engine = null;
+		this.engineType = 'webllm';
 
 
 		await this.clearMessages();
@@ -743,10 +869,25 @@ class LLMStore {
 	 * Clear the cache of all WebLLM models.
 	 */
 	async clearCache() {
-		if (!this.engine) {
+		const modelConfig = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
+
+		// Modèle Transformers.js : on vide le cache navigateur dédié, pas WebLLM.
+		// Transformers.js model: clear the dedicated browser cache, not WebLLM.
+		if (modelConfig?.engine === 'transformers') {
+			await clearTransformersCache();
+			if (isOpfsSupported()) {
+				try { await deleteModelDirectory(this.selectedModel); } catch (e) { /* non bloquant */ }
+			}
+			console.log('Cache Transformers.js vidé.');
+			window.location.reload();
+			return;
+		}
+
+		if (!this.engine || this.engineType === 'transformers') {
 			console.warn('Le moteur doit être initialisé pour vider le cache.');
 			// Crée une instance temporaire juste pour le nettoyage
 			this.engine = await CreateMLCEngine(this.selectedModel, { appConfig, logLevel: 'SILENT' });
+			this.engineType = 'webllm';
 		}
 		await this.engine.runtime.clear();
 

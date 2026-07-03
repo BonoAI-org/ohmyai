@@ -222,6 +222,15 @@
                                                 >Custom</span
                                             >
                                         {/if}
+                                        {#if model.engine === "transformers"}
+                                            <span
+                                                class="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20"
+                                                title={$_(
+                                                    "models.webgpuExperimentalTitle",
+                                                )}
+                                                >{$_("models.webgpuTag")}</span
+                                            >
+                                        {/if}
                                         {#if llmStore.downloadedModels[model.id]}
                                             <span
                                                 class="text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-500/20"

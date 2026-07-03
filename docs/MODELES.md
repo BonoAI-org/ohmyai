@@ -56,6 +56,19 @@ This document lists the LLM models compatible with WebLLM that you can use in th
   - Excellent support des langues asiatiques / Great Asian language support
   - Bon équilibre taille/performance / Good size/performance balance
 
+### 5. **Gemma 4 (E2B) — WebGPU** 🧪 (Expérimental / Experimental)
+- **Taille / Size**: ~2.4 GB
+- **RAM requise / Required RAM**: ~4 GB
+- **Moteur / Engine**: **Transformers.js** (ONNX Runtime Web), *pas* WebLLM/MLC
+- **Modèle / Model**: `onnx-community/gemma-4-e2b-it-ONNX`
+- **Cas d'usage / Use cases**:
+  - Discussions générales avec le dernier modèle de Google / General chat with Google's latest model
+- **Notes importantes / Important notes**:
+  - ⚠️ **Texte uniquement** pour l'instant (la vision de Gemma 4 n'est pas encore portée dans le navigateur) / **Text only** for now (Gemma 4 vision is not yet ported to the browser).
+  - Seule la variante **E2B** (~2B "Efficient") tient dans WebGPU ; les 12B/27B demandent trop de VRAM / Only the **E2B** variant fits in WebGPU; 12B/27B need too much VRAM.
+  - **Pourquoi un moteur différent ?** WebLLM/MLC ne supporte pas encore l'architecture `gemma4`. On utilise donc Transformers.js pour ce modèle, tout en gardant WebLLM pour tous les autres / **Why a different engine?** WebLLM/MLC does not yet support the `gemma4` architecture, so we use Transformers.js for this model while keeping WebLLM for all others.
+  - Les fichiers sont mis en cache via la **Cache API** du navigateur (et non le cache WebLLM/OPFS) / Files are cached via the browser **Cache API** (not the WebLLM/OPFS cache).
+
 ## 🔄 Comment Changer de Modèle / How to Change Model
 
 ### Méthode 1: Modifier le code / Edit the code
@@ -84,6 +97,7 @@ You can enhance the application by adding a dropdown menu to change models dynam
 | Llama-3.2-3B | 1.9 GB | 4-5 GB | ⚡⚡ | ⭐⭐⭐⭐ | Usage général / General use |
 | Phi-3.5-mini | 2.2 GB | 4-6 GB | ⚡⚡ | ⭐⭐⭐⭐⭐ | Code & Tech |
 | Qwen2.5-1.5B | 950 MB | 3-4 GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Multilingue / Multilingual |
+| Gemma 4 (E2B) 🧪 | 2.4 GB | ~4 GB | ⚡⚡ | ⭐⭐⭐⭐ | Dernier modèle Google (via Transformers.js) |
 
 ## 🔍 Autres Modèles Disponibles / Other Available Models
 
