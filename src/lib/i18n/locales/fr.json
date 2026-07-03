@@ -38,6 +38,10 @@
 		"progress": "Progression",
 		"modelLoaded": "Modèle chargé avec succès !"
 	},
+	"models": {
+		"webgpuTag": "WebGPU · exp.",
+		"webgpuExperimentalTitle": "Exécuté via Transformers.js (ONNX Runtime Web) sur WebGPU — support expérimental."
+	},
 	"error": {
 		"title": "Erreur",
 		"webgpuNotAvailable": "❌ WebGPU non disponible. Votre navigateur ou appareil ne supporte pas WebGPU. Essayez Chrome/Edge 113+ sur desktop ou activez WebGPU dans les flags du navigateur."
