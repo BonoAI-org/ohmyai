@@ -1273,16 +1273,64 @@
 								})}
 							</p>
 						</div>
-						<div class="flex gap-4 mt-4">
-							<button
-								onclick={() => llmStore.initEngine(true)}
-								class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow"
+						{#if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
+							<!-- Avertissement matériel insuffisant / Insufficient hardware warning -->
+							<div
+								class="bg-amber-500/15 border border-amber-500/60 rounded-lg p-3 text-sm max-w-md mx-auto"
 							>
-								{$_("loading.downloadNow", {
-									default:
-										"Télécharger maintenant / Download now",
-								})}
-							</button>
+								<p
+									class="font-semibold text-amber-700 dark:text-amber-300"
+								>
+									⚠️ {$_("loading.hardwareUnsupported", {
+										default:
+											"Cet appareil ne semble pas assez puissant pour ce modèle. / This device does not seem powerful enough for this model.",
+									})}
+								</p>
+								<p
+									class="text-xs mt-1 text-amber-700/90 dark:text-amber-300/90"
+								>
+									{$_("loading.hardwareRequired", {
+										default: "Mémoire requise / Required memory",
+									})}: ~{llmStore.hardwareCheck.requiredGB} GB
+									{#if llmStore.hardwareCheck.deviceMemoryGB}
+										• {$_("loading.hardwareDetected", {
+											default: "RAM détectée / Detected RAM",
+										})}: {llmStore.hardwareCheck
+											.deviceMemoryGB}{llmStore.hardwareCheck
+											.deviceMemoryGB >= 8
+											? "+"
+											: ""} GB
+									{/if}
+									{#if llmStore.hardwareCheck.gpuMaxBufferGB}
+										• {$_("loading.hardwareGpuBuffer", {
+											default: "Buffer GPU max / Max GPU buffer",
+										})}: {llmStore.hardwareCheck.gpuMaxBufferGB} GB
+									{/if}
+								</p>
+							</div>
+						{/if}
+						<div class="flex gap-4 mt-4">
+							{#if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
+								<button
+									onclick={() => llmStore.initEngine(true)}
+									class="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow"
+								>
+									{$_("loading.downloadAnyway", {
+										default:
+											"Télécharger quand même / Download anyway",
+									})}
+								</button>
+							{:else}
+								<button
+									onclick={() => llmStore.initEngine(true)}
+									class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow"
+								>
+									{$_("loading.downloadNow", {
+										default:
+											"Télécharger maintenant / Download now",
+									})}
+								</button>
+							{/if}
 						</div>
 					</div>
 				</div>

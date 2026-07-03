@@ -36,7 +36,16 @@
 	"loading": {
 		"loadingModel": "Loading model...",
 		"progress": "Progress",
-		"modelLoaded": "Model loaded successfully!"
+		"modelLoaded": "Model loaded successfully!",
+		"downloadRequired": "Download required",
+		"notOnDevice": "The selected model is not on this device yet.",
+		"downloadWarning": "Download may take several minutes and use data. Wi-Fi recommended.",
+		"downloadNow": "Download now",
+		"downloadAnyway": "Download anyway",
+		"hardwareUnsupported": "This device does not seem powerful enough for this model.",
+		"hardwareRequired": "Required memory",
+		"hardwareDetected": "Detected RAM",
+		"hardwareGpuBuffer": "Max GPU buffer"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",

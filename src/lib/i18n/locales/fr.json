@@ -36,7 +36,16 @@
 	"loading": {
 		"loadingModel": "Chargement du modèle...",
 		"progress": "Progression",
-		"modelLoaded": "Modèle chargé avec succès !"
+		"modelLoaded": "Modèle chargé avec succès !",
+		"downloadRequired": "Téléchargement requis",
+		"notOnDevice": "Le modèle sélectionné n'est pas encore sur cet appareil.",
+		"downloadWarning": "Le téléchargement peut prendre plusieurs minutes et consommer des données. Wi-Fi recommandé.",
+		"downloadNow": "Télécharger maintenant",
+		"downloadAnyway": "Télécharger quand même",
+		"hardwareUnsupported": "Cet appareil ne semble pas assez puissant pour ce modèle.",
+		"hardwareRequired": "Mémoire requise",
+		"hardwareDetected": "RAM détectée",
+		"hardwareGpuBuffer": "Buffer GPU max"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
