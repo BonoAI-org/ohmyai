@@ -21,9 +21,10 @@
     <h3 class="text-lg font-bold">🧠 Local Vector DB Test (Orama)</h3>
 
     <div class="space-y-2">
-        <label class="block text-sm font-medium">Add Knowledge</label>
+        <label for="rag-add-input" class="block text-sm font-medium">Add Knowledge</label>
         <div class="flex gap-2">
             <input
+                id="rag-add-input"
                 type="text"
                 bind:value={inputText}
                 placeholder="Ex: My secret color is blue..."
@@ -41,9 +42,10 @@
     </div>
 
     <div class="space-y-2">
-        <label class="block text-sm font-medium">Semantic Search</label>
+        <label for="rag-search-input" class="block text-sm font-medium">Semantic Search</label>
         <div class="flex gap-2">
             <input
+                id="rag-search-input"
                 type="text"
                 bind:value={searchQuery}
                 placeholder="Ex: What is the secret color?"

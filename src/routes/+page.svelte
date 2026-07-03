@@ -11,6 +11,7 @@
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
 	import { _ } from "svelte-i18n";
+	import { mcpStore } from "$lib/stores/mcp.svelte.js";
 	import Image from "svelte-material-icons/Image.svelte";
 	import Send from "svelte-material-icons/Send.svelte";
 
@@ -33,6 +34,15 @@
 	let isModelSelectorOpen = $state(false);
 	let showAllModels = $state(false);
 	const VISIBLE_MODEL_COUNT = 3;
+
+	// Tri des modèles : téléchargés en premier / Sort models: downloaded first
+	const sortedModels = $derived(
+		[...AVAILABLE_MODELS].sort((a, b) => {
+			const aLocal = llmStore.downloadedModels[a.id] ? 1 : 0;
+			const bLocal = llmStore.downloadedModels[b.id] ? 1 : 0;
+			return bLocal - aLocal;
+		})
+	);
 
 	// État du modal d'ajout de modèle / Add model modal state
 	let isAddModelModalOpen = $state(false);
@@ -95,9 +105,17 @@
 		llmStore.loadHuggingFaceToken();
 		llmStore.loadSystemPrompt();
 		llmStore.loadUserProfile();
+		llmStore.loadGenerationParams();
+		llmStore.loadThinkingEnabled();
 
 		// Charge l'historique des conversations / Load conversation history
 		llmStore.loadConversationHistory();
+
+		// Charge les serveurs MCP / Load MCP servers
+		mcpStore.loadServers();
+		if (mcpStore.servers.some(s => s.enabled)) {
+			mcpStore.discoverTools();
+		}
 
 		// Vérifie la RAM disponible / Check available RAM
 		checkRAM();
@@ -448,12 +466,14 @@
 {#if isSettingsModalOpen}
 	<div
 		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-		onclick={() => (isSettingsModalOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Paramètres / Settings"
+		tabindex="-1"
+		onclick={(e) => e.target === e.currentTarget && (isSettingsModalOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (isSettingsModalOpen = false)}
 	>
-		<div
-			class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md"
-			onclick={(event) => event.stopPropagation()}
-		>
+		<div class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md">
 			<Settings close={() => (isSettingsModalOpen = false)} />
 		</div>
 	</div>
@@ -462,14 +482,16 @@
 {#if isRagTestOpen}
 	<div
 		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-		onclick={() => (isRagTestOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="rag-test-title"
+		tabindex="-1"
+		onclick={(e) => e.target === e.currentTarget && (isRagTestOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (isRagTestOpen = false)}
 	>
-		<div
-			class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4"
-			onclick={(event) => event.stopPropagation()}
-		>
+		<div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4">
 			<div class="flex justify-between items-center mb-4">
-				<h2 class="text-xl font-bold text-gray-900 dark:text-white">
+			<h2 id="rag-test-title" class="text-xl font-bold text-gray-900 dark:text-white">
 					Vector DB Test
 				</h2>
 				<button
@@ -778,7 +800,7 @@
 										>
 											{$_("header.chooseModel")}
 										</div>
-										{#each showAllModels ? AVAILABLE_MODELS : AVAILABLE_MODELS.slice(0, VISIBLE_MODEL_COUNT) as model}
+										{#each showAllModels ? sortedModels : sortedModels.slice(0, VISIBLE_MODEL_COUNT) as model}
 											<button
 												onclick={() =>
 													handleModelChange(model.id)}
@@ -805,6 +827,13 @@
 																	{$_(
 																		"model.recommended",
 																	)}
+																</span>
+															{/if}
+															{#if model.supportsTools}
+																<span
+																	class="text-[10px] bg-purple-500/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30"
+																>
+																	Tools
 																</span>
 															{/if}
 
@@ -891,14 +920,14 @@
 											</button>
 										{/each}
 
-										{#if !showAllModels && AVAILABLE_MODELS.length > VISIBLE_MODEL_COUNT}
+										{#if !showAllModels && sortedModels.length > VISIBLE_MODEL_COUNT}
 											<button
 												onclick={(e) => { e.stopPropagation(); showAllModels = true; }}
 												class="w-full text-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded transition-colors font-medium"
 											>
-												Voir plus ({AVAILABLE_MODELS.length - VISIBLE_MODEL_COUNT} autres)
+												Voir plus ({sortedModels.length - VISIBLE_MODEL_COUNT} autres)
 											</button>
-										{:else if showAllModels && AVAILABLE_MODELS.length > VISIBLE_MODEL_COUNT}
+										{:else if showAllModels && sortedModels.length > VISIBLE_MODEL_COUNT}
 											<button
 												onclick={(e) => { e.stopPropagation(); showAllModels = false; }}
 												class="w-full text-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded transition-colors font-medium"
@@ -1447,15 +1476,32 @@
 						</div>
 					{/if}
 				{/if}
-				<!-- Bouton pour effacer la conversation / Button to clear conversation -->
-				{#if llmStore.messages.length > 0}
-					<button
-						onclick={() => llmStore.clearMessages()}
-						class="mt-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
-					>
-						{$_("chat.clearConversation")}
-					</button>
-				{/if}
+				<!-- Actions sous le champ / Actions below input -->
+				<div class="mt-2 flex items-center gap-3">
+					{#if llmStore.messages.length > 0}
+						<button
+							onclick={() => llmStore.clearMessages()}
+							class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
+						>
+							{$_("chat.clearConversation")}
+						</button>
+					{/if}
+
+					{#if llmStore.isSelectedModelThinkingCapable()}
+						<button
+							onclick={() => llmStore.toggleThinking()}
+							class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border {llmStore.thinkingEnabled
+								? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/30'
+								: 'bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-600/50'}"
+							title={llmStore.thinkingEnabled ? 'Désactiver le raisonnement' : 'Activer le raisonnement'}
+						>
+							<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+							</svg>
+							Think {llmStore.thinkingEnabled ? 'ON' : 'OFF'}
+						</button>
+					{/if}
+				</div>
 			</div>
 			<!-- ... -->
 			<!-- Footer avec crédit BonoAI / Footer with BonoAI credit -->

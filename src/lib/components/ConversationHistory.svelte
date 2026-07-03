@@ -157,7 +157,7 @@
 	<!-- Overlay -->
 	<div 
 		class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-		onclick={() => isOpen = false}
+		onclick={(e) => e.target === e.currentTarget && (isOpen = false)}
 		onkeydown={(e) => e.key === 'Escape' && (isOpen = false)}
 		role="dialog"
 		aria-modal="true"
@@ -167,9 +167,6 @@
 		<!-- Panneau latéral / Side panel -->
 		<div 
 			class="fixed left-0 top-0 bottom-0 w-full max-w-md bg-slate-900 border-r border-slate-700 shadow-2xl overflow-hidden flex flex-col"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-			role="document"
 		>
 			<!-- Header -->
 			<div class="bg-slate-800 border-b border-slate-700 p-4">
@@ -264,15 +261,15 @@
 						>
 							{#if renamingId === conversation.id}
 								<!-- Mode renommage / Rename mode -->
-								<div class="flex gap-2" role="form" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+							<div class="flex gap-2">
 									<input
 										type="text"
 										bind:value={renamingTitle}
 										class="flex-1 bg-slate-900 text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-										onkeydown={(e) => {
-											if (e.key === 'Enter') saveRename();
-											if (e.key === 'Escape') cancelRename();
-										}}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') saveRename();
+										if (e.key === 'Escape') { e.stopPropagation(); cancelRename(); }
+									}}
 									/>
 									<button
 										onclick={saveRename}

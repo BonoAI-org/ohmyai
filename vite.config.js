@@ -86,7 +86,11 @@ export default defineConfig({
 				globIgnores: ['**/*.wasm', '**/*.bin']
 			},
 			devOptions: {
-				enabled: true,
+				// Désactivé en dev : le SW sert des modules Vite périmés après un
+				// changement de dépendances (504 Outdated Optimize Dep)
+				// Disabled in dev: the SW serves stale Vite modules after a
+				// dependency change (504 Outdated Optimize Dep)
+				enabled: false,
 				suppressWarnings: true,
 				type: 'module',
 				navigateFallback: '/'

@@ -4,6 +4,7 @@ import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/
 import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
+import { mcpStore } from '$lib/stores/mcp.svelte.js';
 
 
 /**
@@ -60,14 +61,16 @@ export const AVAILABLE_MODELS = [
 		name: 'Qwen 3 (4B) - Reasoning',
 		size: '~2.4 GB',
 		description: 'Raisonnement avancé avec mode thinking intégré.',
-		recommended: true
+		recommended: true,
+		supportsThinking: true
 	},
 	{
 		id: 'Qwen3-8B-q4f16_1-MLC',
 		name: 'Qwen 3 (8B) - Reasoning',
 		size: '~4.5 GB',
 		description: 'Meilleur raisonnement, nécessite ~8 GB de RAM.',
-		recommended: false
+		recommended: false,
+		supportsThinking: true
 	},
 	{
 		id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
@@ -81,14 +84,16 @@ export const AVAILABLE_MODELS = [
 		name: 'Qwen 3 (0.6B) - Quantisé',
 		size: '~400 MB',
 		description: 'Incroyablement léger. Idéal pour être le modèle par défaut ultra-rapide.',
-		recommended: true
+		recommended: true,
+		supportsThinking: true
 	},
 	{
 		id: 'Qwen3-0.6B-q0f16-MLC',
 		name: 'Qwen 3 (0.6B) - Non Quantisé',
 		size: '~2.4 GB',
 		description: 'Modèle pur non compressé (plus lourd en RAM).',
-		recommended: false
+		recommended: false,
+		supportsThinking: true
 	},
 	{
 		id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
@@ -126,8 +131,43 @@ export const AVAILABLE_MODELS = [
 		description: 'Modèle populaire et performant / Popular and powerful model',
 		recommended: false
 	},
-
-
+	{
+		id: 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC',
+		name: 'Hermes 2 Pro Llama 3 (8B)',
+		size: '~4.3 GB',
+		description: 'Supporte les appels d\'outils (function calling) via MCP.',
+		recommended: false,
+		supportsTools: true
+	},
+	{
+		id: 'Hermes-3-Llama-3.1-8B-q4f16_1-MLC',
+		name: 'Hermes 3 Llama 3.1 (8B)',
+		size: '~4.5 GB',
+		description: 'Dernier Hermes avec support outils amélioré.',
+		recommended: false,
+		supportsTools: true
+	},
+	{
+		id: 'Ministral-3-3B-Instruct-2512-BF16-q4f16_1-MLC',
+		name: 'Ministral 3 (3B) - Instruct',
+		size: '~1.8 GB',
+		description: 'Modèle Mistral léger, optimisé pour suivre les instructions.',
+		recommended: false
+	},
+	{
+		id: 'Ministral-3-3B-Base-2512-q4f16_1-MLC',
+		name: 'Ministral 3 (3B) - Base',
+		size: '~1.8 GB',
+		description: 'Modèle Mistral de base, flexible et polyvalent.',
+		recommended: false
+	},
+	{
+		id: 'Ministral-3-3B-Reasoning-2512-q4f16_1-MLC',
+		name: 'Ministral 3 (3B) - Reasoning',
+		size: '~1.8 GB',
+		description: 'Modèle Mistral spécialisé en raisonnement logique.',
+		recommended: false
+	},
 ];
 
 /**
@@ -191,6 +231,27 @@ class LLMStore {
 		language: ''
 	});
 
+	// Mode thinking activé / Thinking mode enabled
+	thinkingEnabled = $state(true);
+
+	// Paramètres de génération / Generation parameters
+	generationParams = $state({
+		temperature: 0.65,
+		maxTokens: 512,
+		frequencyPenalty: 0.5,
+		presencePenalty: 0.5,
+	});
+
+	/**
+	 * Vérifie si le modèle sélectionné supporte le thinking
+	 * Check if selected model supports thinking
+	 * @returns {boolean}
+	 */
+	isSelectedModelThinkingCapable() {
+		const model = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
+		return model?.supportsThinking || false;
+	}
+
 	/**
 	 * Vérifie si WebGPU est disponible / Check if WebGPU is available
 	 * @returns {boolean}
@@ -217,6 +278,21 @@ class LLMStore {
 	}
 
 	/**
+	 * Indique si le modèle sélectionné supporte le function calling (outils MCP)
+	 * Indicates if the selected model supports function calling (MCP tools)
+	 * @returns {boolean}
+	 */
+	isSelectedModelToolCapable() {
+		try {
+			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
+			const model = allModels.find(m => m.id === this.selectedModel);
+			return !!(model && model.supportsTools);
+		} catch (_) {
+			return false;
+		}
+	}
+
+	/**
 	 * Sauvegarde le modèle sélectionné dans localStorage
 	 * Save currently selected model to localStorage
 	 */
@@ -235,12 +311,6 @@ class LLMStore {
 	loadSelectedModel() {
 		try {
 			let saved = localStorage.getItem('selectedModel');
-
-			// Migration: Si l'utilisateur avait l'ancien gros modèle par défaut, on le force doucement sur le nouveau modèle léger
-			// Migration: If user had the old heavy default model, gently force them to the new lightweight default
-			if (saved === 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC') {
-				saved = 'Qwen3-0.6B-q4f16_1-MLC';
-			}
 
 			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
 			const modelExists = allModels.some(m => m.id === saved);
@@ -334,6 +404,60 @@ class LLMStore {
 			localStorage.setItem('userProfile', JSON.stringify(this.userProfile));
 		} catch (err) {
 			console.error('Error saving user profile:', err);
+		}
+	}
+
+	/**
+	 * Charge les paramètres de génération depuis localStorage
+	 * Load generation parameters from localStorage
+	 */
+	loadGenerationParams() {
+		try {
+			const saved = localStorage.getItem('generationParams');
+			if (saved) {
+				this.generationParams = { ...this.generationParams, ...JSON.parse(saved) };
+			}
+		} catch (err) {
+			console.error('Error loading generation params:', err);
+		}
+	}
+
+	/**
+	 * Met à jour et sauvegarde les paramètres de génération
+	 * Update and save generation parameters
+	 */
+	updateGenerationParams(params) {
+		this.generationParams = { ...this.generationParams, ...params };
+		try {
+			localStorage.setItem('generationParams', JSON.stringify(this.generationParams));
+		} catch (err) {
+			console.error('Error saving generation params:', err);
+		}
+	}
+
+	/**
+	 * Charge l'état du thinking depuis localStorage
+	 */
+	loadThinkingEnabled() {
+		try {
+			const saved = localStorage.getItem('thinkingEnabled');
+			if (saved !== null) {
+				this.thinkingEnabled = JSON.parse(saved);
+			}
+		} catch (err) {
+			console.error('Error loading thinking state:', err);
+		}
+	}
+
+	/**
+	 * Active/désactive le mode thinking
+	 */
+	toggleThinking() {
+		this.thinkingEnabled = !this.thinkingEnabled;
+		try {
+			localStorage.setItem('thinkingEnabled', JSON.stringify(this.thinkingEnabled));
+		} catch (err) {
+			console.error('Error saving thinking state:', err);
 		}
 	}
 
@@ -644,10 +768,30 @@ class LLMStore {
 				return { role: msg.role, content: msg.content };
 			});
 
+			// System prompt par défaut pour guider les petits modèles / Default system prompt to guide small models
+			const defaultSystemPrompt = 'You are a helpful assistant. Keep your answers SHORT: 2-3 sentences max. Never repeat yourself. Never restart your answer. Maximum 3 items in any list. Stop when done.';
+
 			// Injection des règles (System Prompt) au tout début du contexte
 			// Injecting the rules (System Prompt) at the very beginning of the context
-			if (this.systemPrompt && this.systemPrompt.trim().length > 0) {
-				chatMessages.unshift({ role: 'system', content: this.systemPrompt.trim() });
+			let systemContent = (this.systemPrompt && this.systemPrompt.trim().length > 0)
+				? this.systemPrompt.trim()
+				: defaultSystemPrompt;
+
+			chatMessages.unshift({ role: 'system', content: systemContent });
+
+			// Ajout de /no_think au dernier message utilisateur si thinking désactivé
+			// Append /no_think to last user message if thinking is disabled
+			if (this.isSelectedModelThinkingCapable() && !this.thinkingEnabled) {
+				const lastUserIdx = chatMessages.findLastIndex(m => m.role === 'user');
+				if (lastUserIdx !== -1) {
+					const msg = chatMessages[lastUserIdx];
+					if (typeof msg.content === 'string') {
+						chatMessages[lastUserIdx] = { ...msg, content: msg.content + ' /no_think' };
+					} else if (Array.isArray(msg.content)) {
+						const textPart = msg.content.find(p => p.type === 'text');
+						if (textPart) textPart.text += ' /no_think';
+					}
+				}
 			}
 
 			// Injection du profil utilisateur / Inject user profile
@@ -667,9 +811,13 @@ class LLMStore {
 				}
 			}
 
+			// Détermine si le modèle supporte les outils / Check if model supports tools
+			const useTools = this.isSelectedModelToolCapable() && mcpStore.availableTools.length > 0;
+			const toolsParam = useTools ? mcpStore.getToolsForLLM() : undefined;
+
 			// Ajoute un message assistant vide pour la réponse
 			// Add an empty assistant message for the response
-			const assistantMessageIndex = this.messages.length;
+			let assistantMessageIndex = this.messages.length;
 			this.messages = [...this.messages, { role: 'assistant', content: '' }];
 
 			// Mécanisme de streaming batché partagé par les deux moteurs.
@@ -706,28 +854,140 @@ class LLMStore {
 			if (this.engineType === 'transformers') {
 				// --- Génération via Transformers.js / Generation via Transformers.js ---
 				await this.engine.generate(chatMessages, {
-					temperature: 0.7,
-					max_new_tokens: 2048,
+					temperature: this.generationParams.temperature,
+					max_new_tokens: this.generationParams.maxTokens,
 					onToken: (delta) => {
 						if (this._abortController?.signal.aborted) return;
 						pushDelta(delta);
 					}
 				});
 			} else {
-				// --- Génération en streaming via WebLLM / Streaming generation via WebLLM ---
-				const asyncChunkGenerator = await this.engine.chat.completions.create({
-					messages: chatMessages,
-					temperature: 0.7,
-					max_tokens: 2048, // Limite de tokens pour la réponse / Token limit for response
-					stream: true,
-				});
+				// --- Génération WebLLM avec boucle de tool-calling (max 5 rounds) ---
+				// --- WebLLM generation with tool-calling loop (max 5 rounds) ---
+				let continueLoop = true;
+				let maxToolRounds = 5;
 
-				for await (const chunk of asyncChunkGenerator) {
-					// Vérifie si l'utilisateur a demandé l'arrêt / Check if user requested stop
-					if (this._abortController?.signal.aborted) {
-						break;
+				while (continueLoop && maxToolRounds > 0) {
+					if (this._abortController?.signal.aborted) break;
+
+					const completionParams = {
+						messages: chatMessages,
+						temperature: this.generationParams.temperature,
+						max_tokens: this.generationParams.maxTokens,
+						frequency_penalty: this.generationParams.frequencyPenalty,
+						presence_penalty: this.generationParams.presencePenalty,
+						stream: true,
+					};
+
+					if (toolsParam && toolsParam.length > 0) {
+						completionParams.tools = toolsParam;
+						completionParams.tool_choice = 'auto';
 					}
-					pushDelta(chunk.choices[0]?.delta?.content || '');
+
+					const asyncChunkGenerator = await this.engine.chat.completions.create(completionParams);
+
+					let assistantContent = '';
+					let toolCalls = [];
+					let lastFinishReason = null;
+
+					// Traite chaque chunk de la réponse / Process each response chunk
+					for await (const chunk of asyncChunkGenerator) {
+						if (this._abortController?.signal.aborted) break;
+
+						const choice = chunk.choices[0];
+						if (!choice) continue;
+
+						lastFinishReason = choice.finish_reason || lastFinishReason;
+						const delta = choice.delta;
+
+						if (delta?.content) {
+							assistantContent += delta.content;
+							pushDelta(delta.content);
+						}
+
+						// Accumule les tool calls depuis les deltas / Accumulate tool calls from deltas
+						if (delta?.tool_calls) {
+							for (const tc of delta.tool_calls) {
+								const idx = tc.index ?? 0;
+								if (!toolCalls[idx]) {
+									toolCalls[idx] = { id: tc.id || `call_${idx}`, function: { name: '', arguments: '' } };
+								}
+								if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
+								if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
+							}
+						}
+					}
+
+					// Si le LLM a demandé des tool calls (et pas tronqué par max_tokens)
+					// If LLM requested tool calls (and not truncated by max_tokens)
+					if (lastFinishReason === 'tool_calls' && toolCalls.length > 0) {
+						// Le message assistant est réécrit en entier ci-dessous : on jette le batch en attente
+						// The assistant message is fully rewritten below: discard the pending batch
+						pendingContent = '';
+
+						// Ajoute le message assistant avec tool_calls au contexte
+						chatMessages.push({
+							role: 'assistant',
+							content: assistantContent || null,
+							tool_calls: toolCalls.map((tc, i) => ({
+								id: tc.id || `call_${i}`,
+								type: 'function',
+								function: { name: tc.function.name, arguments: tc.function.arguments }
+							}))
+						});
+
+						// Met à jour l'UI avec les tool calls en cours
+						this.messages = this.messages.map((msg, idx) =>
+							idx === assistantMessageIndex
+								? { ...msg, content: assistantContent, toolCalls: toolCalls.map(tc => ({ name: tc.function.name, arguments: tc.function.arguments, status: 'pending' })) }
+								: msg
+						);
+
+						// Exécute chaque tool call / Execute each tool call
+						for (let i = 0; i < toolCalls.length; i++) {
+							const tc = toolCalls[i];
+							let result;
+							let hasError = false;
+
+							try {
+								const args = JSON.parse(tc.function.arguments || '{}');
+								const serverId = mcpStore.getServerIdForTool(tc.function.name);
+								if (!serverId) throw new Error(`No server found for tool: ${tc.function.name}`);
+								result = await mcpStore.callTool(serverId, tc.function.name, args);
+							} catch (err) {
+								result = { error: err.message };
+								hasError = true;
+							}
+
+							const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+
+							// Ajoute le résultat au contexte / Add result to context
+							chatMessages.push({
+								role: 'tool',
+								tool_call_id: tc.id || `call_${i}`,
+								content: resultStr
+							});
+
+							// Met à jour le statut du tool call dans l'UI
+							this.messages = this.messages.map((msg, idx) => {
+								if (idx === assistantMessageIndex && msg.toolCalls) {
+									const updatedCalls = [...msg.toolCalls];
+									updatedCalls[i] = { ...updatedCalls[i], status: hasError ? 'error' : 'done', result: resultStr };
+									return { ...msg, toolCalls: updatedCalls };
+								}
+								return msg;
+							});
+						}
+
+						// Ajoute un nouveau message assistant vide pour la suite
+						assistantMessageIndex = this.messages.length;
+						this.messages = [...this.messages, { role: 'assistant', content: '' }];
+
+						maxToolRounds--;
+						// La boucle continue pour que le LLM traite les résultats
+					} else {
+						continueLoop = false;
+					}
 				}
 			}
 
@@ -1022,10 +1282,17 @@ class LLMStore {
 			this.currentConversationId = conversationId;
 			try { localStorage.setItem('currentConversationId', conversationId); } catch (e) { }
 
-			// Change le modèle si différent / Change model if different
-			if (conversation.model !== this.selectedModel) {
-				// Note: Ne change pas automatiquement le modèle pour éviter les rechargements
-				// Note: Don't automatically change model to avoid reloads
+			// Restaure le modèle utilisé dans la conversation / Restore the model used in the conversation
+			if (conversation.model && conversation.model !== this.selectedModel) {
+				const allModels = [...AVAILABLE_MODELS, ...this.customModels];
+				const modelExists = allModels.some(m => m.id === conversation.model);
+				if (modelExists) {
+					this.selectedModel = conversation.model;
+					this.saveSelectedModel();
+					// Réinitialise le moteur pour charger le bon modèle / Reset engine to load the correct model
+					this.engine = null;
+					await this.initEngine();
+				}
 			}
 		}
 	}

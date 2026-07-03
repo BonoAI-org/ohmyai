@@ -2,6 +2,13 @@
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
+	import { marked } from "marked";
+
+	// Configure marked pour la sécurité et le rendu
+	marked.setOptions({
+		breaks: true,
+		gfm: true,
+	});
 
 	/**
 	 * Composant pour afficher un message de chat
@@ -239,19 +246,50 @@
 						{/if}
 					</div>
 					{#if parsed.answer}
-						<p class="whitespace-pre-wrap break-words m-0">{parsed.answer}</p>
+						<div class="break-words m-0">{@html marked.parse(parsed.answer)}</div>
 					{:else if !parsed.closed}
 						<span class="text-slate-400 text-sm italic">...</span>
 					{/if}
 				{:else}
-					<p class="whitespace-pre-wrap break-words m-0">
-						{parsed ? parsed.answer : message.content}
-					</p>
+					{#if message.role === 'assistant'}
+						<div class="break-words m-0">{@html marked.parse(parsed ? parsed.answer : message.content)}</div>
+					{:else}
+						<p class="whitespace-pre-wrap break-words m-0">{message.content}</p>
+					{/if}
 				{/if}
 			{:else}
 				<span class="text-slate-400 text-sm italic">...</span>
 			{/if}
 		</div>
+
+		<!-- Tool calls (si présents) / Tool calls (if any) -->
+		{#if message.toolCalls && message.toolCalls.length > 0}
+			<div class="mt-3 space-y-2">
+				{#each message.toolCalls as tc}
+					<div class="flex items-start gap-2 text-xs bg-slate-100 dark:bg-slate-700/50 rounded-lg px-3 py-2 border border-slate-200 dark:border-slate-600">
+						<svg class="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+						</svg>
+						<div class="min-w-0 flex-1">
+							<div class="flex items-center gap-2">
+								<span class="font-mono font-medium text-slate-700 dark:text-slate-200">{tc.name}</span>
+								{#if tc.status === 'pending'}
+									<span class="animate-pulse text-amber-500">...</span>
+								{:else if tc.status === 'error'}
+									<span class="text-red-500 font-medium">Error</span>
+								{:else}
+									<span class="text-green-500">OK</span>
+								{/if}
+							</div>
+							{#if tc.result}
+								<pre class="mt-1 text-[11px] font-mono bg-slate-50 dark:bg-slate-900 rounded p-2 border border-slate-200 dark:border-slate-600 max-h-32 overflow-auto whitespace-pre-wrap break-all m-0">{tc.result}</pre>
+							{/if}
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
 
 		<!-- Images attachées (si présentes) / Attached images (if any) -->
 		{#if message.images && message.images.length > 0}
