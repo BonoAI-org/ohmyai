@@ -99,8 +99,8 @@ function showUpdateNotification(registration) {
 					New version available!
 				</div>
 			</div>
-			<button 
-				onclick="this.parentElement.remove(); window.location.reload();"
+			<button
+				onclick="this.parentElement.remove(); if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({type: 'SKIP_WAITING'}); } window.location.reload();"
 				class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-transform hover:scale-105"
 			>
 				Actualiser / Refresh
