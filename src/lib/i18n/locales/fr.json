@@ -107,7 +107,19 @@
 		"rulesSaved": "Règles sauvegardées !",
 		"save": "Sauvegarder",
 		"clearCache": "Vider le cache",
-		"builtBy": "Créé par"
+		"builtBy": "Créé par",
+		"generationTitle": "Paramètres de génération",
+		"generationDescription": "Ajustez la façon dont l'IA génère ses réponses.",
+		"temperature": "Température",
+		"temperatureHelp": "Plus haut = plus créatif, Plus bas = plus précis",
+		"maxTokens": "Tokens maximum",
+		"maxTokensHelp": "Longueur maximale de la réponse",
+		"frequencyPenalty": "Pénalité de fréquence",
+		"frequencyPenaltyHelp": "Réduit la répétition des mots",
+		"presencePenalty": "Pénalité de présence",
+		"presencePenaltyHelp": "Encourage les nouveaux sujets",
+		"saveGeneration": "Sauvegarder les paramètres",
+		"generationSaved": "Paramètres sauvegardés !"
 	},
 	"mcp": {
 		"title": "Serveurs MCP",

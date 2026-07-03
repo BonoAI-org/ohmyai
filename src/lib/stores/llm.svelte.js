@@ -45,14 +45,16 @@ export const AVAILABLE_MODELS = [
 		name: 'Qwen 3 (4B) - Reasoning',
 		size: '~2.4 GB',
 		description: 'Raisonnement avancé avec mode thinking intégré.',
-		recommended: true
+		recommended: true,
+		supportsThinking: true
 	},
 	{
 		id: 'Qwen3-8B-q4f16_1-MLC',
 		name: 'Qwen 3 (8B) - Reasoning',
 		size: '~4.5 GB',
 		description: 'Meilleur raisonnement, nécessite ~8 GB de RAM.',
-		recommended: false
+		recommended: false,
+		supportsThinking: true
 	},
 	{
 		id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
@@ -66,14 +68,16 @@ export const AVAILABLE_MODELS = [
 		name: 'Qwen 3 (0.6B) - Quantisé',
 		size: '~400 MB',
 		description: 'Incroyablement léger. Idéal pour être le modèle par défaut ultra-rapide.',
-		recommended: true
+		recommended: true,
+		supportsThinking: true
 	},
 	{
 		id: 'Qwen3-0.6B-q0f16-MLC',
 		name: 'Qwen 3 (0.6B) - Non Quantisé',
 		size: '~2.4 GB',
 		description: 'Modèle pur non compressé (plus lourd en RAM).',
-		recommended: false
+		recommended: false,
+		supportsThinking: true
 	},
 	{
 		id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
@@ -126,6 +130,27 @@ export const AVAILABLE_MODELS = [
 		description: 'Dernier Hermes avec support outils amélioré.',
 		recommended: false,
 		supportsTools: true
+	},
+	{
+		id: 'Ministral-3-3B-Instruct-2512-BF16-q4f16_1-MLC',
+		name: 'Ministral 3 (3B) - Instruct',
+		size: '~1.8 GB',
+		description: 'Modèle Mistral léger, optimisé pour suivre les instructions.',
+		recommended: false
+	},
+	{
+		id: 'Ministral-3-3B-Base-2512-q4f16_1-MLC',
+		name: 'Ministral 3 (3B) - Base',
+		size: '~1.8 GB',
+		description: 'Modèle Mistral de base, flexible et polyvalent.',
+		recommended: false
+	},
+	{
+		id: 'Ministral-3-3B-Reasoning-2512-q4f16_1-MLC',
+		name: 'Ministral 3 (3B) - Reasoning',
+		size: '~1.8 GB',
+		description: 'Modèle Mistral spécialisé en raisonnement logique.',
+		recommended: false
 	},
 ];
 
@@ -186,6 +211,27 @@ class LLMStore {
 		preferences: '',
 		language: ''
 	});
+
+	// Mode thinking activé / Thinking mode enabled
+	thinkingEnabled = $state(true);
+
+	// Paramètres de génération / Generation parameters
+	generationParams = $state({
+		temperature: 0.65,
+		maxTokens: 512,
+		frequencyPenalty: 0.5,
+		presencePenalty: 0.5,
+	});
+
+	/**
+	 * Vérifie si le modèle sélectionné supporte le thinking
+	 * Check if selected model supports thinking
+	 * @returns {boolean}
+	 */
+	isSelectedModelThinkingCapable() {
+		const model = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
+		return model?.supportsThinking || false;
+	}
 
 	/**
 	 * Vérifie si WebGPU est disponible / Check if WebGPU is available
@@ -332,6 +378,60 @@ class LLMStore {
 			localStorage.setItem('userProfile', JSON.stringify(this.userProfile));
 		} catch (err) {
 			console.error('Error saving user profile:', err);
+		}
+	}
+
+	/**
+	 * Charge les paramètres de génération depuis localStorage
+	 * Load generation parameters from localStorage
+	 */
+	loadGenerationParams() {
+		try {
+			const saved = localStorage.getItem('generationParams');
+			if (saved) {
+				this.generationParams = { ...this.generationParams, ...JSON.parse(saved) };
+			}
+		} catch (err) {
+			console.error('Error loading generation params:', err);
+		}
+	}
+
+	/**
+	 * Met à jour et sauvegarde les paramètres de génération
+	 * Update and save generation parameters
+	 */
+	updateGenerationParams(params) {
+		this.generationParams = { ...this.generationParams, ...params };
+		try {
+			localStorage.setItem('generationParams', JSON.stringify(this.generationParams));
+		} catch (err) {
+			console.error('Error saving generation params:', err);
+		}
+	}
+
+	/**
+	 * Charge l'état du thinking depuis localStorage
+	 */
+	loadThinkingEnabled() {
+		try {
+			const saved = localStorage.getItem('thinkingEnabled');
+			if (saved !== null) {
+				this.thinkingEnabled = JSON.parse(saved);
+			}
+		} catch (err) {
+			console.error('Error loading thinking state:', err);
+		}
+	}
+
+	/**
+	 * Active/désactive le mode thinking
+	 */
+	toggleThinking() {
+		this.thinkingEnabled = !this.thinkingEnabled;
+		try {
+			localStorage.setItem('thinkingEnabled', JSON.stringify(this.thinkingEnabled));
+		} catch (err) {
+			console.error('Error saving thinking state:', err);
 		}
 	}
 
@@ -564,10 +664,30 @@ class LLMStore {
 				return { role: msg.role, content: msg.content };
 			});
 
+			// System prompt par défaut pour guider les petits modèles / Default system prompt to guide small models
+			const defaultSystemPrompt = 'You are a helpful assistant. Keep your answers SHORT: 2-3 sentences max. Never repeat yourself. Never restart your answer. Maximum 3 items in any list. Stop when done.';
+
 			// Injection des règles (System Prompt) au tout début du contexte
 			// Injecting the rules (System Prompt) at the very beginning of the context
-			if (this.systemPrompt && this.systemPrompt.trim().length > 0) {
-				chatMessages.unshift({ role: 'system', content: this.systemPrompt.trim() });
+			let systemContent = (this.systemPrompt && this.systemPrompt.trim().length > 0)
+				? this.systemPrompt.trim()
+				: defaultSystemPrompt;
+
+			chatMessages.unshift({ role: 'system', content: systemContent });
+
+			// Ajout de /no_think au dernier message utilisateur si thinking désactivé
+			// Append /no_think to last user message if thinking is disabled
+			if (this.isSelectedModelThinkingCapable() && !this.thinkingEnabled) {
+				const lastUserIdx = chatMessages.findLastIndex(m => m.role === 'user');
+				if (lastUserIdx !== -1) {
+					const msg = chatMessages[lastUserIdx];
+					if (typeof msg.content === 'string') {
+						chatMessages[lastUserIdx] = { ...msg, content: msg.content + ' /no_think' };
+					} else if (Array.isArray(msg.content)) {
+						const textPart = msg.content.find(p => p.type === 'text');
+						if (textPart) textPart.text += ' /no_think';
+					}
+				}
 			}
 
 			// Injection du profil utilisateur / Inject user profile
@@ -605,8 +725,10 @@ class LLMStore {
 
 				const completionParams = {
 					messages: chatMessages,
-					temperature: 0.7,
-					max_tokens: 2048,
+					temperature: this.generationParams.temperature,
+					max_tokens: this.generationParams.maxTokens,
+					frequency_penalty: this.generationParams.frequencyPenalty,
+					presence_penalty: this.generationParams.presencePenalty,
 					stream: true,
 				};
 
@@ -654,8 +776,9 @@ class LLMStore {
 					}
 				}
 
-				// Si le LLM a demandé des tool calls / If LLM requested tool calls
-				if ((lastFinishReason === 'tool_calls' || toolCalls.length > 0) && toolCalls.length > 0) {
+				// Si le LLM a demandé des tool calls (et pas tronqué par max_tokens)
+				// If LLM requested tool calls (and not truncated by max_tokens)
+				if (lastFinishReason === 'tool_calls' && toolCalls.length > 0) {
 					// Ajoute le message assistant avec tool_calls au contexte
 					chatMessages.push({
 						role: 'assistant',

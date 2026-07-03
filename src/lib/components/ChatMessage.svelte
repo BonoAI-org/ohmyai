@@ -2,6 +2,13 @@
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
+	import { marked } from "marked";
+
+	// Configure marked pour la sécurité et le rendu
+	marked.setOptions({
+		breaks: true,
+		gfm: true,
+	});
 
 	/**
 	 * Composant pour afficher un message de chat
@@ -239,14 +246,16 @@
 						{/if}
 					</div>
 					{#if parsed.answer}
-						<p class="whitespace-pre-wrap break-words m-0">{parsed.answer}</p>
+						<div class="break-words m-0">{@html marked.parse(parsed.answer)}</div>
 					{:else if !parsed.closed}
 						<span class="text-slate-400 text-sm italic">...</span>
 					{/if}
 				{:else}
-					<p class="whitespace-pre-wrap break-words m-0">
-						{parsed ? parsed.answer : message.content}
-					</p>
+					{#if message.role === 'assistant'}
+						<div class="break-words m-0">{@html marked.parse(parsed ? parsed.answer : message.content)}</div>
+					{:else}
+						<p class="whitespace-pre-wrap break-words m-0">{message.content}</p>
+					{/if}
 				{/if}
 			{:else}
 				<span class="text-slate-400 text-sm italic">...</span>

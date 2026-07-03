@@ -107,7 +107,19 @@
 		"rulesSaved": "Rules saved!",
 		"save": "Save",
 		"clearCache": "Clear cache",
-		"builtBy": "Built by"
+		"builtBy": "Built by",
+		"generationTitle": "Generation Parameters",
+		"generationDescription": "Fine-tune how the AI generates responses.",
+		"temperature": "Temperature",
+		"temperatureHelp": "Higher = more creative, Lower = more focused",
+		"maxTokens": "Max tokens",
+		"maxTokensHelp": "Maximum length of the response",
+		"frequencyPenalty": "Frequency penalty",
+		"frequencyPenaltyHelp": "Reduces word repetition",
+		"presencePenalty": "Presence penalty",
+		"presencePenaltyHelp": "Encourages new topics",
+		"saveGeneration": "Save parameters",
+		"generationSaved": "Parameters saved!"
 	},
 	"mcp": {
 		"title": "MCP Servers",
