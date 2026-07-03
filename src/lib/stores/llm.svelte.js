@@ -41,6 +41,21 @@ const appConfig = {
  */
 export const AVAILABLE_MODELS = [
 	{
+		// Gemma 4 n'est PAS supporté par WebLLM/MLC (architecture "gemma4" inconnue).
+		// On le fait tourner via Transformers.js (ONNX Runtime Web) sur WebGPU.
+		// Gemma 4 is NOT supported by WebLLM/MLC (unknown "gemma4" architecture).
+		// We run it via Transformers.js (ONNX Runtime Web) on WebGPU.
+		id: 'onnx-community/gemma-4-e2b-it-ONNX',
+		name: 'Gemma 4 (E2B) — WebGPU',
+		size: '~2.4 GB',
+		vram: '~4 GB',
+		description: 'Google Gemma 4 (variante E2B, texte) via Transformers.js. Expérimental.',
+		engine: 'transformers',
+		dtype: 'q4',
+		experimental: true,
+		recommended: false
+	},
+	{
 		id: 'Qwen3-4B-q4f16_1-MLC',
 		name: 'Qwen 3 (4B) - Reasoning',
 		size: '~2.4 GB',
@@ -103,21 +118,6 @@ export const AVAILABLE_MODELS = [
 		vram: '6.1 GB',
 		size: '5.5 GB',
 		description: 'Modèle de Google, nouvelle génération.'
-	},
-	{
-		// Gemma 4 n'est PAS supporté par WebLLM/MLC (architecture "gemma4" inconnue).
-		// On le fait tourner via Transformers.js (ONNX Runtime Web) sur WebGPU.
-		// Gemma 4 is NOT supported by WebLLM/MLC (unknown "gemma4" architecture).
-		// We run it via Transformers.js (ONNX Runtime Web) on WebGPU.
-		id: 'onnx-community/gemma-4-e2b-it-ONNX',
-		name: 'Gemma 4 (E2B) — WebGPU',
-		size: '~2.4 GB',
-		vram: '~4 GB',
-		description: 'Google Gemma 4 (variante E2B, texte) via Transformers.js. Expérimental.',
-		engine: 'transformers',
-		dtype: 'q4',
-		experimental: true,
-		recommended: false
 	},
 	{
 		id: 'Mistral-7B-Instruct-v0.3-q4f16_1-MLC',
