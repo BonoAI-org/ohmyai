@@ -623,6 +623,7 @@
 							aria-label="Exporter en Markdown / Export to Markdown"
 							title="Exporter la conversation / Export conversation"
 						>
+							<!-- Icône disquette (sauvegarder) / Floppy disk icon (save) -->
 							<svg
 								class="w-5 h-5 flex-shrink-0"
 								fill="none"
@@ -633,7 +634,13 @@
 									stroke-linecap="round"
 									stroke-linejoin="round"
 									stroke-width="2"
-									d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+									d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+								/>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M17 21v-8H7v8M7 3v5h8"
 								/>
 							</svg>
 						</button>
