@@ -14,6 +14,19 @@ export async function registerServiceWorker() {
 		return null;
 	}
 
+	// En dev, pas de SW : il servirait des modules Vite périmés. On désinscrit
+	// aussi tout SW resté d'une session précédente.
+	// In dev, no SW: it would serve stale Vite modules. Also unregister any SW
+	// left over from a previous session.
+	if (import.meta.env.DEV) {
+		const registrations = await navigator.serviceWorker.getRegistrations();
+		for (const registration of registrations) {
+			await registration.unregister();
+			console.log('🧹 Service Worker désinscrit en dev / Service Worker unregistered in dev');
+		}
+		return null;
+	}
+
 	try {
 		// Attend que la page soit chargée / Wait for page to load
 		if (document.readyState !== 'complete') {
