@@ -54,7 +54,7 @@ export const AVAILABLE_MODELS = [
 		engine: 'transformers',
 		dtype: 'q4',
 		experimental: true,
-		recommended: false
+		recommended: true
 	},
 	{
 		// Variante E4B : plus grosse et meilleure que E2B, même architecture.
@@ -69,7 +69,7 @@ export const AVAILABLE_MODELS = [
 		engine: 'transformers',
 		dtype: 'q4f16',
 		experimental: true,
-		recommended: true
+		recommended: false
 	},
 	{
 		id: 'Qwen3-4B-q4f16_1-MLC',
@@ -213,7 +213,7 @@ class LLMStore {
 	loadingProgress = $state('');
 
 	// Modèle sélectionné / Selected model
-	selectedModel = $state('onnx-community/gemma-4-E4B-it-ONNX');
+	selectedModel = $state('onnx-community/gemma-4-e2b-it-ONNX');
 
 	// Type de moteur actif ('webllm' | 'transformers') / Active engine type
 	engineType = $state('webllm');
