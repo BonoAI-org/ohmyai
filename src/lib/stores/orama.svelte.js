@@ -39,6 +39,10 @@ class OramaStore {
 	// Number of indexed documents (null = not counted yet)
 	documentCount = $state(null);
 
+	// Progression d'une ingestion de fichier en cours ({done, total} ou null)
+	// Progress of an ongoing file ingestion ({done, total} or null)
+	ingestProgress = $state(null);
+
 	/**
 	 * Compte les documents persistés sans charger le modèle d'embedding.
 	 * Permet au chat de savoir si une recherche vaut la peine.
@@ -73,6 +77,7 @@ class OramaStore {
 				schema: {
 					content: 'string',
 					category: 'string',
+					source: 'string',
 					embedding: `vector[${EMBEDDING_DIM}]`,
 				},
 			});
@@ -84,6 +89,7 @@ class OramaStore {
 				await insert(this._index, {
 					content: doc.content,
 					category: doc.category,
+					source: doc.source ?? 'note',
 					embedding: doc.embedding,
 				});
 			}
@@ -106,30 +112,17 @@ class OramaStore {
 	 * Add a document: embedding, indexing, persistence.
 	 * @param {string} text - Le contenu texte / Content text
 	 * @param {string} category - Catégorie (ex: 'user-memory', 'doc')
+	 * @param {string} source - Provenance : 'note' ou nom de fichier / Origin: 'note' or file name
 	 * @returns {Promise<string>} ID persistant du document / Persistent document ID
 	 */
-	async addDocument(text, category = 'general') {
+	async addDocument(text, category = 'general', source = 'note') {
 		if (!this._index) await this.init();
 
 		this.status = 'Embedding & Indexing...';
 		this.isLoading = true;
 		try {
-			const embedding = await embedText(text, 'passage');
-
-			await insert(this._index, { content: text, category, embedding });
-
-			const id = crypto.randomUUID();
-			await db.ragDocuments.put({
-				id,
-				content: text,
-				category,
-				embedding,
-				createdAt: Date.now(),
-			});
-			this.documentCount = (this.documentCount ?? 0) + 1;
-
+			const id = await this._insertAndPersist(text, category, source);
 			this.status = 'Ready';
-			console.log(`Indexed document [${id}]: "${text.substring(0, 20)}..."`);
 			return id;
 		} catch (err) {
 			console.error('Error adding document:', err);
@@ -138,6 +131,52 @@ class OramaStore {
 		} finally {
 			this.isLoading = false;
 		}
+	}
+
+	/**
+	 * Indexe une liste de chunks provenant d'un même fichier, avec progression.
+	 * Indexes a list of chunks from a same file, with progress reporting.
+	 * @param {string[]} chunks
+	 * @param {string} source - Nom du fichier / File name
+	 */
+	async addChunks(chunks, source) {
+		if (!this._index) await this.init();
+
+		this.isLoading = true;
+		this.ingestProgress = { done: 0, total: chunks.length };
+		try {
+			for (const chunk of chunks) {
+				await this._insertAndPersist(chunk, 'doc', source);
+				this.ingestProgress = { done: this.ingestProgress.done + 1, total: chunks.length };
+			}
+			this.status = 'Ready';
+		} catch (err) {
+			console.error('Error ingesting file:', err);
+			this.status = 'Error indexing';
+			throw err;
+		} finally {
+			this.isLoading = false;
+			this.ingestProgress = null;
+		}
+	}
+
+	/** @private */
+	async _insertAndPersist(text, category, source) {
+		const embedding = await embedText(text, 'passage');
+
+		await insert(this._index, { content: text, category, source, embedding });
+
+		const id = crypto.randomUUID();
+		await db.ragDocuments.put({
+			id,
+			content: text,
+			category,
+			source,
+			embedding,
+			createdAt: Date.now(),
+		});
+		this.documentCount = (this.documentCount ?? 0) + 1;
+		return id;
 	}
 
 	/**
@@ -163,7 +202,23 @@ class OramaStore {
 	 */
 	async listDocuments() {
 		const docs = await db.ragDocuments.orderBy('createdAt').reverse().toArray();
-		return docs.map(({ id, content, category, createdAt }) => ({ id, content, category, createdAt }));
+		return docs.map(({ id, content, category, source, createdAt }) =>
+			({ id, content, category, source: source ?? 'note', createdAt }));
+	}
+
+	/**
+	 * Supprime tous les chunks d'une même source (fichier importé) puis
+	 * reconstruit l'index en mémoire.
+	 * Deletes all chunks of a same source (imported file) then rebuilds the
+	 * in-memory index.
+	 * @param {string} source - Nom du fichier / File name
+	 */
+	async deleteSource(source) {
+		await db.ragDocuments.where('source').equals(source).delete();
+		this.documentCount = null;
+		this._index = null;
+		this.isReady = false;
+		await this.init();
 	}
 
 	/**
@@ -192,7 +247,8 @@ class OramaStore {
 				id: hit.id,
 				score: hit.score,
 				content: hit.document.content,
-				category: hit.document.category
+				category: hit.document.category,
+				source: hit.document.source ?? 'note'
 			}));
 		} catch (err) {
 			console.error('Search error:', err);

@@ -291,6 +291,21 @@
 			</div>
 		{/if}
 
+		<!-- Sources de la base de connaissances (RAG) / Knowledge base sources (RAG) -->
+		{#if message.sources && message.sources.length > 0}
+			<div class="mt-3 flex flex-wrap items-center gap-1.5">
+				<span class="text-[11px] text-slate-400 dark:text-slate-500">📚 Sources :</span>
+				{#each message.sources as s}
+					<span
+						class="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700"
+						title="Similarité / Similarity: {(s.score * 100).toFixed(0)}%"
+					>
+						{s.source === 'note' ? '📝 note' : `📄 ${s.source}`}
+					</span>
+				{/each}
+			</div>
+		{/if}
+
 		<!-- Images attachées (si présentes) / Attached images (if any) -->
 		{#if message.images && message.images.length > 0}
 			<div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">

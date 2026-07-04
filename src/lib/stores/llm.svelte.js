@@ -904,6 +904,7 @@ class LLMStore {
 			// locale, uniquement si l'utilisateur a indexé des documents.
 			// Knowledge base injection (RAG): local semantic search, only if the
 			// user has indexed documents.
+			let ragSources = [];
 			try {
 				if ((await oramaStore.countDocuments()) > 0) {
 					const hits = await oramaStore.search(userMessage, 4);
@@ -914,6 +915,16 @@ class LLMStore {
 						} else {
 							chatMessages.unshift({ role: 'system', content: ragContext });
 						}
+
+						// Sources dédupliquées pour affichage sous la réponse
+						// Deduplicated sources for display under the answer
+						const bySource = new Map();
+						for (const h of hits) {
+							if (!bySource.has(h.source) || bySource.get(h.source) < h.score) {
+								bySource.set(h.source, h.score);
+							}
+						}
+						ragSources = [...bySource.entries()].map(([source, score]) => ({ source, score }));
 					}
 				}
 			} catch (ragErr) {
@@ -929,7 +940,10 @@ class LLMStore {
 			// Ajoute un message assistant vide pour la réponse
 			// Add an empty assistant message for the response
 			let assistantMessageIndex = this.messages.length;
-			this.messages = [...this.messages, { role: 'assistant', content: '' }];
+			this.messages = [
+				...this.messages,
+				{ role: 'assistant', content: '', ...(ragSources.length > 0 ? { sources: ragSources } : {}) }
+			];
 
 			// Mécanisme de streaming batché partagé par les deux moteurs.
 			// Streaming batching mechanism shared by both engines.

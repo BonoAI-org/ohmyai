@@ -5,7 +5,7 @@
 	import ChatMessage from "$lib/components/ChatMessage.svelte";
 	import ManageModelsModal from "$lib/components/ManageModelsModal.svelte";
 	import Settings from "$lib/components/Settings.svelte";
-	import RAGTest from "$lib/components/RAGTest.svelte";
+	import KnowledgeBase from "$lib/components/KnowledgeBase.svelte";
 	import ConversationHistory from "$lib/components/ConversationHistory.svelte";
 	import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 	import logo from "$lib/assets/logo.svg";
@@ -489,10 +489,10 @@
 		onclick={(e) => e.target === e.currentTarget && (isRagTestOpen = false)}
 		onkeydown={(e) => e.key === 'Escape' && (isRagTestOpen = false)}
 	>
-		<div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4">
+		<div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4 max-h-[85vh] overflow-y-auto">
 			<div class="flex justify-between items-center mb-4">
 			<h2 id="rag-test-title" class="text-xl font-bold text-gray-900 dark:text-white">
-					Vector DB Test
+					🧠 Base de connaissances / Knowledge base
 				</h2>
 				<button
 					onclick={() => (isRagTestOpen = false)}
@@ -501,7 +501,7 @@
 					✕
 				</button>
 			</div>
-			<RAGTest />
+			<KnowledgeBase />
 		</div>
 	</div>
 {/if}

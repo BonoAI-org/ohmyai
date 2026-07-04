@@ -25,6 +25,14 @@ export class ConversationDB extends Dexie {
 			ragDocuments: 'id, category, createdAt'
 		});
 
+		// Version 3: index `source` (nom de fichier ou 'note') pour lister et
+		// supprimer tous les chunks d'un même document importé.
+		// Version 3: `source` index (file name or 'note') to list and delete
+		// all chunks of a same imported document.
+		this.version(3).stores({
+			ragDocuments: 'id, category, createdAt, source'
+		});
+
 		// Références aux tables / Table references
 		this.conversations = this.table('conversations');
 		this.settings = this.table('settings');
