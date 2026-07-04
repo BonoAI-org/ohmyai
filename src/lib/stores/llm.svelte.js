@@ -5,6 +5,7 @@ import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
 import { mcpStore } from '$lib/stores/mcp.svelte.js';
+import { oramaStore } from '$lib/stores/orama.svelte.js';
 
 
 /**
@@ -897,6 +898,28 @@ class LLMStore {
 				} else {
 					chatMessages.unshift({ role: 'system', content: profileContext });
 				}
+			}
+
+			// Injection de la base de connaissances (RAG) : recherche sémantique
+			// locale, uniquement si l'utilisateur a indexé des documents.
+			// Knowledge base injection (RAG): local semantic search, only if the
+			// user has indexed documents.
+			try {
+				if ((await oramaStore.countDocuments()) > 0) {
+					const hits = await oramaStore.search(userMessage, 4);
+					if (hits.length > 0) {
+						const ragContext = `\n\n[Knowledge Base]\nUser-provided information relevant to the question. Use it when applicable:\n${hits.map((h, i) => `${i + 1}. ${h.content}`).join('\n')}`;
+						if (chatMessages.length > 0 && chatMessages[0].role === 'system') {
+							chatMessages[0].content += ragContext;
+						} else {
+							chatMessages.unshift({ role: 'system', content: ragContext });
+						}
+					}
+				}
+			} catch (ragErr) {
+				// La génération ne doit jamais échouer à cause du RAG
+				// Generation must never fail because of RAG
+				console.warn('RAG search failed:', ragErr);
 			}
 
 			// Détermine si le modèle supporte les outils / Check if model supports tools

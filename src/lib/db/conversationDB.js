@@ -14,10 +14,21 @@ export class ConversationDB extends Dexie {
 			conversations: 'id, title, model, timestamp, lastModified, *tags',
 			settings: 'key'
 		});
-		
+
+		// Version 2: documents de la base de connaissances (RAG).
+		// Chaque entrée stocke le texte ET son embedding pré-calculé, pour
+		// reconstruire l'index vectoriel au démarrage sans ré-embedder.
+		// Version 2: knowledge base documents (RAG). Each entry stores the text
+		// AND its precomputed embedding, so the vector index can be rebuilt on
+		// startup without re-embedding.
+		this.version(2).stores({
+			ragDocuments: 'id, category, createdAt'
+		});
+
 		// Références aux tables / Table references
 		this.conversations = this.table('conversations');
 		this.settings = this.table('settings');
+		this.ragDocuments = this.table('ragDocuments');
 	}
 	
 	/**

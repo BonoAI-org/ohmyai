@@ -1151,15 +1151,14 @@
 							{/if}
 						</div>
 
-						<!-- Bouton RAG Test (Caché pour le moment)
-					<button
-						onclick={() => (isRagTestOpen = !isRagTestOpen)}
-						class="flex items-center justify-center w-10 h-10 bg-slate-200/50 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:active:bg-slate-600 text-slate-900 dark:text-white rounded-lg transition-colors touch-manipulation"
-						title="Test Vector DB"
-					>
-						<span class="text-xl">🧠</span>
-					</button>
-					-->
+						<!-- Base de connaissances (RAG) / Knowledge base (RAG) -->
+						<button
+							onclick={() => (isRagTestOpen = !isRagTestOpen)}
+							class="flex items-center justify-center w-10 h-10 bg-slate-200/50 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:active:bg-slate-600 text-slate-900 dark:text-white rounded-lg transition-colors touch-manipulation"
+							title="Base de connaissances / Knowledge base"
+						>
+							<span class="text-xl">🧠</span>
+						</button>
 					</div>
 				</div>
 			</div>
