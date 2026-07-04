@@ -69,7 +69,7 @@ export const AVAILABLE_MODELS = [
 		engine: 'transformers',
 		dtype: 'q4f16',
 		experimental: true,
-		recommended: false
+		recommended: true
 	},
 	{
 		id: 'Qwen3-4B-q4f16_1-MLC',
@@ -213,7 +213,7 @@ class LLMStore {
 	loadingProgress = $state('');
 
 	// Modèle sélectionné / Selected model
-	selectedModel = $state('Qwen3-0.6B-q4f16_1-MLC');
+	selectedModel = $state('onnx-community/gemma-4-E4B-it-ONNX');
 
 	// Type de moteur actif ('webllm' | 'transformers') / Active engine type
 	engineType = $state('webllm');
