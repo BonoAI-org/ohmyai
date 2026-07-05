@@ -907,7 +907,15 @@ class LLMStore {
 			let ragSources = [];
 			try {
 				if ((await oramaStore.countDocuments()) > 0) {
-					const hits = await oramaStore.search(userMessage, 4);
+					let hits = await oramaStore.search(userMessage, 4);
+					// Écarte les résultats nettement moins pertinents que le meilleur :
+					// en recherche hybride, un score < 50 % du top est du bruit.
+					// Drop results clearly less relevant than the best one: in hybrid
+					// search, a score < 50% of the top is noise.
+					if (hits.length > 1) {
+						const topScore = hits[0].score;
+						hits = hits.filter(h => h.score >= topScore * 0.5);
+					}
 					if (hits.length > 0) {
 						const ragContext = `\n\n[Knowledge Base]\nUser-provided information relevant to the question. Use it when applicable:\n${hits.map((h, i) => `${i + 1}. ${h.content}`).join('\n')}`;
 						if (chatMessages.length > 0 && chatMessages[0].role === 'system') {

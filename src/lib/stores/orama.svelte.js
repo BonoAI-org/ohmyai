@@ -135,12 +135,19 @@ class OramaStore {
 
 	/**
 	 * Indexe une liste de chunks provenant d'un même fichier, avec progression.
+	 * Réimporter un fichier du même nom le REMPLACE (pas de doublons).
 	 * Indexes a list of chunks from a same file, with progress reporting.
+	 * Re-importing a file with the same name REPLACES it (no duplicates).
 	 * @param {string[]} chunks
 	 * @param {string} source - Nom du fichier / File name
 	 */
 	async addChunks(chunks, source) {
 		if (!this._index) await this.init();
+
+		const existing = await db.ragDocuments.where('source').equals(source).count();
+		if (existing > 0) {
+			await this.deleteSource(source);
+		}
 
 		this.isLoading = true;
 		this.ingestProgress = { done: 0, total: chunks.length };
@@ -235,8 +242,14 @@ class OramaStore {
 		this.status = 'Searching...';
 		try {
 			const vector = await embedText(query, 'query');
+			// Recherche hybride : BM25 (mots-clés exacts, noms propres) + vecteurs
+			// (sens). Orama fusionne les deux scores.
+			// Hybrid search: BM25 (exact keywords, proper nouns) + vectors
+			// (meaning). Orama fuses both scores.
 			const results = await search(this._index, {
-				mode: 'vector',
+				mode: 'hybrid',
+				term: query,
+				properties: ['content'],
 				vector: { property: 'embedding', value: vector },
 				similarity,
 				limit,

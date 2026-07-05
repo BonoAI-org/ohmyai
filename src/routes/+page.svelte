@@ -12,6 +12,7 @@
 	import logoDark from "$lib/assets/logo-dark.svg";
 	import { _ } from "svelte-i18n";
 	import { mcpStore } from "$lib/stores/mcp.svelte.js";
+	import { oramaStore } from "$lib/stores/orama.svelte.js";
 	import Image from "svelte-material-icons/Image.svelte";
 	import Send from "svelte-material-icons/Send.svelte";
 
@@ -262,15 +263,14 @@
 	/**
 	 * Sauvegarde un message en mémoire locale / Save a message to local memory
 	 */
-	function handleSaveToMemory(content) {
+	async function handleSaveToMemory(content) {
 		try {
-			const savedNotes = JSON.parse(localStorage.getItem('savedNotes') || '[]');
-			savedNotes.push({
-				id: Date.now(),
-				content: content,
-				timestamp: new Date().toISOString()
-			});
-			localStorage.setItem('savedNotes', JSON.stringify(savedNotes));
+			// Indexe le message dans la base de connaissances : il devient
+			// cherchable et le modèle pourra s'en resservir dans les
+			// prochaines conversations.
+			// Indexes the message into the knowledge base: it becomes
+			// searchable and the model can reuse it in future conversations.
+			await oramaStore.addDocument(content, 'saved-message');
 		} catch (err) {
 			console.error('Error saving note:', err);
 		}
