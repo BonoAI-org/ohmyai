@@ -291,10 +291,15 @@
 			</div>
 		{/if}
 
-		<!-- Sources de la base de connaissances (RAG) / Knowledge base sources (RAG) -->
+		<!-- Contexte fourni au modèle depuis la base de connaissances (RAG).
+		     « Contexte consulté » et non « Sources » : on sait ce qui a été
+		     fourni au modèle, pas ce qu'il a réellement utilisé.
+		     Context provided to the model from the knowledge base (RAG).
+		     "Context consulted", not "Sources": we know what was given to the
+		     model, not what it actually used. -->
 		{#if message.sources && message.sources.length > 0}
 			<div class="mt-3 flex flex-wrap items-center gap-1.5">
-				<span class="text-[11px] text-slate-400 dark:text-slate-500">📚 Sources :</span>
+				<span class="text-[11px] text-slate-400 dark:text-slate-500">📚 Contexte consulté / Context used :</span>
 				{#each message.sources as s}
 					<span
 						class="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700"

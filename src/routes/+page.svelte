@@ -13,6 +13,7 @@
 	import { _ } from "svelte-i18n";
 	import { mcpStore } from "$lib/stores/mcp.svelte.js";
 	import { oramaStore } from "$lib/stores/orama.svelte.js";
+	import { marked } from "marked";
 	import Image from "svelte-material-icons/Image.svelte";
 	import Send from "svelte-material-icons/Send.svelte";
 
@@ -263,6 +264,26 @@
 	/**
 	 * Sauvegarde un message en mémoire locale / Save a message to local memory
 	 */
+	/**
+	 * Convertit un message assistant en texte brut pour l'indexation :
+	 * sans bloc de réflexion ni marquage Markdown, qui polluent la note
+	 * et les embeddings.
+	 * Converts an assistant message to plain text for indexing: without
+	 * thinking block or Markdown markup, which pollute the note and the
+	 * embeddings.
+	 */
+	function toPlainText(content) {
+		const withoutThinking = content
+			.replace(/^<think>[\s\S]*?(<\/think>|$)/, "")
+			.replace(/^\[THINK\][\s\S]*?(\[\/THINK\]|$)/, "")
+			.trim();
+		const html = marked.parse(withoutThinking);
+		return new DOMParser()
+			.parseFromString(html, "text/html")
+			.body.textContent.replace(/\n{3,}/g, "\n\n")
+			.trim();
+	}
+
 	async function handleSaveToMemory(content) {
 		try {
 			// Indexe le message dans la base de connaissances : il devient
@@ -270,7 +291,7 @@
 			// prochaines conversations.
 			// Indexes the message into the knowledge base: it becomes
 			// searchable and the model can reuse it in future conversations.
-			await oramaStore.addDocument(content, 'saved-message');
+			await oramaStore.addDocument(toPlainText(content), 'saved-message');
 		} catch (err) {
 			console.error('Error saving note:', err);
 		}
