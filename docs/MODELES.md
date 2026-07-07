@@ -64,7 +64,7 @@ This document lists the LLM models compatible with WebLLM that you can use in th
 - **Cas d'usage / Use cases**:
   - Discussions générales avec le dernier modèle de Google / General chat with Google's latest model
 - **Notes importantes / Important notes**:
-  - ⚠️ **Texte uniquement** pour l'instant (la vision de Gemma 4 n'est pas encore portée dans le navigateur) / **Text only** for now (Gemma 4 vision is not yet ported to the browser).
+  - ✅ **Texte + images** : l'encodeur vision est chargé via `Gemma4ForConditionalGeneration` ; attachez des images avec le bouton 🖼️ / **Text + images**: the vision encoder is loaded via `Gemma4ForConditionalGeneration`; attach images with the 🖼️ button. (Audio pas encore branché côté UI / Audio not wired in the UI yet.)
   - Seules les variantes **E2B/E4B** ("Efficient") tiennent dans WebGPU ; les gros Gemma 4 (26B A4B, 31B) n'ont **pas de port ONNX navigateur** et demanderaient trop de VRAM / Only the **E2B/E4B** ("Efficient") variants fit in WebGPU; the big Gemma 4 (26B A4B, 31B) have **no browser ONNX port** and would need too much VRAM.
   - **Pourquoi un moteur différent ?** WebLLM/MLC ne supporte pas encore l'architecture `gemma4`. On utilise donc Transformers.js pour ce modèle, tout en gardant WebLLM pour tous les autres / **Why a different engine?** WebLLM/MLC does not yet support the `gemma4` architecture, so we use Transformers.js for this model while keeping WebLLM for all others.
   - Les fichiers sont mis en cache via la **Cache API** du navigateur (et non le cache WebLLM/OPFS) / Files are cached via the browser **Cache API** (not the WebLLM/OPFS cache).
@@ -77,7 +77,7 @@ This document lists the LLM models compatible with WebLLM that you can use in th
 - **Cas d'usage / Use cases**:
   - Meilleure qualité que E2B pour les machines avec assez de mémoire / Better quality than E2B for machines with enough memory
 - **Notes importantes / Important notes**:
-  - Mêmes limitations que E2B (texte uniquement, Cache API, Transformers.js) / Same limitations as E2B (text only, Cache API, Transformers.js).
+  - Mêmes capacités que E2B (texte + images, Cache API, Transformers.js) / Same capabilities as E2B (text + images, Cache API, Transformers.js).
   - ⚠️ Avant le téléchargement, l'app **vérifie le matériel** (RAM rapportée par le navigateur + limites de l'adaptateur WebGPU) et avertit si la machine semble trop limitée / Before download, the app **checks the hardware** (browser-reported RAM + WebGPU adapter limits) and warns if the machine seems too limited.
 
 ## 🔄 Comment Changer de Modèle / How to Change Model

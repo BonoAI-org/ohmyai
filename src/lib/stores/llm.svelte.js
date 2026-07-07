@@ -49,11 +49,12 @@ export const AVAILABLE_MODELS = [
 		// We run it via Transformers.js (ONNX Runtime Web) on WebGPU.
 		id: 'onnx-community/gemma-4-e2b-it-ONNX',
 		name: 'Gemma 4 (E2B) — WebGPU',
-		size: '~2.4 GB',
-		vram: '~4 GB',
-		description: 'Google Gemma 4 (variante E2B, texte) via Transformers.js. Expérimental.',
+		size: '~3.2 GB',
+		vram: '~5 GB',
+		description: 'Google Gemma 4 (variante E2B, texte + images) via Transformers.js. Expérimental.',
 		engine: 'transformers',
 		dtype: 'q4',
+		multimodal: true,
 		experimental: true,
 		recommended: true
 	},
@@ -64,11 +65,12 @@ export const AVAILABLE_MODELS = [
 		// Gemma 4 26B/31B have no browser ONNX port — see docs/MODELES.md.
 		id: 'onnx-community/gemma-4-E4B-it-ONNX',
 		name: 'Gemma 4 (E4B) — WebGPU',
-		size: '~5 GB',
+		size: '~5.5 GB',
 		vram: '~8 GB',
-		description: 'Google Gemma 4 (variante E4B, texte) via Transformers.js. Meilleure qualité que E2B. Expérimental.',
+		description: 'Google Gemma 4 (variante E4B, texte + images) via Transformers.js. Meilleure qualité que E2B. Expérimental.',
 		engine: 'transformers',
 		dtype: 'q4f16',
+		multimodal: true,
 		experimental: true,
 		recommended: false
 	},
@@ -792,6 +794,7 @@ class LLMStore {
 			this.engine = await TransformersEngine.create(this.selectedModel, {
 				dtype: modelConfig?.dtype || 'q4',
 				device: 'webgpu',
+				multimodal: !!modelConfig?.multimodal,
 				progressCallback: (progress) => {
 					this.loadingProgress = progress.text;
 				}
