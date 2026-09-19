@@ -6,158 +6,32 @@ import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
 import { mcpStore } from '$lib/stores/mcp.svelte.js';
 import { oramaStore } from '$lib/stores/orama.svelte.js';
-
+import { AVAILABLE_MODELS, findModel } from '$lib/llm/models.js';
+import { readLocal, writeLocal, removeLocal } from '$lib/llm/storage.js';
 
 /**
- * Liste des modèles disponibles avec leurs caractéristiques
- * List of available models with their characteristics
+ * Clés de persistance dans le localStorage. Regroupées ici pour qu'une
+ * relecture suffise à voir tout ce que l'application conserve côté client.
+ * localStorage persistence keys. Grouped here so a single read shows
+ * everything the app keeps on the client side.
  */
-export const AVAILABLE_MODELS = [
-	{
-		// Gemma 4 n'est PAS supporté par WebLLM/MLC (architecture "gemma4" inconnue).
-		// On le fait tourner via Transformers.js (ONNX Runtime Web) sur WebGPU.
-		// Gemma 4 is NOT supported by WebLLM/MLC (unknown "gemma4" architecture).
-		// We run it via Transformers.js (ONNX Runtime Web) on WebGPU.
-		id: 'onnx-community/gemma-4-e2b-it-ONNX',
-		name: 'Gemma 4 (E2B) — WebGPU',
-		size: '~3.2 GB',
-		vram: '~5 GB',
-		description: 'Google Gemma 4 (variante E2B, texte + images) via Transformers.js. Expérimental.',
-		engine: 'transformers',
-		dtype: 'q4',
-		multimodal: true,
-		experimental: true,
-		recommended: true
-	},
-	{
-		// Variante E4B : plus grosse et meilleure que E2B, même architecture.
-		// Les Gemma 4 26B/31B n'ont pas de port ONNX navigateur — voir docs/MODELES.md.
-		// E4B variant: bigger and better than E2B, same architecture.
-		// Gemma 4 26B/31B have no browser ONNX port — see docs/MODELES.md.
-		id: 'onnx-community/gemma-4-E4B-it-ONNX',
-		name: 'Gemma 4 (E4B) — WebGPU',
-		size: '~5.5 GB',
-		vram: '~8 GB',
-		description: 'Google Gemma 4 (variante E4B, texte + images) via Transformers.js. Meilleure qualité que E2B. Expérimental.',
-		engine: 'transformers',
-		dtype: 'q4f16',
-		multimodal: true,
-		experimental: true,
-		recommended: false
-	},
-	{
-		id: 'Qwen3-4B-q4f16_1-MLC',
-		name: 'Qwen 3 (4B) - Reasoning',
-		size: '~2.4 GB',
-		description: 'Raisonnement avancé avec mode thinking intégré.',
-		recommended: true,
-		supportsThinking: true
-	},
-	{
-		id: 'Qwen3-8B-q4f16_1-MLC',
-		name: 'Qwen 3 (8B) - Reasoning',
-		size: '~4.5 GB',
-		description: 'Meilleur raisonnement, nécessite ~8 GB de RAM.',
-		recommended: false,
-		supportsThinking: true
-	},
-	{
-		id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
-		name: 'Phi-3 Mini (4k Instruct)',
-		size: '~2.2 GB',
-		description: 'Excellent pour le code / Excellent for code',
-		recommended: false
-	},
-	{
-		id: 'Qwen3-0.6B-q4f16_1-MLC',
-		name: 'Qwen 3 (0.6B) - Quantisé',
-		size: '~400 MB',
-		description: 'Incroyablement léger. Idéal pour être le modèle par défaut ultra-rapide.',
-		recommended: true,
-		supportsThinking: true
-	},
-	{
-		id: 'Qwen3-0.6B-q0f16-MLC',
-		name: 'Qwen 3 (0.6B) - Non Quantisé',
-		size: '~2.4 GB',
-		description: 'Modèle pur non compressé (plus lourd en RAM).',
-		recommended: false,
-		supportsThinking: true
-	},
-	{
-		id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-		name: 'Llama 3.2 (1B)',
-		size: '~800 MB',
-		description: 'Ultra-léger et rapide. Parfait pour les petites configurations.',
-		recommended: true
-	},
-	{
-		id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
-		name: 'Qwen 2.5 (1.5B)',
-		size: '~1 GB',
-		description: 'Très performant pour sa taille (code, logique).',
-		recommended: true
-	},
-	{
-		id: 'Llama-3-8B-Instruct-q4f16_1-MLC',
-		name: 'Llama 3 (8B)',
-		vram: '5.2 GB',
-		size: '4.4 GB',
-		description: 'Modèle Llama populaire et équilibré.',
-		recommended: false
-	},
-	{
-		id: 'gemma-2-9b-it-q4f16_1-MLC',
-		name: 'Gemma 2 (9B)',
-		vram: '6.1 GB',
-		size: '5.5 GB',
-		description: 'Modèle de Google, nouvelle génération.'
-	},
-	{
-		id: 'Mistral-7B-Instruct-v0.3-q4f16_1-MLC',
-		name: 'Mistral 7B Instruct v0.3',
-		size: '~3.8 GB',
-		description: 'Modèle populaire et performant / Popular and powerful model',
-		recommended: false
-	},
-	{
-		id: 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC',
-		name: 'Hermes 2 Pro Llama 3 (8B)',
-		size: '~4.3 GB',
-		description: 'Supporte les appels d\'outils (function calling) via MCP.',
-		recommended: false,
-		supportsTools: true
-	},
-	{
-		id: 'Hermes-3-Llama-3.1-8B-q4f16_1-MLC',
-		name: 'Hermes 3 Llama 3.1 (8B)',
-		size: '~4.5 GB',
-		description: 'Dernier Hermes avec support outils amélioré.',
-		recommended: false,
-		supportsTools: true
-	},
-	{
-		id: 'Ministral-3-3B-Instruct-2512-BF16-q4f16_1-MLC',
-		name: 'Ministral 3 (3B) - Instruct',
-		size: '~1.8 GB',
-		description: 'Modèle Mistral léger, optimisé pour suivre les instructions.',
-		recommended: false
-	},
-	{
-		id: 'Ministral-3-3B-Base-2512-q4f16_1-MLC',
-		name: 'Ministral 3 (3B) - Base',
-		size: '~1.8 GB',
-		description: 'Modèle Mistral de base, flexible et polyvalent.',
-		recommended: false
-	},
-	{
-		id: 'Ministral-3-3B-Reasoning-2512-q4f16_1-MLC',
-		name: 'Ministral 3 (3B) - Reasoning',
-		size: '~1.8 GB',
-		description: 'Modèle Mistral spécialisé en raisonnement logique.',
-		recommended: false
-	},
-];
+const KEYS = {
+	selectedModel: 'selectedModel',
+	systemPrompt: 'systemPrompt',
+	userProfile: 'userProfile',
+	generationParams: 'generationParams',
+	thinkingEnabled: 'thinkingEnabled',
+	huggingFaceToken: 'huggingFaceToken',
+	customModels: 'customModels',
+	currentConversationId: 'currentConversationId'
+};
+
+
+// Réexporté pour que les composants continuent d'importer le catalogue
+// depuis le store, comme avant l'extraction.
+// Re-exported so components keep importing the catalog from the store,
+// as they did before the extraction.
+export { AVAILABLE_MODELS } from '$lib/llm/models.js';
 
 /**
  * Store Svelte pour gérer l'état du LLM et les interactions
@@ -326,10 +200,7 @@ class LLMStore {
 	 */
 	isSelectedModelMultimodal() {
 		try {
-			const standard = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
-			if (standard) return !!standard.multimodal;
-			const custom = this.customModels.find(m => m.id === this.selectedModel);
-			return !!(custom && custom.multimodal);
+			return !!findModel(this.selectedModel, this.customModels)?.multimodal;
 		} catch (_) {
 			return false;
 		}
@@ -342,9 +213,7 @@ class LLMStore {
 	 */
 	isSelectedModelToolCapable() {
 		try {
-			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
-			const model = allModels.find(m => m.id === this.selectedModel);
-			return !!(model && model.supportsTools);
+			return !!findModel(this.selectedModel, this.customModels)?.supportsTools;
 		} catch (_) {
 			return false;
 		}
@@ -355,11 +224,7 @@ class LLMStore {
 	 * Save currently selected model to localStorage
 	 */
 	saveSelectedModel() {
-		try {
-			localStorage.setItem('selectedModel', this.selectedModel);
-		} catch (err) {
-			console.error('Erreur sauvegarde selectedModel / Error saving selectedModel:', err);
-		}
+		writeLocal(KEYS.selectedModel, this.selectedModel);
 	}
 
 	/**
@@ -368,7 +233,7 @@ class LLMStore {
 	 */
 	loadSelectedModel() {
 		try {
-			let saved = localStorage.getItem('selectedModel');
+			let saved = readLocal(KEYS.selectedModel);
 
 			const allModels = [...AVAILABLE_MODELS, ...this.customModels];
 			const modelExists = allModels.some(m => m.id === saved);
@@ -426,13 +291,9 @@ class LLMStore {
 	 * Load System Prompt (AI Rules) from localStorage
 	 */
 	loadSystemPrompt() {
-		try {
-			const saved = localStorage.getItem('systemPrompt');
-			if (saved) {
-				this.systemPrompt = saved;
-			}
-		} catch (err) {
-			console.error('Erreur chargement system prompt:', err);
+		const saved = readLocal(KEYS.systemPrompt);
+		if (saved) {
+			this.systemPrompt = saved;
 		}
 	}
 
@@ -441,13 +302,9 @@ class LLMStore {
 	 * Load user profile from localStorage
 	 */
 	loadUserProfile() {
-		try {
-			const saved = localStorage.getItem('userProfile');
-			if (saved) {
-				this.userProfile = JSON.parse(saved);
-			}
-		} catch (err) {
-			console.error('Error loading user profile:', err);
+		const saved = readLocal(KEYS.userProfile, { json: true });
+		if (saved) {
+			this.userProfile = saved;
 		}
 	}
 
@@ -458,11 +315,7 @@ class LLMStore {
 	 */
 	updateUserProfile(profile) {
 		this.userProfile = { ...profile };
-		try {
-			localStorage.setItem('userProfile', JSON.stringify(this.userProfile));
-		} catch (err) {
-			console.error('Error saving user profile:', err);
-		}
+		writeLocal(KEYS.userProfile, this.userProfile, { json: true });
 	}
 
 	/**
@@ -470,13 +323,9 @@ class LLMStore {
 	 * Load generation parameters from localStorage
 	 */
 	loadGenerationParams() {
-		try {
-			const saved = localStorage.getItem('generationParams');
-			if (saved) {
-				this.generationParams = { ...this.generationParams, ...JSON.parse(saved) };
-			}
-		} catch (err) {
-			console.error('Error loading generation params:', err);
+		const saved = readLocal(KEYS.generationParams, { json: true });
+		if (saved) {
+			this.generationParams = { ...this.generationParams, ...saved };
 		}
 	}
 
@@ -486,24 +335,16 @@ class LLMStore {
 	 */
 	updateGenerationParams(params) {
 		this.generationParams = { ...this.generationParams, ...params };
-		try {
-			localStorage.setItem('generationParams', JSON.stringify(this.generationParams));
-		} catch (err) {
-			console.error('Error saving generation params:', err);
-		}
+		writeLocal(KEYS.generationParams, this.generationParams, { json: true });
 	}
 
 	/**
 	 * Charge l'état du thinking depuis localStorage
 	 */
 	loadThinkingEnabled() {
-		try {
-			const saved = localStorage.getItem('thinkingEnabled');
-			if (saved !== null) {
-				this.thinkingEnabled = JSON.parse(saved);
-			}
-		} catch (err) {
-			console.error('Error loading thinking state:', err);
+		const saved = readLocal(KEYS.thinkingEnabled, { json: true });
+		if (saved !== null) {
+			this.thinkingEnabled = saved;
 		}
 	}
 
@@ -512,11 +353,7 @@ class LLMStore {
 	 */
 	toggleThinking() {
 		this.thinkingEnabled = !this.thinkingEnabled;
-		try {
-			localStorage.setItem('thinkingEnabled', JSON.stringify(this.thinkingEnabled));
-		} catch (err) {
-			console.error('Error saving thinking state:', err);
-		}
+		writeLocal(KEYS.thinkingEnabled, this.thinkingEnabled, { json: true });
 	}
 
 	/**
@@ -525,11 +362,7 @@ class LLMStore {
 	 */
 	updateSystemPrompt(newPrompt) {
 		this.systemPrompt = newPrompt;
-		try {
-			localStorage.setItem('systemPrompt', newPrompt);
-		} catch (err) {
-			console.error('Erreur sauvegarde system prompt:', err);
-		}
+		writeLocal(KEYS.systemPrompt, newPrompt);
 	}
 
 	/**
@@ -1136,7 +969,7 @@ class LLMStore {
 
 		this.messages = [];
 		this.currentConversationId = null;
-		try { localStorage.removeItem('currentConversationId'); } catch (e) { }
+		removeLocal(KEYS.currentConversationId);
 	}
 
 	/**
@@ -1203,7 +1036,7 @@ class LLMStore {
 	 */
 	saveCustomModels() {
 		try {
-			localStorage.setItem('customModels', JSON.stringify(this.customModels));
+			writeLocal(KEYS.customModels, this.customModels, { json: true });
 		} catch (err) {
 			console.error('Erreur lors de la sauvegarde / Error saving:', err);
 		}
@@ -1215,7 +1048,7 @@ class LLMStore {
 	 */
 	loadCustomModels() {
 		try {
-			const saved = localStorage.getItem('customModels');
+			const saved = readLocal(KEYS.customModels);
 			if (saved) {
 				this.customModels = JSON.parse(saved);
 			}
@@ -1291,7 +1124,7 @@ class LLMStore {
 		console.log('Setting HF token:', token ? 'Token provided' : 'No token');
 		this.huggingFaceToken = token;
 		try {
-			localStorage.setItem('huggingFaceToken', token);
+			writeLocal(KEYS.huggingFaceToken, token);
 		} catch (err) {
 			console.error('Erreur sauvegarde huggingFaceToken / Error saving huggingFaceToken:', err);
 		}
@@ -1303,7 +1136,7 @@ class LLMStore {
 	 */
 	loadHuggingFaceToken() {
 		try {
-			const saved = localStorage.getItem('huggingFaceToken');
+			const saved = readLocal(KEYS.huggingFaceToken);
 			console.log('Loading HF token from storage:', saved ? 'Found' : 'Not found');
 			if (saved && typeof saved === 'string' && saved.length > 0) {
 				this.huggingFaceToken = saved;
@@ -1342,7 +1175,7 @@ class LLMStore {
 		await db.saveConversation(conversation);
 
 		this.currentConversationId = conversationId;
-		try { localStorage.setItem('currentConversationId', conversationId); } catch (e) { }
+		writeLocal(KEYS.currentConversationId, conversationId);
 
 		// Recharge l'historique / Reload history
 		await this.loadConversationHistory();
@@ -1381,7 +1214,7 @@ class LLMStore {
 		if (conversation) {
 			this.messages = [...conversation.messages];
 			this.currentConversationId = conversationId;
-			try { localStorage.setItem('currentConversationId', conversationId); } catch (e) { }
+			writeLocal(KEYS.currentConversationId, conversationId);
 
 			// Restaure le modèle utilisé dans la conversation / Restore the model used in the conversation
 			if (conversation.model && conversation.model !== this.selectedModel) {
@@ -1412,7 +1245,7 @@ class LLMStore {
 		this.messages = [];
 		this.currentConversationId = null;
 		this.error = null;
-		try { localStorage.removeItem('currentConversationId'); } catch (e) { }
+		removeLocal(KEYS.currentConversationId);
 	}
 
 	/**
@@ -1428,7 +1261,7 @@ class LLMStore {
 		if (this.currentConversationId === conversationId) {
 			this.messages = [];
 			this.currentConversationId = null;
-			try { localStorage.removeItem('currentConversationId'); } catch (e) { }
+			removeLocal(KEYS.currentConversationId);
 		}
 
 		// Recharge l'historique / Reload history
@@ -1486,7 +1319,7 @@ class LLMStore {
 			// Restaure la conversation active si aucune n'est chargée / Restore active conversation if none loaded
 			if (this.messages.length === 0) {
 				try {
-					const activeId = localStorage.getItem('currentConversationId');
+					const activeId = readLocal(KEYS.currentConversationId);
 					if (activeId && this.conversationHistory.some(c => c.id === activeId)) {
 						await this.loadConversation(activeId);
 					}
