@@ -75,15 +75,33 @@ export default defineConfig({
 			define: {
 				__PWA_VERSION__: JSON.stringify(process.env.npm_package_version)
 			},
+			// Seule la clé `injectManifest` compte ici : sous
+			// `strategies: 'injectManifest'`, la clé `workbox` est entièrement
+			// ignorée par le plugin. Elle existait et ne faisait rien.
+			// Only the `injectManifest` key matters here: under
+			// `strategies: 'injectManifest'`, the `workbox` key is ignored
+			// outright by the plugin. It used to exist and do nothing.
 			injectManifest: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+				// `mjs` est nécessaire : le worker de pdfjs est émis en .mjs et
+				// n'était donc jamais précaché.
+				// `mjs` is required: the pdfjs worker is emitted as .mjs and was
+				// therefore never precached.
+				globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,webp,woff,woff2}'],
+				// Les poids des modèles ne passent jamais par le précache : ils
+				// sont volumineux et gérés par WebLLM (OPFS / Cache API).
+				// Model weights never go through the precache: they are large and
+				// managed by WebLLM itself (OPFS / Cache API).
+				globIgnores: ['**/*.wasm', '**/*.bin'],
+				// Garde-fou explicite. @mlc-ai/web-llm (~6 Mo) reste volontairement
+				// hors précache : le charger à l'installation pénaliserait la
+				// première visite, alors que le service worker le sert ensuite en
+				// StaleWhileRevalidate.
+				// Explicit guard rail. @mlc-ai/web-llm (~6 MB) is deliberately kept
+				// out of the precache: fetching it at install time would penalize
+				// the first visit, while the service worker then serves it with
+				// StaleWhileRevalidate.
+				maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
 				injectionPoint: 'self.__WB_MANIFEST'
-			},
-			workbox: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
-				// Ne pas mettre en cache les fichiers WASM (trop gros)
-				// Don't cache WASM files (too large)
-				globIgnores: ['**/*.wasm', '**/*.bin']
 			},
 			devOptions: {
 				// Désactivé en dev : le SW sert des modules Vite périmés après un
@@ -120,19 +138,14 @@ export default defineConfig({
 		}
 	},
 
-	// Optimisations pour les gros fichiers WASM
-	// Optimizations for large WASM files
 	build: {
-		target: 'esnext',
-		rollupOptions: {
-			output: {
-				manualChunks: undefined,
-			},
-		},
+		target: 'esnext'
 	},
 
-	// Augmente la limite de taille pour les warnings
-	// Increase size limit for warnings
+	// web-llm est chargé dynamiquement (src/lib/engines/webllm.js) ; l'exclure
+	// du pré-bundling évite un rechargement coûteux du serveur de dev.
+	// web-llm is loaded dynamically (src/lib/engines/webllm.js); excluding it
+	// from pre-bundling avoids an expensive dev-server reload.
 	optimizeDeps: {
 		exclude: ['@mlc-ai/web-llm']
 	}

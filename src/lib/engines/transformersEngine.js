@@ -14,11 +14,17 @@
  * bloat the main bundle for users who only use WebLLM.
  */
 
-// Nom du cache navigateur (Cache API) utilisé par Transformers.js pour stocker
-// les fichiers de modèle ONNX. Sert à détecter si un modèle est déjà téléchargé.
-// Browser Cache API name used by Transformers.js to store ONNX model files.
-// Used to detect whether a model is already downloaded.
-export const TRANSFORMERS_CACHE_NAME = 'transformers-cache';
+// Les helpers de cache vivent dans un module sans dépendance à la librairie,
+// pour que le store puisse les importer sans annuler le découpage dynamique.
+// Réexportés ici pour les appelants historiques.
+// The cache helpers live in a module with no dependency on the library, so the
+// store can import them without defeating the dynamic split. Re-exported here
+// for historical callers.
+export {
+	TRANSFORMERS_CACHE_NAME,
+	isTransformersModelCached,
+	clearTransformersCache
+} from './transformersCache.js';
 
 // Référence mémoïsée vers la librairie chargée dynamiquement.
 // Memoized reference to the lazily loaded library.
@@ -34,37 +40,6 @@ async function loadLibrary() {
 		_lib = await import('@huggingface/transformers');
 	}
 	return _lib;
-}
-
-/**
- * Vérifie si un modèle Transformers.js est déjà présent dans le cache navigateur.
- * Checks whether a Transformers.js model is already in the browser cache.
- * @param {string} modelId - Ex : "onnx-community/gemma-4-e2b-it-ONNX".
- * @returns {Promise<boolean>}
- */
-export async function isTransformersModelCached(modelId) {
-	try {
-		if (typeof caches === 'undefined') return false;
-		const cache = await caches.open(TRANSFORMERS_CACHE_NAME);
-		const requests = await cache.keys();
-		return requests.some((req) => req.url.includes(modelId));
-	} catch (e) {
-		return false;
-	}
-}
-
-/**
- * Supprime tous les fichiers de modèles Transformers.js du cache navigateur.
- * Deletes all Transformers.js model files from the browser cache.
- * @returns {Promise<void>}
- */
-export async function clearTransformersCache() {
-	try {
-		if (typeof caches === 'undefined') return;
-		await caches.delete(TRANSFORMERS_CACHE_NAME);
-	} catch (e) {
-		console.warn('Impossible de vider le cache Transformers.js:', e);
-	}
 }
 
 /**

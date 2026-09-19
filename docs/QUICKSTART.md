@@ -24,9 +24,9 @@ bun run dev
 
 ### Étape 3 : Ouvrir dans le navigateur / Step 3: Open in browser
 
-Ouvrez votre navigateur à : `http://localhost:5173`
+Ouvrez votre navigateur à : `http://localhost:4242`
 
-Open your browser at: `http://localhost:5173`
+Open your browser at: `http://localhost:4242`
 
 ⏱️ Premier chargement du modèle / First model load: ~2-5 minutes (téléchargement + initialisation)
 
@@ -79,12 +79,12 @@ The assistant should respond within seconds with text appearing progressively (s
 
 ### ❌ Le serveur ne démarre pas / Server won't start
 
-**Problème / Issue**: `Port 5173 already in use`
+**Problème / Issue**: `Port 4242 already in use`
 
 **Solution**:
 ```bash
 # Arrêtez le processus existant / Stop existing process
-lsof -ti:5173 | xargs kill -9
+lsof -ti:4242 | xargs kill -9
 
 # Ou utilisez un autre port / Or use another port
 bun run dev -- --port 3000
@@ -221,7 +221,7 @@ bun run dev -- --host
 2. Notez l'adresse réseau affichée / Note the network address displayed:
 
 ```
-Network: http://192.168.1.100:5173/
+Network: http://192.168.1.100:4242/
 ```
 
 3. Ouvrez cette URL sur votre téléphone (même réseau WiFi)
