@@ -10,6 +10,7 @@ import { AVAILABLE_MODELS, findModel } from '$lib/llm/models.js';
 import { readLocal, writeLocal, removeLocal } from '$lib/llm/storage.js';
 import { buildChatContext } from '$lib/llm/chatContext.js';
 import { createStreamBatcher } from '$lib/llm/streamBatcher.js';
+import { runToolLoop } from '$lib/llm/toolLoop.js';
 
 /**
  * Clés de persistance dans le localStorage. Regroupées ici pour qu'une
@@ -690,8 +691,6 @@ class LLMStore {
 						: msg
 				);
 			});
-			const flushContent = () => batcher.flush();
-			const pushDelta = (delta) => batcher.push(delta);
 
 			if (this.engineType === 'transformers') {
 				// --- Génération via Transformers.js / Generation via Transformers.js ---
@@ -700,141 +699,75 @@ class LLMStore {
 					max_new_tokens: this.generationParams.maxTokens,
 					onToken: (delta) => {
 						if (this._abortController?.signal.aborted) return;
-						pushDelta(delta);
+						batcher.push(delta);
 					}
 				});
 			} else {
-				// --- Génération WebLLM avec boucle de tool-calling (max 5 rounds) ---
-				// --- WebLLM generation with tool-calling loop (max 5 rounds) ---
-				let continueLoop = true;
-				let maxToolRounds = 5;
-
-				while (continueLoop && maxToolRounds > 0) {
-					if (this._abortController?.signal.aborted) break;
-
-					const completionParams = {
-						messages: chatMessages,
+				// --- Génération WebLLM, avec allers-retours d'appels d'outils ---
+				// --- WebLLM generation, with tool-calling round-trips ---
+				await runToolLoop(this.engine, chatMessages, {
+					params: {
 						temperature: this.generationParams.temperature,
 						max_tokens: this.generationParams.maxTokens,
 						frequency_penalty: this.generationParams.frequencyPenalty,
-						presence_penalty: this.generationParams.presencePenalty,
-						stream: true,
-					};
-
-					if (toolsParam && toolsParam.length > 0) {
-						completionParams.tools = toolsParam;
-						completionParams.tool_choice = 'auto';
-					}
-
-					const asyncChunkGenerator = await this.engine.chat.completions.create(completionParams);
-
-					let assistantContent = '';
-					let toolCalls = [];
-					let lastFinishReason = null;
-
-					// Traite chaque chunk de la réponse / Process each response chunk
-					for await (const chunk of asyncChunkGenerator) {
-						if (this._abortController?.signal.aborted) break;
-
-						const choice = chunk.choices[0];
-						if (!choice) continue;
-
-						lastFinishReason = choice.finish_reason || lastFinishReason;
-						const delta = choice.delta;
-
-						if (delta?.content) {
-							assistantContent += delta.content;
-							pushDelta(delta.content);
-						}
-
-						// Accumule les tool calls depuis les deltas / Accumulate tool calls from deltas
-						if (delta?.tool_calls) {
-							for (const tc of delta.tool_calls) {
-								const idx = tc.index ?? 0;
-								if (!toolCalls[idx]) {
-									toolCalls[idx] = { id: tc.id || `call_${idx}`, function: { name: '', arguments: '' } };
-								}
-								if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
-								if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
-							}
-						}
-					}
-
-					// Si le LLM a demandé des tool calls (et pas tronqué par max_tokens)
-					// If LLM requested tool calls (and not truncated by max_tokens)
-					if (lastFinishReason === 'tool_calls' && toolCalls.length > 0) {
-						// Le message assistant est réécrit en entier ci-dessous : on jette le batch en attente
-						// The assistant message is fully rewritten below: discard the pending batch
+						presence_penalty: this.generationParams.presencePenalty
+					},
+					tools: toolsParam,
+					signal: this._abortController?.signal,
+					callTool: async (name, args) => {
+						const serverId = mcpStore.getServerIdForTool(name);
+						if (!serverId) throw new Error(`No server found for tool: ${name}`);
+						return mcpStore.callTool(serverId, name, args);
+					},
+					onDelta: (delta) => batcher.push(delta),
+					onToolCalls: (assistantContent, toolCalls) => {
+						// Le message assistant est réécrit en entier : on jette le
+						// texte partiel encore en attente de poussée.
+						// The assistant message is fully rewritten: drop the partial
+						// text still waiting to be pushed.
 						batcher.discard();
-
-						// Ajoute le message assistant avec tool_calls au contexte
-						chatMessages.push({
-							role: 'assistant',
-							content: assistantContent || null,
-							tool_calls: toolCalls.map((tc, i) => ({
-								id: tc.id || `call_${i}`,
-								type: 'function',
-								function: { name: tc.function.name, arguments: tc.function.arguments }
-							}))
-						});
-
-						// Met à jour l'UI avec les tool calls en cours
 						this.messages = this.messages.map((msg, idx) =>
 							idx === assistantMessageIndex
-								? { ...msg, content: assistantContent, toolCalls: toolCalls.map(tc => ({ name: tc.function.name, arguments: tc.function.arguments, status: 'pending' })) }
+								? {
+									...msg,
+									content: assistantContent,
+									toolCalls: toolCalls.map(tc => ({
+										name: tc.function.name,
+										arguments: tc.function.arguments,
+										status: 'pending'
+									}))
+								}
 								: msg
 						);
-
-						// Exécute chaque tool call / Execute each tool call
-						for (let i = 0; i < toolCalls.length; i++) {
-							const tc = toolCalls[i];
-							let result;
-							let hasError = false;
-
-							try {
-								const args = JSON.parse(tc.function.arguments || '{}');
-								const serverId = mcpStore.getServerIdForTool(tc.function.name);
-								if (!serverId) throw new Error(`No server found for tool: ${tc.function.name}`);
-								result = await mcpStore.callTool(serverId, tc.function.name, args);
-							} catch (err) {
-								result = { error: err.message };
-								hasError = true;
+					},
+					onToolResult: (i, { resultStr, hasError }) => {
+						this.messages = this.messages.map((msg, idx) => {
+							if (idx === assistantMessageIndex && msg.toolCalls) {
+								const updatedCalls = [...msg.toolCalls];
+								updatedCalls[i] = {
+									...updatedCalls[i],
+									status: hasError ? 'error' : 'done',
+									result: resultStr
+								};
+								return { ...msg, toolCalls: updatedCalls };
 							}
-
-							const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
-
-							// Ajoute le résultat au contexte / Add result to context
-							chatMessages.push({
-								role: 'tool',
-								tool_call_id: tc.id || `call_${i}`,
-								content: resultStr
-							});
-
-							// Met à jour le statut du tool call dans l'UI
-							this.messages = this.messages.map((msg, idx) => {
-								if (idx === assistantMessageIndex && msg.toolCalls) {
-									const updatedCalls = [...msg.toolCalls];
-									updatedCalls[i] = { ...updatedCalls[i], status: hasError ? 'error' : 'done', result: resultStr };
-									return { ...msg, toolCalls: updatedCalls };
-								}
-								return msg;
-							});
-						}
-
-						// Ajoute un nouveau message assistant vide pour la suite
+							return msg;
+						});
+					},
+					onRoundEnd: () => {
+						// Nouveau message assistant vide : le modèle va commenter
+						// les résultats des outils au tour suivant.
+						// New empty assistant message: the model will comment on the
+						// tool results in the next round.
 						assistantMessageIndex = this.messages.length;
 						this.messages = [...this.messages, { role: 'assistant', content: '' }];
-
-						maxToolRounds--;
-						// La boucle continue pour que le LLM traite les résultats
-					} else {
-						continueLoop = false;
 					}
-				}
+				});
 			}
 
-			// Flush any remaining content after streaming ends
-			flushContent();
+			// Pousse ce qui reste en attente une fois le flux terminé.
+			// Push whatever remains pending once the stream is over.
+			batcher.flush();
 		} catch (err) {
 			if (err.name !== 'AbortError') {
 				this.error = err.message;
