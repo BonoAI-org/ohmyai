@@ -31,7 +31,8 @@
 		"clear": "Clear conversation",
 		"clearConversation": "🗑️ Clear conversation",
 		"generating": "Generating...",
-		"scrollToBottom": "Scroll to bottom"
+		"scrollToBottom": "Scroll to bottom",
+		"contextUsed": "Context:"
 	},
 	"loading": {
 		"loadingModel": "Loading model...",

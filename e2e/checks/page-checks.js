@@ -23,6 +23,14 @@ async () => {
 	};
 	const q = (s) => document.querySelector(s);
 	const qa = (s) => [...document.querySelectorAll(s)];
+	// Nom accessible : le libellé visible est masqué à certaines largeurs et
+	// change de langue, donc on interroge aussi aria-label et title.
+	// Accessible name: the visible label is hidden at some widths and changes
+	// language, so aria-label and title are consulted too.
+	const nom = (el) =>
+		[el.innerText, el.getAttribute('aria-label'), el.getAttribute('title')]
+			.filter(Boolean)
+			.join(' ');
 	const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 	const visible = (el) => !!el && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
 
@@ -37,7 +45,7 @@ async () => {
 	check('zone de saisie présente', visible(q('textarea')));
 	check(
 		'bouton nouvelle conversation présent',
-		qa('header button').some((b) => /New|Nouveau/i.test(b.innerText))
+		qa('header button').some((b) => /New|Nouvelle/i.test(nom(b)))
 	);
 
 	// --- Sélecteur de modèle ---
@@ -74,19 +82,14 @@ async () => {
 		native.call(textarea, '');
 		textarea.dispatchEvent(new Event('input', { bubbles: true }));
 	}
-	check(
-		'bouton d\'envoi présent',
-		qa('button[aria-label]').some((b) => /send|envoy/i.test(b.getAttribute('aria-label')))
-	);
+	check('bouton d\'envoi présent', qa('button[aria-label]').some((b) => /send|envoy/i.test(nom(b))));
 	check(
 		'message d\'accueil affiché quand la conversation est vide',
 		/Start a conversation|Démarrez une conversation|WebAssembly/.test(body)
 	);
 
 	// --- Panneau historique ---
-	const historyBtn = qa('header button').find((b) =>
-		/histori|history/i.test(b.innerText + b.title + (b.ariaLabel ?? ''))
-	);
+	const historyBtn = qa('header button').find((b) => /histori|history/i.test(nom(b)));
 	check('bouton historique présent', !!historyBtn);
 	if (historyBtn) {
 		historyBtn.click();
@@ -101,9 +104,7 @@ async () => {
 	}
 
 	// --- Modale des paramètres ---
-	const settingsBtn = qa('header button').find((b) =>
-		/ettings|aramètre/i.test((b.getAttribute('aria-label') ?? '') + (b.title ?? ''))
-	);
+	const settingsBtn = qa('header button').find((b) => /ettings|aramètre/i.test(nom(b)));
 	check('bouton paramètres présent', !!settingsBtn);
 	if (settingsBtn) {
 		settingsBtn.click();

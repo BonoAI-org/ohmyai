@@ -1,4 +1,4 @@
-import { hasWebLLMModelInCache, createWebLLMEngine } from '$lib/engines/webllm.js';
+import { hasWebLLMModelInCache, createWebLLMEngine, getModelContextWindow } from '$lib/engines/webllm.js';
 import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
 import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/transformersCache.js';
 import { get } from 'svelte/store';
@@ -125,6 +125,44 @@ class LLMStore {
 		frequencyPenalty: 0.5,
 		presencePenalty: 0.5,
 	});
+
+	// Utilisation du contexte du modèle après le dernier échange
+	// Model context usage after the last exchange
+	// { used: tokens consommés, max: fenêtre de contexte, ratio: used/max (0..1) }
+	contextUsage = $state(null);
+
+	/**
+	 * Taille de la fenêtre de contexte du modèle sélectionné, en tokens.
+	 * Selected model's context window size, in tokens.
+	 *
+	 * Ordre de recherche : champ `contextWindow` du catalogue ou des modèles
+	 * personnalisés, puis le catalogue MLC lorsque web-llm est déjà chargé,
+	 * sinon 4096, qui est le défaut de WebLLM.
+	 * Lookup order: the `contextWindow` field from the catalog or the custom
+	 * models, then the MLC catalog when web-llm is already loaded, else 4096,
+	 * which is WebLLM's default.
+	 * @returns {Promise<number>}
+	 */
+	async getContextWindowSize() {
+		const declared = findModel(this.selectedModel, this.customModels)?.contextWindow;
+		if (declared) return declared;
+		return (await getModelContextWindow(this.selectedModel)) || 4096;
+	}
+
+	/**
+	 * Met à jour le ratio de contexte utilisé après un échange.
+	 * Updates the used-context ratio after an exchange.
+	 * @param {number} usedTokens - Tokens consommés (prompt + réponse) / Tokens used (prompt + completion)
+	 */
+	async _updateContextUsage(usedTokens) {
+		if (!Number.isFinite(usedTokens) || usedTokens <= 0) return;
+		const max = await this.getContextWindowSize();
+		this.contextUsage = {
+			used: usedTokens,
+			max,
+			ratio: Math.min(usedTokens / max, 1)
+		};
+	}
 
 	/**
 	 * Vérifie si le modèle sélectionné supporte le thinking
@@ -664,6 +702,10 @@ class LLMStore {
 						batcher.push(delta);
 					}
 				});
+
+				// Usage mesuré par le moteur (tokenizer local) / Usage measured by the engine (local tokenizer)
+				const usage = this.engine.getLastUsage?.();
+				if (usage) await this._updateContextUsage(usage.total_tokens);
 			} else {
 				// --- Génération WebLLM, avec allers-retours d'appels d'outils ---
 				// --- WebLLM generation, with tool-calling round-trips ---
@@ -672,7 +714,10 @@ class LLMStore {
 						temperature: this.generationParams.temperature,
 						max_tokens: this.generationParams.maxTokens,
 						frequency_penalty: this.generationParams.frequencyPenalty,
-						presence_penalty: this.generationParams.presencePenalty
+						presence_penalty: this.generationParams.presencePenalty,
+						// Demande les compteurs de tokens, servis dans un dernier chunk.
+						// Asks for the token counters, served in a final chunk.
+						stream_options: { include_usage: true }
 					},
 					tools: toolsParam,
 					signal: this._abortController?.signal,
@@ -682,6 +727,7 @@ class LLMStore {
 						return mcpStore.callTool(serverId, name, args);
 					},
 					onDelta: (delta) => batcher.push(delta),
+					onUsage: (usage) => this._updateContextUsage(usage.total_tokens),
 					onToolCalls: (assistantContent, toolCalls) => {
 						// Le message assistant est réécrit en entier : on jette le
 						// texte partiel encore en attente de poussée.
@@ -772,6 +818,7 @@ class LLMStore {
 
 		this.messages = [];
 		this.currentConversationId = null;
+		this.contextUsage = null;
 		removeLocal(KEYS.currentConversationId);
 	}
 
@@ -1002,6 +1049,9 @@ class LLMStore {
 		if (conversation) {
 			this.messages = [...conversation.messages];
 			this.currentConversationId = conversationId;
+			// Usage inconnu tant qu'aucun échange n'a eu lieu dans cette conversation
+			// Usage unknown until an exchange happens in this conversation
+			this.contextUsage = null;
 			writeLocal(KEYS.currentConversationId, conversationId);
 
 			// Restaure le modèle utilisé dans la conversation / Restore the model used in the conversation
@@ -1033,6 +1083,7 @@ class LLMStore {
 		this.messages = [];
 		this.currentConversationId = null;
 		this.error = null;
+		this.contextUsage = null;
 		removeLocal(KEYS.currentConversationId);
 	}
 
@@ -1048,6 +1099,7 @@ class LLMStore {
 		if (this.currentConversationId === conversationId) {
 			this.messages = [];
 			this.currentConversationId = null;
+			this.contextUsage = null;
 			removeLocal(KEYS.currentConversationId);
 		}
 

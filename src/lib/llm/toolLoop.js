@@ -81,6 +81,7 @@ export async function executeToolCall(toolCall, callTool) {
  *   tools?: Array<any>,
  *   signal?: AbortSignal,
  *   onDelta: (text: string) => void,
+ *   onUsage?: (usage: { total_tokens?: number }) => void,
  *   onToolCalls: (assistantContent: string, toolCalls: Array<any>) => void,
  *   onToolResult: (index: number, outcome: { resultStr: string, hasError: boolean }) => void,
  *   onRoundEnd: () => void,
@@ -94,6 +95,7 @@ export async function runToolLoop(engine, chatMessages, deps) {
 		tools,
 		signal,
 		onDelta,
+		onUsage,
 		onToolCalls,
 		onToolResult,
 		onRoundEnd,
@@ -121,6 +123,16 @@ export async function runToolLoop(engine, chatMessages, deps) {
 
 		for await (const chunk of stream) {
 			if (signal?.aborted) break;
+
+			// Avec `stream_options.include_usage`, le dernier chunk ne porte pas de
+			// `choices` mais les compteurs de tokens : il faut donc le lire avant
+			// le garde ci-dessous. Sur plusieurs tours d'outils, chaque tour
+			// écrase le précédent, et le dernier reflète le contexte complet.
+			// With `stream_options.include_usage`, the final chunk carries no
+			// `choices` but the token counters, so it must be read before the
+			// guard below. Across several tool rounds, each round overwrites the
+			// previous one, and the last reflects the full context.
+			if (chunk.usage) onUsage?.(chunk.usage);
 
 			const choice = chunk.choices[0];
 			if (!choice) continue;
