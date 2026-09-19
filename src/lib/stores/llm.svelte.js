@@ -1,4 +1,4 @@
-import { CreateMLCEngine, hasModelInCache, prebuiltAppConfig } from '@mlc-ai/web-llm';
+import { hasWebLLMModelInCache, createWebLLMEngine } from '$lib/engines/webllm.js';
 import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
 import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/transformersEngine.js';
 import { db } from '$lib/db/conversationDB.js';
@@ -7,35 +7,6 @@ import { _ } from 'svelte-i18n';
 import { mcpStore } from '$lib/stores/mcp.svelte.js';
 import { oramaStore } from '$lib/stores/orama.svelte.js';
 
-
-/**
- * Configuration de l'application avec le modèle Gemma 2 ajouté manuellement
- * App configuration with manually added Gemma 2 model
- */
-const appConfig = {
-	model_list: [
-		...prebuiltAppConfig.model_list,
-		{
-			"model": "https://huggingface.co/mlc-ai/gemma-2-9b-it-q4f16_1-MLC",
-			"model_id": "gemma-2-9b-it-q4f16_1-MLC",
-			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0.2.48/Gemma-2-9B-Instruct-q4f16_1-MLC-webgpu.wasm",
-			"vram_required_MB": 6103.52,
-			"low_resource_required": false,
-		},
-		{
-			"model": "https://huggingface.co/mlc-ai/Phi-3.5-vision-instruct-q4f16_1-MLC",
-			"model_id": "Phi-3.5-vision-instruct-q4f16_1-MLC",
-			"model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_48/Phi-3.5-vision-instruct-q4f16_1-ctx4k_cs2k-webgpu.wasm",
-			"vram_required_MB": 3952.18,
-			"low_resource_required": true,
-			"overrides": {
-				"context_window_size": 4096
-			},
-			"model_type": 2
-		}
-	],
-	use_web_worker: true
-};
 
 /**
  * Liste des modèles disponibles avec leurs caractéristiques
@@ -435,7 +406,7 @@ class LLMStore {
 						// Transformers.js model: browser Cache API, not WebLLM/OPFS.
 						isCached = await isTransformersModelCached(model.id);
 					} else {
-						isCached = await hasModelInCache(model.id, appConfig);
+						isCached = await hasWebLLMModelInCache(model.id);
 						if (!isCached) {
 							isCached = await isModelFullyInOpfs(model.id);
 						}
@@ -624,7 +595,7 @@ class LLMStore {
 				// Vérifie le Cache API standard de WebLLM
 				if (!isCached) {
 					try {
-						isCached = await hasModelInCache(this.selectedModel, appConfig);
+						isCached = await hasWebLLMModelInCache(this.selectedModel);
 					} catch (e) {
 						console.warn('Erreur vérification Cache API:', e);
 					}
@@ -668,17 +639,13 @@ class LLMStore {
 
 					if (modelInOpfs) {
 						this.loadingProgress = t ? t('loading.loadingFromOpfs') : 'Loading from local storage...';
-						this.engine = await CreateMLCEngine(this.selectedModel, {
-							appConfig,
+						this.engine = await createWebLLMEngine(this.selectedModel, {
 							initProgressCallback: progressCallback,
-							logLevel: 'SILENT',
 							modelCache: { cacheUrl: `/opfs/${this.selectedModel}/` }
 						});
 					} else {
-						this.engine = await CreateMLCEngine(this.selectedModel, {
-							appConfig,
-							initProgressCallback: progressCallback,
-							logLevel: 'SILENT'
+						this.engine = await createWebLLMEngine(this.selectedModel, {
+							initProgressCallback: progressCallback
 						});
 
 						// Lance la sauvegarde en arrière-plan sans bloquer l'interface
@@ -710,10 +677,8 @@ class LLMStore {
 				// Fallback si OPFS non supporté
 				const t = get(_); // Define t here for this block
 				this.loadingProgress = t ? t('loading.loadingStandard') : 'Loading model...';
-				this.engine = await CreateMLCEngine(this.selectedModel, {
-					appConfig,
-					initProgressCallback: progressCallback,
-					logLevel: 'SILENT'
+				this.engine = await createWebLLMEngine(this.selectedModel, {
+					initProgressCallback: progressCallback
 				});
 			}
 
@@ -1282,7 +1247,7 @@ class LLMStore {
 		if (!this.engine || this.engineType === 'transformers') {
 			console.warn('Le moteur doit être initialisé pour vider le cache.');
 			// Crée une instance temporaire juste pour le nettoyage
-			this.engine = await CreateMLCEngine(this.selectedModel, { appConfig, logLevel: 'SILENT' });
+			this.engine = await createWebLLMEngine(this.selectedModel);
 			this.engineType = 'webllm';
 		}
 		await this.engine.runtime.clear();
