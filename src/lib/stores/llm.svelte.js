@@ -13,6 +13,7 @@ import { runToolLoop } from '$lib/llm/toolLoop.js';
 import {
 	generateConversationId,
 	generateConversationTitle,
+	resolveConversationTitle,
 	mergeCustomModels
 } from '$lib/llm/conversationMeta.js';
 import {
@@ -1003,19 +1004,36 @@ class LLMStore {
 	async saveCurrentConversation(title = null) {
 		if (this.messages.length === 0) return;
 
-		const isExisting = !!this.currentConversationId;
 		const conversationId = this.currentConversationId || generateConversationId();
+
+		// Instantané des messages : un proxy réactif ne passe pas dans
+		// IndexedDB (DataCloneError).
+		// Snapshot of the messages: a reactive proxy cannot cross into
+		// IndexedDB (DataCloneError).
+		const messages = $state.snapshot(this.messages);
+
+		// Relit la conversation déjà en base : son titre renommé et son
+		// horodatage de création ne doivent pas être écrasés par une
+		// sauvegarde automatique.
+		// Re-reads the already stored conversation: its renamed title and its
+		// creation timestamp must not be overwritten by an automatic save.
+		const existing = this.currentConversationId
+			? await fetchConversation(conversationId)
+			: null;
+
+		const { title: resolvedTitle, titleIsCustom } = resolveConversationTitle({
+			explicitTitle: title,
+			existing,
+			messages
+		});
 
 		await persistConversation({
 			id: conversationId,
-			title: title || this.generateConversationTitle(),
-			// Instantané des messages : un proxy réactif ne passe pas dans
-			// IndexedDB (DataCloneError).
-			// Snapshot of the messages: a reactive proxy cannot cross into
-			// IndexedDB (DataCloneError).
-			messages: $state.snapshot(this.messages),
+			title: resolvedTitle,
+			titleIsCustom,
+			messages,
 			model: this.selectedModel,
-			isExisting
+			existing
 		});
 
 		this.currentConversationId = conversationId;

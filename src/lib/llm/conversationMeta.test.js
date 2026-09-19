@@ -3,6 +3,7 @@ import {
 	UNTITLED_CONVERSATION,
 	generateConversationId,
 	generateConversationTitle,
+	resolveConversationTitle,
 	mergeCustomModels
 } from './conversationMeta.js';
 
@@ -62,6 +63,65 @@ describe('generateConversationTitle', () => {
 			{ role: 'user', content: 'second' }
 		]);
 		expect(title).toBe('premier');
+	});
+});
+
+describe('resolveConversationTitle', () => {
+	const messages = [{ role: 'user', content: 'Comment fonctionne le RAG ?' }];
+
+	test('un titre explicite fait autorité et marque le titre', () => {
+		expect(resolveConversationTitle({ explicitTitle: 'Mon titre', messages })).toEqual({
+			title: 'Mon titre',
+			titleIsCustom: true
+		});
+	});
+
+	test('sans titre explicite ni marquage, le titre est déduit des messages', () => {
+		expect(resolveConversationTitle({ messages })).toEqual({
+			title: 'Comment fonctionne le RAG ?',
+			titleIsCustom: false
+		});
+	});
+
+	test('un titre déjà marqué survit à une sauvegarde automatique', () => {
+		// C'est le bug corrigé : la sauvegarde après chaque échange régénérait
+		// le titre et effaçait le renommage.
+		const existing = { title: 'Titre renommé', titleIsCustom: true };
+		expect(resolveConversationTitle({ existing, messages })).toEqual({
+			title: 'Titre renommé',
+			titleIsCustom: true
+		});
+	});
+
+	test('un titre non marqué est bien réévalué quand la conversation évolue', () => {
+		const existing = { title: 'Ancien titre auto', titleIsCustom: false };
+		expect(resolveConversationTitle({ existing, messages })).toEqual({
+			title: 'Comment fonctionne le RAG ?',
+			titleIsCustom: false
+		});
+	});
+
+	test('un renommage prime sur un titre déjà marqué', () => {
+		const existing = { title: 'Premier renommage', titleIsCustom: true };
+		expect(
+			resolveConversationTitle({ explicitTitle: 'Second renommage', existing, messages })
+		).toEqual({ title: 'Second renommage', titleIsCustom: true });
+	});
+
+	test('un marquage sans titre ne bloque pas la génération', () => {
+		// Donnée incohérente venue d'une base ancienne : on ne doit pas
+		// renvoyer un titre vide.
+		const existing = { titleIsCustom: true };
+		expect(resolveConversationTitle({ existing, messages }).title).toBe(
+			'Comment fonctionne le RAG ?'
+		);
+	});
+
+	test('sans argument, replie sur le titre par défaut', () => {
+		expect(resolveConversationTitle()).toEqual({
+			title: UNTITLED_CONVERSATION,
+			titleIsCustom: false
+		});
 	});
 });
 

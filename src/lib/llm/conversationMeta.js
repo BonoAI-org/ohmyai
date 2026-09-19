@@ -40,6 +40,47 @@ export function generateConversationTitle(messages) {
 }
 
 /**
+ * Décide du titre à écrire lors d'une sauvegarde.
+ * Decides which title to write on a save.
+ *
+ * La sauvegarde automatique après chaque échange régénérait systématiquement
+ * le titre depuis le premier message, ce qui effaçait un renommage dès
+ * l'échange suivant. Un titre choisi par l'utilisateur est donc marqué, et ce
+ * marquage le protège des régénérations.
+ *
+ * The automatic save after each exchange used to regenerate the title from the
+ * first message every time, which wiped a rename on the very next exchange. A
+ * user-chosen title is therefore flagged, and that flag shields it from
+ * regeneration.
+ *
+ * @param {{
+ *   explicitTitle?: string | null,
+ *   existing?: { title?: string, titleIsCustom?: boolean } | null,
+ *   messages?: Array<{ role: string, content: any }>
+ * }} options
+ * @returns {{ title: string, titleIsCustom: boolean }}
+ */
+export function resolveConversationTitle({ explicitTitle, existing, messages } = {}) {
+	// Un titre fourni explicitement vient d'un renommage : il fait autorité.
+	// An explicitly supplied title comes from a rename: it wins.
+	if (explicitTitle) {
+		return { title: explicitTitle, titleIsCustom: true };
+	}
+
+	// Titre déjà choisi par l'utilisateur : on le conserve tel quel.
+	// Title already chosen by the user: keep it as is.
+	if (existing?.titleIsCustom && existing.title) {
+		return { title: existing.title, titleIsCustom: true };
+	}
+
+	// Sinon, titre automatique, réévalué à chaque sauvegarde tant que
+	// l'utilisateur n'a rien choisi.
+	// Otherwise, automatic title, re-evaluated on each save for as long as the
+	// user has chosen nothing.
+	return { title: generateConversationTitle(messages), titleIsCustom: false };
+}
+
+/**
  * Fusionne ou remplace les modèles personnalisés lors d'un import.
  * En fusion, les modèles déjà présents sont conservés : un import ne doit pas
  * écraser silencieusement la configuration locale.
