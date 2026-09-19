@@ -51,7 +51,24 @@
 	export function closeMenu() {
 		isOpen = false;
 	}
+
+	/**
+	 * Referme le menu lorsqu'on clique ailleurs dans la page. La page déléguait
+	 * auparavant cette fermeture via une référence au composant ; le composant
+	 * s'en charge désormais lui-même, grâce à la classe `language-selector` de
+	 * sa racine.
+	 * Closes the menu when clicking elsewhere in the page. The page used to
+	 * delegate this close through a component reference; the component now
+	 * handles it itself, via the `language-selector` class on its root.
+	 */
+	function handleClickOutside(event) {
+		if (isOpen && !event.target.closest(".language-selector")) {
+			isOpen = false;
+		}
+	}
 </script>
+
+<svelte:window onclick={handleClickOutside} />
 
 <div
 	class="relative language-selector bg-slate-200/50 dark:bg-slate-700/50 rounded-lg"
