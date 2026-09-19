@@ -24,6 +24,7 @@ import {
 	exportHistoryJson,
 	importHistoryJson
 } from '$lib/llm/conversationRepo.js';
+import { estimateHardwareSupport } from '$lib/llm/hardware.js';
 
 /**
  * Clés de persistance dans le localStorage. Regroupées ici pour qu'une
@@ -145,68 +146,16 @@ class LLMStore {
 	}
 
 	/**
-	 * Estime si la machine peut faire tourner un modèle, avant de le télécharger.
-	 * Heuristique : RAM rapportée par le navigateur + limites réelles de
-	 * l'adaptateur WebGPU, comparées à la VRAM requise par le modèle.
-	 * Estimate whether this machine can run a model, before downloading it.
-	 * Heuristic: browser-reported RAM + actual WebGPU adapter limits, compared
-	 * to the model's required VRAM.
+	 * Estime si la machine peut faire tourner un modèle, avant de le
+	 * télécharger, et retient le résultat pour l'affichage.
+	 * Estimates whether this machine can run a model, before downloading it,
+	 * and keeps the result for display.
 	 * @param {Object} modelConfig - Entrée de AVAILABLE_MODELS / AVAILABLE_MODELS entry
 	 * @returns {Promise<Object>} Résultat stocké dans `this.hardwareCheck`
 	 */
 	async checkHardwareSupport(modelConfig) {
-		const parseGB = (s) => {
-			const match = String(s ?? '').match(/([\d.]+)\s*GB/i);
-			return match ? parseFloat(match[1]) : null;
-		};
-		// VRAM déclarée, sinon poids des fichiers + marge d'exécution (KV cache, activations)
-		// Declared VRAM, otherwise file weights + runtime margin (KV cache, activations)
-		const requiredGB = parseGB(modelConfig?.vram) ?? (parseGB(modelConfig?.size) ?? 0) * 1.25;
-
-		const result = {
-			supported: true,
-			requiredGB: Math.round(requiredGB * 10) / 10,
-			deviceMemoryGB: null,
-			gpuMaxBufferGB: null,
-		};
-
-		if (typeof navigator !== 'undefined' && navigator.deviceMemory) {
-			// Chrome plafonne deviceMemory à 8 : une valeur de 8 veut dire "8 GB ou plus",
-			// on ne peut donc conclure à un manque de RAM que sous ce plafond.
-			// Chrome caps deviceMemory at 8: a value of 8 means "8 GB or more", so we
-			// can only conclude RAM is insufficient below that cap.
-			result.deviceMemoryGB = navigator.deviceMemory;
-			if (navigator.deviceMemory < 8 && requiredGB > navigator.deviceMemory) {
-				result.supported = false;
-			}
-		}
-
-		try {
-			const adapter = await navigator.gpu?.requestAdapter();
-			if (adapter) {
-				const maxBufferGB = adapter.limits.maxBufferSize / 1024 ** 3;
-				result.gpuMaxBufferGB = Math.round(maxBufferGB * 10) / 10;
-				// Les poids sont répartis sur plusieurs buffers GPU : on exige que le
-				// buffer maximal couvre au moins le quart du modèle, sinon l'adaptateur
-				// est trop limité pour cette taille.
-				// Weights are split across several GPU buffers: the max buffer must
-				// cover at least a quarter of the model, otherwise the adapter is too
-				// limited for this size.
-				if (requiredGB > 0 && maxBufferGB < requiredGB / 4) {
-					result.supported = false;
-				}
-			} else {
-				result.supported = false;
-			}
-		} catch (_) {
-			// Requête adaptateur échouée : on reste permissif, le chargement échouera
-			// avec un message clair le cas échéant.
-			// Adapter query failed: stay permissive, loading will fail with a clear
-			// message if needed.
-		}
-
-		this.hardwareCheck = result;
-		return result;
+		this.hardwareCheck = await estimateHardwareSupport(modelConfig);
+		return this.hardwareCheck;
 	}
 
 	/**
