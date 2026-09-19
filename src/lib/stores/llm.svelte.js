@@ -1,7 +1,6 @@
 import { hasWebLLMModelInCache, createWebLLMEngine } from '$lib/engines/webllm.js';
 import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
 import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/transformersCache.js';
-import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
 import { mcpStore } from '$lib/stores/mcp.svelte.js';
@@ -11,6 +10,20 @@ import { readLocal, writeLocal, removeLocal } from '$lib/llm/storage.js';
 import { buildChatContext } from '$lib/llm/chatContext.js';
 import { createStreamBatcher } from '$lib/llm/streamBatcher.js';
 import { runToolLoop } from '$lib/llm/toolLoop.js';
+import {
+	generateConversationId,
+	generateConversationTitle,
+	mergeCustomModels
+} from '$lib/llm/conversationMeta.js';
+import {
+	persistConversation,
+	fetchConversation,
+	fetchHistory,
+	removeConversation,
+	renameInDb,
+	exportHistoryJson,
+	importHistoryJson
+} from '$lib/llm/conversationRepo.js';
 
 /**
  * Clés de persistance dans le localStorage. Regroupées ici pour qu'une
@@ -994,26 +1007,20 @@ class LLMStore {
 	async saveCurrentConversation(title = null) {
 		if (this.messages.length === 0) return;
 
-		const conversationId = this.currentConversationId || this.generateConversationId();
+		const isExisting = !!this.currentConversationId;
+		const conversationId = this.currentConversationId || generateConversationId();
 
-		// Génère un titre automatique si non fourni / Generate auto title if not provided
-		const conversationTitle = title || this.generateConversationTitle();
-
-		// Sérialise les messages pour éviter les erreurs DataCloneError avec les proxies Svelte
-		// Serialize messages to avoid DataCloneError with Svelte proxies
-		const serializedMessages = $state.snapshot(this.messages);
-
-		const conversation = {
+		await persistConversation({
 			id: conversationId,
-			title: conversationTitle,
-			messages: serializedMessages, // Correction: Utilise les messages sérialisés
+			title: title || this.generateConversationTitle(),
+			// Instantané des messages : un proxy réactif ne passe pas dans
+			// IndexedDB (DataCloneError).
+			// Snapshot of the messages: a reactive proxy cannot cross into
+			// IndexedDB (DataCloneError).
+			messages: $state.snapshot(this.messages),
 			model: this.selectedModel,
-			timestamp: this.currentConversationId ? (await db.getConversation(conversationId))?.timestamp || Date.now() : Date.now(),
-			lastModified: Date.now()
-		};
-
-		// Sauvegarde dans Dexie / Save to Dexie
-		await db.saveConversation(conversation);
+			isExisting
+		});
 
 		this.currentConversationId = conversationId;
 		writeLocal(KEYS.currentConversationId, conversationId);
@@ -1026,7 +1033,7 @@ class LLMStore {
 	 * Génère un ID unique pour une conversation / Generate unique ID for conversation
 	 */
 	generateConversationId() {
-		return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		return generateConversationId();
 	}
 
 	/**
@@ -1034,16 +1041,7 @@ class LLMStore {
 	 * Generate automatic title based on first message
 	 */
 	generateConversationTitle() {
-		if (this.messages.length === 0) return 'Nouvelle conversation / New conversation';
-
-		const firstUserMessage = this.messages.find(m => m.role === 'user');
-		if (firstUserMessage) {
-			// Prend les 50 premiers caractères / Take first 50 characters
-			const title = firstUserMessage.content.substring(0, 50);
-			return title.length < firstUserMessage.content.length ? title + '...' : title;
-		}
-
-		return 'Nouvelle conversation / New conversation';
+		return generateConversationTitle(this.messages);
 	}
 
 	/**
@@ -1051,7 +1049,7 @@ class LLMStore {
 	 * @param {string} conversationId - ID de la conversation / Conversation ID
 	 */
 	async loadConversation(conversationId) {
-		const conversation = await db.getConversation(conversationId);
+		const conversation = await fetchConversation(conversationId);
 		if (conversation) {
 			this.messages = [...conversation.messages];
 			this.currentConversationId = conversationId;
@@ -1094,8 +1092,7 @@ class LLMStore {
 	 * @param {string} conversationId - ID de la conversation / Conversation ID
 	 */
 	async deleteConversation(conversationId) {
-		// Supprime de Dexie / Delete from Dexie
-		await db.deleteConversation(conversationId);
+		await removeConversation(conversationId);
 
 		// Si on supprime la conversation actuelle, la réinitialiser
 		// If deleting current conversation, reset it
@@ -1115,27 +1112,10 @@ class LLMStore {
 	 * @param {string} newTitle - Nouveau titre / New title
 	 */
 	async renameConversation(conversationId, newTitle) {
-		const conversation = await db.getConversation(conversationId);
-		if (conversation) {
-			conversation.title = newTitle;
-			conversation.lastModified = Date.now();
-			await db.saveConversation(conversation);
-
+		if (await renameInDb(conversationId, newTitle)) {
 			// Recharge l'historique / Reload history
 			await this.loadConversationHistory();
 		}
-	}
-
-	/**
-	 * Sauvegarde l'historique des conversations (n'est plus nécessaire avec Dexie)
-	 * Save conversation history (no longer needed with Dexie)
-	 * @deprecated Utiliser db.saveConversation() directement / Use db.saveConversation() directly
-	 */
-	saveConversationHistory() {
-		// Migration note: Cette méthode n'est plus utilisée avec Dexie.js
-		// Migration note: This method is no longer used with Dexie.js
-		// Les conversations sont sauvegardées automatiquement via db.saveConversation()
-		// Conversations are automatically saved via db.saveConversation()
 	}
 
 	/**
@@ -1144,18 +1124,7 @@ class LLMStore {
 	 */
 	async loadConversationHistory() {
 		try {
-			// Vérifie s'il faut migrer depuis localStorage / Check if need to migrate from localStorage
-			const count = await db.count();
-			if (count === 0) {
-				// Première utilisation, migre depuis localStorage / First use, migrate from localStorage
-				const migrated = await db.migrateFromLocalStorage();
-				if (migrated.conversations > 0) {
-					console.log(`✅ Migration réussie: ${migrated.conversations} conversations importées`);
-				}
-			}
-
-			// Charge toutes les conversations depuis Dexie / Load all conversations from Dexie
-			this.conversationHistory = await db.getAllConversations();
+			this.conversationHistory = await fetchHistory();
 
 			// Restaure la conversation active si aucune n'est chargée / Restore active conversation if none loaded
 			if (this.messages.length === 0) {
@@ -1176,10 +1145,7 @@ class LLMStore {
 	 * Exporte l'historique complet en JSON / Export full history as JSON
 	 */
 	async exportHistory() {
-		const data = await db.exportAll();
-		// Ajoute les modèles personnalisés / Add custom models
-		data.customModels = this.customModels;
-		return JSON.stringify(data, null, 2);
+		return exportHistoryJson($state.snapshot(this.customModels));
 	}
 
 	/**
@@ -1189,22 +1155,10 @@ class LLMStore {
 	 */
 	async importHistory(jsonData, merge = true) {
 		try {
-			const data = JSON.parse(jsonData);
+			const { imported, customModels } = await importHistoryJson(jsonData, merge);
 
-			// Importe dans Dexie / Import to Dexie
-			const imported = await db.importData(data, merge);
-
-			// Importe les modèles personnalisés / Import custom models
-			if (data.customModels) {
-				if (merge) {
-					// Fusionne les modèles / Merge models
-					const existingIds = new Set(this.customModels.map(m => m.id));
-					const newModels = data.customModels.filter(m => !existingIds.has(m.id));
-					this.customModels = [...this.customModels, ...newModels];
-				} else {
-					// Remplace les modèles / Replace models
-					this.customModels = data.customModels;
-				}
+			if (customModels) {
+				this.customModels = mergeCustomModels(this.customModels, customModels, merge);
 				this.saveCustomModels();
 			}
 
