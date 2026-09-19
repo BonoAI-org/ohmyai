@@ -69,23 +69,21 @@ bun run preview
 
 ## ✅ Quality gates
 
-The same three commands run locally and in CI on every pull request:
+These commands run locally and in CI on every pull request:
 
 ```sh
 bun run check
 ```
 
 ```sh
-bun run test:unit
-```
-
-```sh
 bun run test
 ```
 
-`check` runs svelte-check, `test:unit` runs the Bun unit tests over `src/lib`,
-and `test` runs the Playwright end-to-end suite. The first end-to-end run needs
-the browser: `bunx playwright install chromium`.
+`check` runs svelte-check and `test` runs the Bun unit tests over `src/lib`.
+
+Interface journeys are not covered by an automated suite. They are verified in a
+real Chrome driven by Claude Code, following `e2e/README.md`. That verification
+is run on demand rather than on every pull request.
 
 ## 🎯 Usage
 
@@ -105,7 +103,7 @@ the browser: `bunx playwright install chromium`.
 
 ```
 ohmyai/
-├── .github/workflows/ci.yml           # CI: build, svelte-check, unit + e2e tests
+├── .github/workflows/ci.yml           # CI: build, svelte-check, unit tests
 ├── src/
 │   ├── lib/
 │   │   ├── components/                # UI, all assembled by the chat page
@@ -145,7 +143,7 @@ ohmyai/
 │   ├── service-worker.js              # PWA caching + OPFS model interception
 │   ├── app.css                        # Global styles
 │   └── app.html                       # HTML template
-├── e2e/                               # Playwright end-to-end tests
+├── e2e/                               # Chrome DevTools interface checks
 ├── static/                            # Static files
 ├── package.json                       # Dependencies (Bun)
 ├── svelte.config.js                   # Svelte configuration
