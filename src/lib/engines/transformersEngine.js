@@ -215,6 +215,14 @@ export class TransformersEngine {
 		this.lib = lib;
 		/** @type {any} Critère d'arrêt interruptible pour la génération courante. */
 		this._stopping = null;
+		/**
+		 * Compteurs de tokens du dernier échange, mesurés avec le tokenizer local
+		 * (Transformers.js ne retourne pas d'usage, contrairement à WebLLM).
+		 * Token counters for the last exchange, measured with the local tokenizer
+		 * (Transformers.js does not return usage, unlike WebLLM).
+		 * @type {{prompt_tokens:number, completion_tokens:number, total_tokens:number}|null}
+		 */
+		this.lastUsage = null;
 	}
 
 	/**
@@ -273,20 +281,37 @@ export class TransformersEngine {
 	async generate(messages, { onToken, temperature = 0.7, max_new_tokens = 2048 } = {}) {
 		const { TextStreamer, InterruptableStoppingCriteria } = this.lib;
 		this._stopping = new InterruptableStoppingCriteria();
+		this.lastUsage = null;
 
 		if (this.multimodal) {
 			return this._generateMultimodal(messages, { onToken, temperature, max_new_tokens });
 		}
 
+		let outputText = '';
 		const streamer = new TextStreamer(this.pipe.tokenizer, {
 			skip_prompt: true,
 			skip_special_tokens: true,
 			callback_function: (text) => {
-				if (text && onToken) onToken(text);
+				if (text) {
+					outputText += text;
+					if (onToken) onToken(text);
+				}
 			}
 		});
 
 		const chatMessages = normalizeMessagesForChatTemplate(messages);
+
+		// Tokens du prompt : on tokenize le template complet, comme le fera le pipeline.
+		// Prompt tokens: tokenize the full template, as the pipeline will.
+		let promptTokens = null;
+		try {
+			const ids = this.pipe.tokenizer.apply_chat_template(chatMessages, {
+				add_generation_prompt: true,
+				tokenize: true,
+				return_tensor: false
+			});
+			if (Array.isArray(ids)) promptTokens = ids.length;
+		} catch (e) { /* non bloquant / non-blocking */ }
 
 		await this.pipe(chatMessages, {
 			max_new_tokens,
@@ -295,6 +320,8 @@ export class TransformersEngine {
 			streamer,
 			stopping_criteria: this._stopping
 		});
+
+		this._recordUsage(promptTokens, outputText, this.pipe.tokenizer);
 	}
 
 	/**
@@ -323,11 +350,19 @@ export class TransformersEngine {
 			add_special_tokens: false
 		});
 
+		// Tokens du prompt (placeholders image inclus) lus sur le tenseur d'entrée.
+		// Prompt tokens (image placeholders included) read from the input tensor.
+		const promptTokens = inputs.input_ids?.dims?.at(-1) ?? null;
+
+		let outputText = '';
 		const streamer = new TextStreamer(this.processor.tokenizer, {
 			skip_prompt: true,
 			skip_special_tokens: true,
 			callback_function: (text) => {
-				if (text && onToken) onToken(text);
+				if (text) {
+					outputText += text;
+					if (onToken) onToken(text);
+				}
 			}
 		});
 
@@ -339,6 +374,48 @@ export class TransformersEngine {
 			streamer,
 			stopping_criteria: this._stopping
 		});
+
+		this._recordUsage(promptTokens, outputText, this.processor.tokenizer);
+	}
+
+	/**
+	 * Calcule et mémorise l'usage du dernier échange. Le nombre de tokens de la
+	 * réponse est retokenisé depuis le texte généré ; à défaut de tokenizer
+	 * fonctionnel, on estime à 4 caractères par token.
+	 * Computes and stores the last exchange's usage. The completion token count
+	 * is re-tokenized from the generated text; if the tokenizer fails, we
+	 * estimate 4 characters per token.
+	 * @private
+	 * @param {number|null} promptTokens
+	 * @param {string} outputText
+	 * @param {any} tokenizer
+	 */
+	_recordUsage(promptTokens, outputText, tokenizer) {
+		let completionTokens = 0;
+		if (outputText) {
+			try {
+				const ids = tokenizer.encode(outputText);
+				completionTokens = Array.isArray(ids) ? ids.length : Math.ceil(outputText.length / 4);
+			} catch (e) {
+				completionTokens = Math.ceil(outputText.length / 4);
+			}
+		}
+		if (promptTokens == null && completionTokens === 0) return;
+		const prompt = promptTokens ?? 0;
+		this.lastUsage = {
+			prompt_tokens: prompt,
+			completion_tokens: completionTokens,
+			total_tokens: prompt + completionTokens
+		};
+	}
+
+	/**
+	 * Retourne l'usage du dernier échange (ou null) — même forme que WebLLM.
+	 * Returns the last exchange's usage (or null) — same shape as WebLLM.
+	 * @returns {{prompt_tokens:number, completion_tokens:number, total_tokens:number}|null}
+	 */
+	getLastUsage() {
+		return this.lastUsage;
 	}
 
 	/**

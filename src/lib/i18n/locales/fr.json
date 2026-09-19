@@ -31,7 +31,8 @@
 		"clear": "Effacer la conversation",
 		"clearConversation": "🗑️ Effacer la conversation",
 		"generating": "Génération en cours...",
-		"scrollToBottom": "Retour en bas"
+		"scrollToBottom": "Retour en bas",
+		"contextUsed": "Contexte :"
 	},
 	"loading": {
 		"loadingModel": "Chargement du modèle...",

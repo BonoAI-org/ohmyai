@@ -59,11 +59,15 @@
 		const message = messageInput.trim();
 		messageInput = ""; // Réinitialise l'input / Reset input
 
-		// Envoi du message avec images si modèle multimodal / Send images only when model is multimodal
-		await llmStore.sendMessage(message, allowImages ? selectedImages : []);
-
-		// Nettoie la sélection d'images / Clear selected images
+		// Capture puis vide la sélection d'images avant la génération, pour que
+		// l'aperçu disparaisse dès l'envoi et non à la fin de la réponse.
+		// Capture then clear the image selection before generating, so the
+		// preview disappears on send rather than when the response finishes.
+		const images = allowImages ? [...selectedImages] : [];
 		selectedImages = [];
+
+		// Envoi du message avec images si modèle multimodal / Send images only when model is multimodal
+		await llmStore.sendMessage(message, images);
 
 		// Laisse la page réactiver l'auto-scroll / Let the page re-enable auto-scroll
 		onsent?.();
@@ -237,6 +241,36 @@
 				</svg>
 				Think {llmStore.thinkingEnabled ? 'ON' : 'OFF'}
 			</button>
+		{/if}
+
+		<!-- Ratio de contexte utilisé / Used context ratio -->
+		{#if llmStore.contextUsage}
+			<div
+				class="ml-auto flex items-center gap-2"
+				title={`${llmStore.contextUsage.used.toLocaleString()} / ${llmStore.contextUsage.max.toLocaleString()} tokens`}
+			>
+				<div
+					class="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
+					role="progressbar"
+					aria-valuenow={Math.round(llmStore.contextUsage.ratio * 100)}
+					aria-valuemin="0"
+					aria-valuemax="100"
+					aria-label={$_("chat.contextUsed")}
+				>
+					<div
+						class="h-full rounded-full transition-all duration-300 {llmStore.contextUsage.ratio > 0.9
+							? 'bg-red-500'
+							: llmStore.contextUsage.ratio > 0.7
+								? 'bg-amber-500'
+								: 'bg-emerald-500'}"
+						style="width: {Math.max(llmStore.contextUsage.ratio * 100, 2)}%"
+					></div>
+				</div>
+				<span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+					{$_("chat.contextUsed")}
+					{Math.round(llmStore.contextUsage.ratio * 100)}%
+				</span>
+			</div>
 		{/if}
 	</div>
 </div>

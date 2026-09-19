@@ -98,6 +98,29 @@ export async function hasWebLLMModelInCache(modelId) {
 }
 
 /**
+ * Taille de la fenêtre de contexte déclarée par le catalogue MLC, ou null.
+ * Context window size declared by the MLC catalog, or null.
+ *
+ * Ne déclenche PAS le chargement de la bibliothèque : consulter une taille de
+ * contexte ne justifie pas de télécharger 6 Mo, en particulier pour un modèle
+ * servi par l'autre moteur. On répond donc null tant que web-llm n'a pas déjà
+ * été chargé pour une vraie raison.
+ * Does NOT trigger loading the library: looking up a context size does not
+ * justify fetching 6 MB, especially for a model served by the other engine. So
+ * we answer null as long as web-llm has not already been loaded for a real
+ * reason.
+ *
+ * @param {string} modelId
+ * @returns {Promise<number | null>}
+ */
+export async function getModelContextWindow(modelId) {
+	if (!_libPromise) return null;
+	const appConfig = await getAppConfig();
+	const entry = appConfig.model_list.find((m) => m.model_id === modelId);
+	return entry?.overrides?.context_window_size ?? null;
+}
+
+/**
  * Crée un moteur web-llm.
  * Creates a web-llm engine.
  *

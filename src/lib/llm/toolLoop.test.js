@@ -33,9 +33,13 @@ const toolChunk = (toolCalls, finish = null) => ({
 	choices: [{ delta: { tool_calls: toolCalls }, finish_reason: finish }]
 });
 
+// Dernier chunk de `stream_options.include_usage` : aucun `choices`.
+// Final chunk from `stream_options.include_usage`: no `choices` at all.
+const usageChunk = (total) => ({ choices: [], usage: { total_tokens: total } });
+
 /** Callbacks inertes, surchargeables. / Inert callbacks, overridable. */
 function spies(over = {}) {
-	const seen = { deltas: [], toolCalls: [], results: [], roundEnds: 0, tools: [] };
+	const seen = { deltas: [], toolCalls: [], results: [], roundEnds: 0, tools: [], usages: [] };
 	return {
 		seen,
 		deps: {
@@ -44,6 +48,7 @@ function spies(over = {}) {
 			onToolCalls: (c, tc) => seen.toolCalls.push({ content: c, count: tc.length }),
 			onToolResult: (i, o) => seen.results.push({ i, ...o }),
 			onRoundEnd: () => seen.roundEnds++,
+			onUsage: (u) => seen.usages.push(u.total_tokens),
 			callTool: async (name, args) => {
 				seen.tools.push({ name, args });
 				return { ok: true };
@@ -281,6 +286,48 @@ describe('runToolLoop', () => {
 
 		await runToolLoop(engine, [], deps);
 		expect(seen.tools).toEqual([]);
+		expect(engine.calls.length).toBe(1);
+	});
+
+	test('remonte les compteurs de tokens du dernier chunk', async () => {
+		const engine = fakeEngine([[textChunk('bonjour', 'stop'), usageChunk(1234)]]);
+		const { seen, deps } = spies();
+
+		await runToolLoop(engine, [], deps);
+		expect(seen.usages).toEqual([1234]);
+		expect(seen.deltas).toEqual(['bonjour']);
+	});
+
+	test('un chunk sans choices ne casse pas la diffusion', async () => {
+		// Le garde sur `choices` ne doit pas court-circuiter la lecture de l'usage.
+		const engine = fakeEngine([[usageChunk(10), textChunk('suite', 'stop')]]);
+		const { seen, deps } = spies();
+
+		await runToolLoop(engine, [], deps);
+		expect(seen.usages).toEqual([10]);
+		expect(seen.deltas).toEqual(['suite']);
+	});
+
+	test('sur plusieurs tours, chaque usage est remonté dans l\'ordre', async () => {
+		const engine = fakeEngine([
+			[
+				toolChunk([{ index: 0, id: 'c', function: { name: 't', arguments: '{}' } }], 'tool_calls'),
+				usageChunk(100)
+			],
+			[textChunk('fini', 'stop'), usageChunk(250)]
+		]);
+		const { seen, deps } = spies();
+
+		await runToolLoop(engine, [], deps);
+		expect(seen.usages).toEqual([100, 250]);
+	});
+
+	test('onUsage absent ne fait pas échouer la boucle', async () => {
+		const engine = fakeEngine([[textChunk('ok', 'stop'), usageChunk(5)]]);
+		const { deps } = spies();
+		delete deps.onUsage;
+
+		await runToolLoop(engine, [], deps);
 		expect(engine.calls.length).toBe(1);
 	});
 
