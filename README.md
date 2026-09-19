@@ -46,7 +46,7 @@ bun install
 bun run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:4242`
 
 ### 4. Open in browser
 

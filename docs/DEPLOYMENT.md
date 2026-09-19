@@ -35,7 +35,7 @@ wrangler login
 ✅ **`wrangler.toml`** - Configuration Wrangler
 ✅ **`svelte.config.js`** - Adapter Cloudflare configuré
 ✅ **`static/_headers`** - En-têtes HTTP (déjà existant)
-✅ **`.node-version`** - Version Node.js (20)
+✅ **`.node-version`** - Version Node.js (22)
 
 ---
 
@@ -70,7 +70,7 @@ git push origin main
    - **Framework preset** : SvelteKit
    - **Build command** : `bun run build`
    - **Build output directory** : `.svelte-kit/cloudflare`
-   - **Node version** : `20`
+   - **Node version** : `22`
 
 #### 3. Variables d'environnement (si nécessaire)
 ```
@@ -175,7 +175,7 @@ curl -I https://votre-app.pages.dev
 ```bash
 # Cloudflare Pages utilise la version de .node-version
 # Cloudflare Pages uses the version from .node-version
-cat .node-version  # Devrait afficher: 20
+cat .node-version  # Devrait afficher: 22
 ```
 
 ### Fichiers WASM trop gros / WASM files too large

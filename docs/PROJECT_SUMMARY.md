@@ -100,11 +100,11 @@ Your web application is now fully functional and ready to use!
 ### L'application est DÉJÀ EN COURS D'EXÉCUTION ! 🎉
 
 Le serveur de développement tourne sur :
-**http://localhost:5173**
+**http://localhost:4242**
 
 Pour y accéder :
 1. Cliquez sur le bouton "Open in Browser" ci-dessus
-2. Ou ouvrez manuellement http://localhost:5173 dans votre navigateur
+2. Ou ouvrez manuellement http://localhost:4242 dans votre navigateur
 
 ### Au premier chargement :
 1. ⏳ Le modèle Llama-3.2-1B (~650 MB) va se télécharger
@@ -271,7 +271,7 @@ bun run db:studio        # Ouvrir Drizzle Studio
 ## 🎓 Prochaines Étapes / Next Steps
 
 1. **Testez l'application** 
-   - Ouvrez http://localhost:5173
+   - Ouvrez http://localhost:4242
    - Attendez le chargement du modèle
    - Discutez avec le LLM !
 

@@ -89,7 +89,7 @@ bun run dev
 
 2. Accédez au sitemap / Access the sitemap:
 ```
-http://localhost:5173/sitemap.xml
+http://localhost:4242/sitemap.xml
 ```
 
 ### Production
