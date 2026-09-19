@@ -1,0 +1,74 @@
+# Intégration continue / Continuous integration
+# Rejoue les trois portes de qualité du projet sur chaque PR :
+# build de production, svelte-check, tests end-to-end Playwright.
+# Runs the project's three quality gates on every PR:
+# production build, svelte-check, Playwright end-to-end tests.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Annule les exécutions obsolètes sur une même branche.
+# Cancels superseded runs on the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: build, check, e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node est requis même sous Bun : vite et Playwright s'exécutent dessus.
+      # Node is required even under Bun: vite and Playwright run on it.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      # Garder en phase avec le champ packageManager de package.json.
+      # Keep in sync with the packageManager field in package.json.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Produit aussi .svelte-kit/tsconfig.json, requis par svelte-check,
+      # et valide l'adapter Cloudflare.
+      # Also produces .svelte-kit/tsconfig.json, required by svelte-check,
+      # and validates the Cloudflare adapter.
+      - name: Build
+        run: bun run build
+
+      - name: Type & a11y check
+        run: bun run check
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: bun run test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
