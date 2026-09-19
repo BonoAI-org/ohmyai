@@ -2,12 +2,15 @@
 	import { onMount } from "svelte";
 	import { llmStore, AVAILABLE_MODELS } from "$lib/stores/llm.svelte.js";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
-	import ChatMessage from "$lib/components/ChatMessage.svelte";
 	import ManageModelsModal from "$lib/components/ManageModelsModal.svelte";
-	import Settings from "$lib/components/Settings.svelte";
-	import KnowledgeBase from "$lib/components/KnowledgeBase.svelte";
+	import SettingsModal from "$lib/components/SettingsModal.svelte";
+	import KnowledgeBaseModal from "$lib/components/KnowledgeBaseModal.svelte";
 	import ConversationHistory from "$lib/components/ConversationHistory.svelte";
 	import LanguageSelector from "$lib/components/LanguageSelector.svelte";
+  import AppFooter from "$lib/components/AppFooter.svelte";
+  import StatusPanels from "$lib/components/StatusPanels.svelte";
+  import MessageList from "$lib/components/MessageList.svelte";
+  import ScrollToBottomButton from "$lib/components/ScrollToBottomButton.svelte";
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
 	import { _ } from "svelte-i18n";
@@ -484,48 +487,8 @@
 <!-- Gestionnaire de clic global / Global click handler -->
 <svelte:window onclick={handleClickOutside} />
 
-{#if isSettingsModalOpen}
-	<div
-		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-		role="dialog"
-		aria-modal="true"
-		aria-label="Paramètres / Settings"
-		tabindex="-1"
-		onclick={(e) => e.target === e.currentTarget && (isSettingsModalOpen = false)}
-		onkeydown={(e) => e.key === 'Escape' && (isSettingsModalOpen = false)}
-	>
-		<div class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md">
-			<Settings close={() => (isSettingsModalOpen = false)} />
-		</div>
-	</div>
-{/if}
-
-{#if isRagTestOpen}
-	<div
-		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="rag-test-title"
-		tabindex="-1"
-		onclick={(e) => e.target === e.currentTarget && (isRagTestOpen = false)}
-		onkeydown={(e) => e.key === 'Escape' && (isRagTestOpen = false)}
-	>
-		<div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4 max-h-[85vh] overflow-y-auto">
-			<div class="flex justify-between items-center mb-4">
-			<h2 id="rag-test-title" class="text-xl font-bold text-gray-900 dark:text-white">
-					🧠 Base de connaissances / Knowledge base
-				</h2>
-				<button
-					onclick={() => (isRagTestOpen = false)}
-					class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-				>
-					✕
-				</button>
-			</div>
-			<KnowledgeBase />
-		</div>
-	</div>
-{/if}
+<SettingsModal bind:isOpen={isSettingsModalOpen} />
+<KnowledgeBaseModal bind:isOpen={isRagTestOpen} />
 
 <div
 	class="h-screen bg-gradient-to-br from-slate-100 dark:from-slate-900 via-purple-100 dark:via-purple-900 to-slate-100 dark:to-slate-900 flex flex-col overflow-hidden"
@@ -1193,263 +1156,17 @@
 		class="flex-1 overflow-y-auto"
 	>
 		<div class="container mx-auto p-4 max-w-4xl">
-			<!-- Avertissement RAM insuffisante / Insufficient RAM warning -->
-			{#if !hasEnoughRAM}
-				<div
-					class="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4 mb-4 flex items-start gap-3"
-				>
-					<svg
-						class="w-6 h-6 text-orange-400 flex-shrink-0 mt-0.5"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-						/>
-					</svg>
-					<div class="text-orange-200">
-						<p class="font-semibold mb-1">{$_("ram.warning")}</p>
-						<p class="text-sm text-orange-300">
-							{$_("ram.insufficientMessage", {
-								values: { min: MIN_RAM_GB },
-							})}
-						</p>
-						<p class="text-xs text-orange-400 mt-2">
-							{$_("ram.tip")}
-						</p>
-					</div>
-				</div>
-			{/if}
+			<StatusPanels {hasEnoughRAM} />
 
-			<!-- Statut du chargement / Loading status -->
-			{#if llmStore.isLoading}
-				<div
-					class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 text-center mb-4"
-				>
-					<div class="flex flex-col items-center gap-4">
-						<div
-							class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"
-						></div>
-						<div class="text-white">
-							<p class="font-semibold">
-								{$_("loading.loadingModel")}
-							</p>
-							<p class="text-sm text-slate-300 mt-2">
-								{llmStore.loadingProgress}
-							</p>
-						</div>
-						<button
-							onclick={() => llmStore.cancelLoading()}
-							class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-						>
-							Annuler / Cancel
-						</button>
-					</div>
-				</div>
-			{:else if llmStore.needsDownload}
-				<!-- Demande de téléchargement / Download prompt -->
-				<div
-					class="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 text-center mb-4 border border-purple-500/30"
-				>
-					<div class="flex flex-col items-center gap-4">
-						<svg
-							class="w-12 h-12 text-purple-500 dark:text-purple-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
-							/>
-						</svg>
-						<div class="text-slate-900 dark:text-white text-lg">
-							<p class="font-semibold mb-2">
-								{$_("loading.downloadRequired", {
-									default:
-										"Téléchargement requis / Download required",
-								})}
-							</p>
-							<p
-								class="text-sm text-slate-600 dark:text-slate-300"
-							>
-								{$_("loading.notOnDevice", {
-									default:
-										"Le modèle sélectionné n'est pas encore sur cet appareil. / The selected model is not on this device yet.",
-								})}
-							</p>
-							<p
-								class="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto"
-							>
-								{$_("loading.downloadWarning", {
-									default:
-										"Le téléchargement peut prendre plusieurs minutes et consommer des données. Wi-Fi recommandé. / Download may take several minutes and use data. Wi-Fi recommended.",
-								})}
-							</p>
-						</div>
-						{#if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
-							<!-- Avertissement matériel insuffisant / Insufficient hardware warning -->
-							<div
-								class="bg-amber-500/15 border border-amber-500/60 rounded-lg p-3 text-sm max-w-md mx-auto"
-							>
-								<p
-									class="font-semibold text-amber-700 dark:text-amber-300"
-								>
-									⚠️ {$_("loading.hardwareUnsupported", {
-										default:
-											"Cet appareil ne semble pas assez puissant pour ce modèle. / This device does not seem powerful enough for this model.",
-									})}
-								</p>
-								<p
-									class="text-xs mt-1 text-amber-700/90 dark:text-amber-300/90"
-								>
-									{$_("loading.hardwareRequired", {
-										default: "Mémoire requise / Required memory",
-									})}: ~{llmStore.hardwareCheck.requiredGB} GB
-									{#if llmStore.hardwareCheck.deviceMemoryGB}
-										• {$_("loading.hardwareDetected", {
-											default: "RAM détectée / Detected RAM",
-										})}: {llmStore.hardwareCheck
-											.deviceMemoryGB}{llmStore.hardwareCheck
-											.deviceMemoryGB >= 8
-											? "+"
-											: ""} GB
-									{/if}
-									{#if llmStore.hardwareCheck.gpuMaxBufferGB}
-										• {$_("loading.hardwareGpuBuffer", {
-											default: "Buffer GPU max / Max GPU buffer",
-										})}: {llmStore.hardwareCheck.gpuMaxBufferGB} GB
-									{/if}
-								</p>
-							</div>
-						{/if}
-						<div class="flex gap-4 mt-4">
-							{#if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
-								<button
-									onclick={() => llmStore.initEngine(true)}
-									class="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow"
-								>
-									{$_("loading.downloadAnyway", {
-										default:
-											"Télécharger quand même / Download anyway",
-									})}
-								</button>
-							{:else}
-								<button
-									onclick={() => llmStore.initEngine(true)}
-									class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow"
-								>
-									{$_("loading.downloadNow", {
-										default:
-											"Télécharger maintenant / Download now",
-									})}
-								</button>
-							{/if}
-						</div>
-					</div>
-				</div>
-			{/if}
+			<MessageList onreuse={handleReusePrompt} onsave={handleSaveToMemory} />
 
-			<!-- Erreur / Error -->
-			{#if llmStore.error}
-				<div
-					class="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4"
-				>
-					<p class="text-red-200">
-						<strong>{$_("error.title")}:</strong>
-						{llmStore.error}
-					</p>
-				</div>
-			{/if}
-
-			<!-- Messages de chat / Chat messages -->
-			<div class="space-y-4 pb-4">
-				{#if llmStore.messages.length === 0 && !llmStore.isLoading}
-					<div class="text-center text-slate-400 py-12">
-						<svg
-							class="w-16 h-16 mx-auto mb-4 opacity-50"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-							/>
-						</svg>
-						<p class="text-lg">{$_("chat.startConversation")}</p>
-						<p class="text-sm mt-2">{$_("chat.runsInBrowser")}</p>
-					</div>
-				{/if}
-
-				{#each llmStore.messages as message, index (index)}
-					<ChatMessage
-					{message}
-					onreuse={(content) => handleReusePrompt(content)}
-					onsave={(content) => handleSaveToMemory(content)}
+			{#if isUserScrolling}
+				<ScrollToBottomButton
+					onclick={() => {
+						isUserScrolling = false;
+						scrollToBottom();
+					}}
 				/>
-				{/each}
-
-				{#if llmStore.isGenerating && llmStore.messages[llmStore.messages.length - 1]?.content === ""}
-					<div class="flex gap-2 items-center text-slate-400">
-						<div class="flex gap-1">
-							<div
-								class="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-								style="animation-delay: 0ms;"
-							></div>
-							<div
-								class="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-								style="animation-delay: 150ms;"
-							></div>
-							<div
-								class="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-								style="animation-delay: 300ms;"
-							></div>
-						</div>
-						<span class="text-sm">{$_("chat.generating")}</span>
-					</div>
-				{/if}
-			</div>
-
-			<!-- Bouton pour revenir en bas / Button to scroll to bottom -->
-			{#if isUserScrolling && llmStore.messages.length > 0}
-				<div
-					class="sticky bottom-4 left-0 right-0 flex justify-center pointer-events-none"
-				>
-					<button
-						onclick={() => {
-							isUserScrolling = false;
-							scrollToBottom();
-						}}
-						class="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all animate-bounce"
-						aria-label={$_("chat.scrollToBottom")}
-					>
-						<svg
-							class="w-5 h-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 14l-7 7m0 0l-7-7m7 7V3"
-							/>
-						</svg>
-						<span class="text-sm font-medium"
-							>{$_("chat.scrollToBottom")}</span
-						>
-					</button>
-				</div>
 			{/if}
 		</div>
 	</main>
@@ -1571,42 +1288,7 @@
 					{/if}
 				</div>
 			</div>
-			<!-- ... -->
-			<!-- Footer avec crédit BonoAI / Footer with BonoAI credit -->
-			<div class="mt-4 text-center">
-				<div
-					class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400"
-				>
-					<span>Built by</span>
-					<a
-						href="https://bonoai.org"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 transition-colors"
-					>
-						BonoAI
-					</a>
-					<span>•</span>
-					<a
-						href="https://github.com/BonoAI-org/ohmyai"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="flex items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
-						aria-label="View on GitHub"
-					>
-						<svg
-							class="w-4 h-4"
-							fill="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-							/>
-						</svg>
-						<span class="hidden sm:inline">Source</span>
-					</a>
-				</div>
-			</div>
+			<AppFooter />
 		</div>
 	</div>
 </div>
