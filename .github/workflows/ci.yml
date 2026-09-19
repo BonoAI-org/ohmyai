@@ -50,6 +50,9 @@ jobs:
       - name: Type & a11y check
         run: bun run check
 
+      - name: Unit tests
+        run: bun run test:unit
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache

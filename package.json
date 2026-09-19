@@ -15,6 +15,7 @@
 		"generate:icons": "bun run scripts/generate-icons.js",
 		"svg-to-png": "bun run scripts/svg-to-png.js",
 		"test": "playwright test",
+		"test:unit": "bun test src/lib",
 		"test:ui": "playwright test --ui"
 	},
 	"devDependencies": {

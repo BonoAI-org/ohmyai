@@ -8,6 +8,8 @@ import { mcpStore } from '$lib/stores/mcp.svelte.js';
 import { oramaStore } from '$lib/stores/orama.svelte.js';
 import { AVAILABLE_MODELS, findModel } from '$lib/llm/models.js';
 import { readLocal, writeLocal, removeLocal } from '$lib/llm/storage.js';
+import { buildChatContext } from '$lib/llm/chatContext.js';
+import { createStreamBatcher } from '$lib/llm/streamBatcher.js';
 
 /**
  * Clés de persistance dans le localStorage. Regroupées ici pour qu'une
@@ -625,8 +627,6 @@ class LLMStore {
 	 * @param {string[]} imageDataUrls - Liste d'URLs d'images / List of image URLs
 	 */
 	async sendMessage(userMessage, imageDataUrls = []) {
-		const selectedModelConfig = AVAILABLE_MODELS.find(m => m.id === this.selectedModel);
-
 		if (!this.engine || this.isGenerating) return;
 
 		// Ajoute le message de l'utilisateur / Add user message
@@ -641,106 +641,31 @@ class LLMStore {
 		this._abortController = new AbortController();
 
 		try {
-			// Prépare le contexte de conversation / Prepare conversation context
-			// FR: Si un message contient des images, on suit le schéma OpenAI: content = [ {type:'text',...}, {type:'image_url',...}, ... ]
-			// EN: If a message contains images, follow OpenAI schema: content = [ {type:'text',...}, {type:'image_url',...}, ... ]
-			const chatMessages = this.messages.map(msg => {
-				if (msg.images && msg.images.length > 0) {
-					const parts = [];
-					if (msg.content && msg.content.length > 0) {
-						parts.push({ type: 'text', text: msg.content });
-					}
-					for (const url of msg.images) {
-						parts.push({ type: 'image_url', image_url: { url } });
-					}
-					return { role: msg.role, content: parts };
-				}
-				return { role: msg.role, content: msg.content };
-			});
-
-			// System prompt par défaut pour guider les petits modèles / Default system prompt to guide small models
-			const defaultSystemPrompt = 'You are a helpful assistant. Keep your answers SHORT: 2-3 sentences max. Never repeat yourself. Never restart your answer. Maximum 3 items in any list. Stop when done.';
-
-			// Injection des règles (System Prompt) au tout début du contexte
-			// Injecting the rules (System Prompt) at the very beginning of the context
-			let systemContent = (this.systemPrompt && this.systemPrompt.trim().length > 0)
-				? this.systemPrompt.trim()
-				: defaultSystemPrompt;
-
-			chatMessages.unshift({ role: 'system', content: systemContent });
-
-			// Ajout de /no_think au dernier message utilisateur si thinking désactivé
-			// Append /no_think to last user message if thinking is disabled
-			if (this.isSelectedModelThinkingCapable() && !this.thinkingEnabled) {
-				const lastUserIdx = chatMessages.findLastIndex(m => m.role === 'user');
-				if (lastUserIdx !== -1) {
-					const msg = chatMessages[lastUserIdx];
-					if (typeof msg.content === 'string') {
-						chatMessages[lastUserIdx] = { ...msg, content: msg.content + ' /no_think' };
-					} else if (Array.isArray(msg.content)) {
-						const textPart = msg.content.find(p => p.type === 'text');
-						if (textPart) textPart.text += ' /no_think';
-					}
-				}
-			}
-
-			// Injection du profil utilisateur / Inject user profile
-			const profileParts = [];
-			if (this.userProfile.name) profileParts.push(`Name: ${this.userProfile.name}`);
-			if (this.userProfile.role) profileParts.push(`Role: ${this.userProfile.role}`);
-			if (this.userProfile.expertise) profileParts.push(`Expertise: ${this.userProfile.expertise}`);
-			if (this.userProfile.preferences) profileParts.push(`Preferences: ${this.userProfile.preferences}`);
-			if (this.userProfile.language) profileParts.push(`Preferred language: ${this.userProfile.language}`);
-			if (profileParts.length > 0) {
-				const profileContext = `\n\n[User Profile]\n${profileParts.join('\n')}`;
-				// Append to existing system message or create new one
-				if (chatMessages.length > 0 && chatMessages[0].role === 'system') {
-					chatMessages[0].content += profileContext;
-				} else {
-					chatMessages.unshift({ role: 'system', content: profileContext });
-				}
-			}
-
-			// Injection de la base de connaissances (RAG) : recherche sémantique
-			// locale, uniquement si l'utilisateur a indexé des documents.
-			// Knowledge base injection (RAG): local semantic search, only if the
-			// user has indexed documents.
-			let ragSources = [];
+			// Recherche documentaire locale (RAG), uniquement si l'utilisateur a
+			// indexé des documents. La génération ne doit jamais échouer à cause
+			// du RAG, d'où le try/catch dédié.
+			// Local document search (RAG), only if the user has indexed documents.
+			// Generation must never fail because of RAG, hence the dedicated
+			// try/catch.
+			let ragHits = [];
 			try {
 				if ((await oramaStore.countDocuments()) > 0) {
-					let hits = await oramaStore.search(userMessage, 4);
-					// Écarte les résultats nettement moins pertinents que le meilleur :
-					// en recherche hybride, un score < 50 % du top est du bruit.
-					// Drop results clearly less relevant than the best one: in hybrid
-					// search, a score < 50% of the top is noise.
-					if (hits.length > 1) {
-						const topScore = hits[0].score;
-						hits = hits.filter(h => h.score >= topScore * 0.5);
-					}
-					if (hits.length > 0) {
-						const ragContext = `\n\n[Knowledge Base]\nUser-provided information relevant to the question. Use it when applicable:\n${hits.map((h, i) => `${i + 1}. ${h.content}`).join('\n')}`;
-						if (chatMessages.length > 0 && chatMessages[0].role === 'system') {
-							chatMessages[0].content += ragContext;
-						} else {
-							chatMessages.unshift({ role: 'system', content: ragContext });
-						}
-
-						// Sources dédupliquées pour affichage sous la réponse
-						// Deduplicated sources for display under the answer
-						const bySource = new Map();
-						for (const h of hits) {
-							if (!bySource.has(h.source) || bySource.get(h.source) < h.score) {
-								bySource.set(h.source, h.score);
-							}
-						}
-						ragSources = [...bySource.entries()].map(([source, score]) => ({ source, score }));
-					}
+					ragHits = await oramaStore.search(userMessage, 4);
 				}
 			} catch (ragErr) {
-				// La génération ne doit jamais échouer à cause du RAG
-				// Generation must never fail because of RAG
 				console.warn('RAG search failed:', ragErr);
 			}
+
+			// Assemblage du contexte : conversion multimodale, prompt système,
+			// mode raisonnement, profil utilisateur, base de connaissances.
+			// Context assembly: multimodal conversion, system prompt, thinking
+			// mode, user profile, knowledge base.
+			const { chatMessages, ragSources } = buildChatContext($state.snapshot(this.messages), {
+				systemPrompt: this.systemPrompt,
+				userProfile: this.userProfile,
+				noThink: this.isSelectedModelThinkingCapable() && !this.thinkingEnabled,
+				ragHits
+			});
 
 			// Détermine si le modèle supporte les outils / Check if model supports tools
 			const useTools = this.isSelectedModelToolCapable() && mcpStore.availableTools.length > 0;
@@ -754,36 +679,19 @@ class LLMStore {
 				{ role: 'assistant', content: '', ...(ragSources.length > 0 ? { sources: ragSources } : {}) }
 			];
 
-			// Mécanisme de streaming batché partagé par les deux moteurs.
-			// Streaming batching mechanism shared by both engines.
-			// On mobile, updating the reactive messages array on every single token
-			// causes massive GC pressure and can trigger the browser to reload the tab.
-			// We batch updates using requestAnimationFrame to reduce reactivity churn.
-			let pendingContent = '';
-			let rafScheduled = false;
-
-			const flushContent = () => {
-				if (pendingContent) {
-					const content = pendingContent;
-					pendingContent = '';
-					this.messages = this.messages.map((msg, idx) =>
-						idx === assistantMessageIndex
-							? { ...msg, content: msg.content + content }
-							: msg
-					);
-				}
-				rafScheduled = false;
-			};
-
-			const pushDelta = (delta) => {
-				if (!delta) return;
-				pendingContent += delta;
-				// Schedule a batched UI update via rAF to avoid per-token reactivity
-				if (!rafScheduled) {
-					rafScheduled = true;
-					requestAnimationFrame(flushContent);
-				}
-			};
+			// Regroupement des jetons pour ne pas réécrire le tableau réactif à
+			// chaque token, ce qui asphyxie le ramasse-miettes en mobile.
+			// Token batching so the reactive array is not rewritten on every
+			// token, which starves the garbage collector on mobile.
+			const batcher = createStreamBatcher((content) => {
+				this.messages = this.messages.map((msg, idx) =>
+					idx === assistantMessageIndex
+						? { ...msg, content: msg.content + content }
+						: msg
+				);
+			});
+			const flushContent = () => batcher.flush();
+			const pushDelta = (delta) => batcher.push(delta);
 
 			if (this.engineType === 'transformers') {
 				// --- Génération via Transformers.js / Generation via Transformers.js ---
@@ -857,7 +765,7 @@ class LLMStore {
 					if (lastFinishReason === 'tool_calls' && toolCalls.length > 0) {
 						// Le message assistant est réécrit en entier ci-dessous : on jette le batch en attente
 						// The assistant message is fully rewritten below: discard the pending batch
-						pendingContent = '';
+						batcher.discard();
 
 						// Ajoute le message assistant avec tool_calls au contexte
 						chatMessages.push({
