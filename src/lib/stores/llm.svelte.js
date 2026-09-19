@@ -1,6 +1,6 @@
 import { hasWebLLMModelInCache, createWebLLMEngine } from '$lib/engines/webllm.js';
 import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
-import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/transformersEngine.js';
+import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/transformersCache.js';
 import { db } from '$lib/db/conversationDB.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
