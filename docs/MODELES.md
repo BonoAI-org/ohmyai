@@ -65,7 +65,7 @@ This document lists the LLM models compatible with WebLLM that you can use in th
   - Discussions générales avec le dernier modèle de Google / General chat with Google's latest model
 - **Notes importantes / Important notes**:
   - ✅ **Texte + images** : l'encodeur vision est chargé via `Gemma4ForConditionalGeneration` ; attachez des images avec le bouton 🖼️ / **Text + images**: the vision encoder is loaded via `Gemma4ForConditionalGeneration`; attach images with the 🖼️ button. (Audio pas encore branché côté UI / Audio not wired in the UI yet.)
-  - Seules les variantes **E2B/E4B** ("Efficient") tiennent dans WebGPU ; les gros Gemma 4 (26B A4B, 31B) n'ont **pas de port ONNX navigateur** et demanderaient trop de VRAM / Only the **E2B/E4B** ("Efficient") variants fit in WebGPU; the big Gemma 4 (26B A4B, 31B) have **no browser ONNX port** and would need too much VRAM.
+  - Les variantes **E2B/E4B** ("Efficient") tiennent confortablement dans WebGPU. Le **26B A4B** dispose depuis peu d'un port ONNX communautaire et figure au catalogue, mais ses 17 Go de poids le réservent aux machines à très forte mémoire graphique ; la **31B** n'a toujours aucun port navigateur / The **E2B/E4B** ("Efficient") variants fit comfortably in WebGPU. The **26B A4B** recently gained a community ONNX port and is listed in the catalog, but its 17 GB of weights restrict it to machines with very large graphics memory; the **31B** still has no browser port at all.
   - **Pourquoi un moteur différent ?** WebLLM/MLC ne supporte pas encore l'architecture `gemma4`. On utilise donc Transformers.js pour ce modèle, tout en gardant WebLLM pour tous les autres / **Why a different engine?** WebLLM/MLC does not yet support the `gemma4` architecture, so we use Transformers.js for this model while keeping WebLLM for all others.
   - Les fichiers sont mis en cache via la **Cache API** du navigateur (et non le cache WebLLM/OPFS) / Files are cached via the browser **Cache API** (not the WebLLM/OPFS cache).
 
@@ -79,6 +79,19 @@ This document lists the LLM models compatible with WebLLM that you can use in th
 - **Notes importantes / Important notes**:
   - Mêmes capacités que E2B (texte + images, Cache API, Transformers.js) / Same capabilities as E2B (text + images, Cache API, Transformers.js).
   - ⚠️ Avant le téléchargement, l'app **vérifie le matériel** (RAM rapportée par le navigateur + limites de l'adaptateur WebGPU) et avertit si la machine semble trop limitée / Before download, the app **checks the hardware** (browser-reported RAM + WebGPU adapter limits) and warns if the machine seems too limited.
+
+### 7. **Gemma 4 (26B A4B) — WebGPU** 🧪 (Expérimental / Experimental)
+- **Taille / Size**: ~17 GB
+- **RAM requise / Required RAM**: ~20 GB de mémoire graphique / ~20 GB of graphics memory
+- **Moteur / Engine**: **Transformers.js** (ONNX Runtime Web), *pas* WebLLM/MLC
+- **Modèle / Model**: `kibitz-coach/gemma-4-26B-A4B-it-ONNX` (dtype `q4f16`)
+- **Cas d'usage / Use cases**:
+  - La meilleure qualité de la famille Gemma 4 accessible en navigateur, sur une machine qui peut la porter / The best quality in the Gemma 4 family reachable in a browser, on a machine that can carry it
+- **Notes importantes / Important notes**:
+  - **Mélange d'experts** : 26 milliards de paramètres dont 4 actifs par jeton. Le calcul par jeton est celui d'un 4B, mais **tous les experts doivent résider en mémoire**, donc le poids à charger reste celui des 26 milliards / **Mixture of experts**: 26 billion parameters with 4 active per token. Per-token compute is that of a 4B model, but **all experts must reside in memory**, so the weight to load remains that of the full 26 billion.
+  - ⚠️ **Texte seul**, contrairement à E2B et E4B : ce port n'embarque pas d'encodeur vision, le bouton 🖼️ n'apparaît donc pas / ⚠️ **Text only**, unlike E2B and E4B: this port ships no vision encoder, so the 🖼️ button does not appear.
+  - **Port communautaire** : Google ne publie ce modèle qu'en safetensors et `mlc-ai` n'en a aucun build. Ce dépôt est le seul au format attendu par Transformers.js / **Community port**: Google only publishes this model as safetensors and `mlc-ai` has no build of it. This repository is the only one in the layout Transformers.js expects.
+  - ⚠️ La vérification matérielle le **refusera sur la plupart des machines**, avant tout téléchargement. C'est voulu : un refus coûte moins cher qu'un échec après 17 Go / ⚠️ The hardware check will **refuse it on most machines**, before any download. This is intended: a refusal costs less than a failure after 17 GB.
 
 ## 🔄 Comment Changer de Modèle / How to Change Model
 
@@ -110,6 +123,7 @@ You can enhance the application by adding a dropdown menu to change models dynam
 | Qwen2.5-1.5B | 950 MB | 3-4 GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Multilingue / Multilingual |
 | Gemma 4 (E2B) 🧪 | 2.4 GB | ~4 GB | ⚡⚡ | ⭐⭐⭐⭐ | Dernier modèle Google (via Transformers.js) |
 | Gemma 4 (E4B) 🧪 | ~5 GB | ~8 GB | ⚡ | ⭐⭐⭐⭐⭐ | Meilleur Gemma 4 navigateur (via Transformers.js) |
+| Gemma 4 (26B A4B) 🧪 | ~17 GB | ~20 GB | ⚡ | ⭐⭐⭐⭐⭐ | Machines à très forte mémoire graphique, texte seul |
 
 ## 🔍 Autres Modèles Disponibles / Other Available Models
 

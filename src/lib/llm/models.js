@@ -32,9 +32,7 @@ export const AVAILABLE_MODELS = [
 	},
 	{
 		// Variante E4B : plus grosse et meilleure que E2B, même architecture.
-		// Les Gemma 4 26B/31B n'ont pas de port ONNX navigateur — voir docs/MODELES.md.
 		// E4B variant: bigger and better than E2B, same architecture.
-		// Gemma 4 26B/31B have no browser ONNX port — see docs/MODELES.md.
 		id: 'onnx-community/gemma-4-E4B-it-ONNX',
 		name: 'Gemma 4 (E4B) — WebGPU',
 		size: '~5.5 GB',
@@ -44,6 +42,45 @@ export const AVAILABLE_MODELS = [
 		contextWindow: 32768,
 		dtype: 'q4f16',
 		multimodal: true,
+		experimental: true,
+		recommended: false
+	},
+	{
+		// Variante 26B A4B : mélange d'experts, 26 milliards de paramètres dont
+		// 4 actifs par jeton. Les experts doivent tous résider en mémoire, donc
+		// le poids à charger reste celui des 26 milliards.
+		// 26B A4B variant: mixture of experts, 26 billion parameters with 4
+		// active per token. All experts must reside in memory, so the weight to
+		// load remains that of the full 26 billion.
+		//
+		// Google ne publie ce modèle qu'en safetensors, et mlc-ai n'en a aucun
+		// build : ce port communautaire est le seul au format attendu par
+		// Transformers.js. Il est texte seul, sans encodeur vision, contrairement
+		// aux variantes E2B et E4B — d'où `multimodal: false`.
+		// Google only publishes this model as safetensors, and mlc-ai has no
+		// build of it: this community port is the only one in the layout
+		// Transformers.js expects. It is text-only, with no vision encoder,
+		// unlike the E2B and E4B variants — hence `multimodal: false`.
+		//
+		// À 17 Go de poids, la vérification matérielle le refusera sur la plupart
+		// des machines, ce qui est voulu : mieux vaut un refus avant
+		// téléchargement qu'un échec après.
+		// At 17 GB of weights, the hardware check will refuse it on most
+		// machines, which is intended: a refusal before downloading beats a
+		// failure after.
+		id: 'kibitz-coach/gemma-4-26B-A4B-it-ONNX',
+		name: 'Gemma 4 (26B A4B) — WebGPU',
+		size: '~17 GB',
+		vram: '~20 GB',
+		description: 'Google Gemma 4 26B A4B (mélange d\'experts, texte seul) via Transformers.js. Port communautaire, très gourmand : réservé aux machines à forte mémoire graphique. Expérimental.',
+		engine: 'transformers',
+		// Le modèle annonce 262144 jetons, hors de portée d'un cache clé/valeur
+		// en navigateur. On déclare la même valeur prudente que E2B et E4B.
+		// The model advertises 262144 tokens, out of reach for a browser
+		// key/value cache. We declare the same conservative value as E2B and E4B.
+		contextWindow: 32768,
+		dtype: 'q4f16',
+		multimodal: false,
 		experimental: true,
 		recommended: false
 	},
