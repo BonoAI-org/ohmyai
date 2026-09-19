@@ -1,8 +1,11 @@
 # Intégration continue / Continuous integration
-# Rejoue les trois portes de qualité du projet sur chaque PR :
-# build de production, svelte-check, tests end-to-end Playwright.
-# Runs the project's three quality gates on every PR:
-# production build, svelte-check, Playwright end-to-end tests.
+# Rejoue les portes de qualité automatisables sur chaque PR :
+# build de production, svelte-check, tests unitaires.
+# Les parcours d'interface sont vérifiés à part, dans un vrai Chrome piloté
+# par Claude Code ; voir e2e/README.md.
+# Runs the automatable quality gates on every PR: production build,
+# svelte-check, unit tests. Interface journeys are verified separately, in a
+# real Chrome driven by Claude Code; see e2e/README.md.
 name: CI
 
 on:
@@ -18,7 +21,7 @@ concurrency:
 
 jobs:
   ci:
-    name: build, check, e2e
+    name: build, check, tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -51,27 +54,4 @@ jobs:
         run: bun run check
 
       - name: Unit tests
-        run: bun run test:unit
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-
-      - name: Install Playwright Chromium
-        run: bunx playwright install --with-deps chromium
-
-      - name: End-to-end tests
         run: bun run test
-
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
