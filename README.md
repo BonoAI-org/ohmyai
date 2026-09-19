@@ -21,7 +21,8 @@ A modern web application that runs a Large Language Model (LLM) entirely in your
 
 ## 📋 Prerequisites
 
-- **Bun**: Version 1.0 or higher
+- **Bun**: Version 1.3 or higher (the only package manager this project uses)
+- **Node.js**: Version 20.19 or higher, required by Vite and Playwright
 - **Modern browser**: Chrome, Firefox, Safari or Edge with WebAssembly support
 - **Memory**: At least 4 GB RAM recommended
 
@@ -66,6 +67,26 @@ To preview the production build:
 bun run preview
 ```
 
+## ✅ Quality gates
+
+The same three commands run locally and in CI on every pull request:
+
+```sh
+bun run check
+```
+
+```sh
+bun run test:unit
+```
+
+```sh
+bun run test
+```
+
+`check` runs svelte-check, `test:unit` runs the Bun unit tests over `src/lib`,
+and `test` runs the Playwright end-to-end suite. The first end-to-end run needs
+the browser: `bunx playwright install chromium`.
+
 ## 🎯 Usage
 
 ### First use
@@ -84,23 +105,54 @@ bun run preview
 
 ```
 ohmyai/
+├── .github/workflows/ci.yml           # CI: build, svelte-check, unit + e2e tests
 ├── src/
 │   ├── lib/
-│   │   ├── components/
-│   │   │   └── ChatMessage.svelte     # Message component
-│   │   └── stores/
-│   │       └── llm.svelte.js          # LLM management store
+│   │   ├── components/                # UI, all assembled by the chat page
+│   │   │   ├── AppHeader.svelte       # Branding, actions, language + model pickers
+│   │   │   ├── ModelSelector.svelte   # Model dropdown, owns its outside-click
+│   │   │   ├── StatusPanels.svelte    # RAM / loading / download / error banners
+│   │   │   ├── MessageList.svelte     # Welcome screen + conversation messages
+│   │   │   ├── ChatMessage.svelte     # One message, thinking block, tool calls
+│   │   │   ├── ChatComposer.svelte    # Textarea, image attachments, send/stop
+│   │   │   └── ...                    # Modals, history panel, knowledge base
+│   │   ├── engines/
+│   │   │   ├── webllm.js              # Lazy @mlc-ai/web-llm loader (own chunk)
+│   │   │   ├── transformersEngine.js  # ONNX Runtime Web engine (lazy)
+│   │   │   └── transformersCache.js   # Cache API probing, library-free
+│   │   ├── llm/                       # Pure logic, unit-tested with `bun test`
+│   │   │   ├── models.js              # Model catalog + lookup helpers
+│   │   │   ├── chatContext.js         # Context assembly sent to the model
+│   │   │   ├── streamBatcher.js       # Per-frame token batching
+│   │   │   ├── toolLoop.js            # MCP tool-calling rounds
+│   │   │   ├── hardware.js            # Pre-download hardware estimation
+│   │   │   ├── conversationMeta.js    # Id, title, custom-model merging
+│   │   │   ├── conversationRepo.js    # IndexedDB access (Dexie)
+│   │   │   ├── storage.js             # Forgiving localStorage access
+│   │   │   └── exportMarkdown.js      # Conversation export
+│   │   ├── rag/                       # Local retrieval: ingestion, plain text
+│   │   ├── stores/                    # Reactive state (Svelte 5 runes)
+│   │   │   ├── llm.svelte.js          # LLM state owner and public facade
+│   │   │   ├── mcp.svelte.js          # MCP servers and tools
+│   │   │   ├── orama.svelte.js        # Vector index for the knowledge base
+│   │   │   ├── theme.svelte.js        # Light/dark theme
+│   │   │   └── installPrompt.svelte.js# PWA install prompt
+│   │   ├── db/conversationDB.js       # Dexie schema and migrations
+│   │   └── opfs.js                    # Origin Private File System helpers
 │   ├── routes/
 │   │   ├── +layout.svelte             # Main layout
-│   │   └── +page.svelte               # Chat page
+│   │   └── +page.svelte               # Chat page, assembles the components
+│   ├── service-worker.js              # PWA caching + OPFS model interception
 │   ├── app.css                        # Global styles
 │   └── app.html                       # HTML template
+├── e2e/                               # Playwright end-to-end tests
 ├── static/                            # Static files
-├── package.json                       # Dependencies
+├── package.json                       # Dependencies (Bun)
 ├── svelte.config.js                   # Svelte configuration
-├── vite.config.js                     # Vite configuration
-└── tailwind.config.js                 # Tailwind configuration
+└── vite.config.js                     # Vite + PWA configuration
 ```
+
+Unit tests live next to the module they cover, as `*.test.js`.
 
 ## 🔧 Configuration
 
