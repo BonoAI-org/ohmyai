@@ -20,20 +20,28 @@ import { db } from '$lib/db/conversationDB.js';
  * Écrit une conversation, en préservant son horodatage de création.
  * Writes a conversation, preserving its creation timestamp.
  *
- * @param {{ id: string, title: string, messages: Array<any>, model: string, isExisting: boolean }} conversation
+ * @param {{
+ *   id: string,
+ *   title: string,
+ *   titleIsCustom?: boolean,
+ *   messages: Array<any>,
+ *   model: string,
+ *   existing?: { timestamp?: number } | null
+ * }} conversation
  * @returns {Promise<void>}
  */
-export async function persistConversation({ id, title, messages, model, isExisting }) {
-	const timestamp = isExisting
-		? (await db.getConversation(id))?.timestamp || Date.now()
-		: Date.now();
-
+export async function persistConversation({ id, title, titleIsCustom, messages, model, existing }) {
 	await db.saveConversation({
 		id,
 		title,
+		// Marque un titre choisi par l'utilisateur, pour que les sauvegardes
+		// automatiques suivantes ne le régénèrent pas.
+		// Flags a user-chosen title, so later automatic saves do not
+		// regenerate it.
+		titleIsCustom: !!titleIsCustom,
 		messages,
 		model,
-		timestamp,
+		timestamp: existing?.timestamp || Date.now(),
 		lastModified: Date.now()
 	});
 }
@@ -85,7 +93,16 @@ export function removeConversation(id) {
 export async function renameInDb(id, title) {
 	const conversation = await db.getConversation(id);
 	if (!conversation) return false;
-	await db.saveConversation({ ...conversation, title, lastModified: Date.now() });
+	await db.saveConversation({
+		...conversation,
+		title,
+		// Un renommage fixe le titre : les sauvegardes automatiques ne doivent
+		// plus le remplacer par un titre déduit du premier message.
+		// A rename pins the title: automatic saves must no longer replace it
+		// with one derived from the first message.
+		titleIsCustom: true,
+		lastModified: Date.now()
+	});
 	return true;
 }
 
