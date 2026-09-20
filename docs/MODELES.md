@@ -78,7 +78,7 @@ This document lists the LLM models compatible with WebLLM that you can use in th
   - Meilleure qualité que E2B pour les machines avec assez de mémoire / Better quality than E2B for machines with enough memory
 - **Notes importantes / Important notes**:
   - Mêmes capacités que E2B (texte + images, Cache API, Transformers.js) / Same capabilities as E2B (text + images, Cache API, Transformers.js).
-  - ⚠️ Avant le téléchargement, l'app **vérifie le matériel** (RAM rapportée par le navigateur + limites de l'adaptateur WebGPU) et avertit si la machine semble trop limitée / Before download, the app **checks the hardware** (browser-reported RAM + WebGPU adapter limits) and warns if the machine seems too limited.
+  - ⚠️ Avant le téléchargement, l'app **vérifie le matériel** et avertit si la machine semble trop limitée, en nommant le critère fautif. WebGPU n'exposant aucune mémoire graphique totale, le budget retenu est la mémoire rapportée par le navigateur : c'est le bon chiffre sur les GPU à mémoire unifiée, et une surestimation sur une carte dédiée / Before download, the app **checks the hardware** and warns if the machine seems too limited, naming the failing criterion. Since WebGPU exposes no total graphics memory, the budget used is the browser-reported memory: the right figure on unified-memory GPUs, an overestimate on a discrete card.
 
 ### 7. **Gemma 4 (26B A4B) — WebGPU** 🧪 (Expérimental / Experimental)
 - **Taille / Size**: ~17 GB
@@ -91,7 +91,7 @@ This document lists the LLM models compatible with WebLLM that you can use in th
   - **Mélange d'experts** : 26 milliards de paramètres dont 4 actifs par jeton. Le calcul par jeton est celui d'un 4B, mais **tous les experts doivent résider en mémoire**, donc le poids à charger reste celui des 26 milliards / **Mixture of experts**: 26 billion parameters with 4 active per token. Per-token compute is that of a 4B model, but **all experts must reside in memory**, so the weight to load remains that of the full 26 billion.
   - ⚠️ **Texte seul**, contrairement à E2B et E4B : ce port n'embarque pas d'encodeur vision, le bouton 🖼️ n'apparaît donc pas / ⚠️ **Text only**, unlike E2B and E4B: this port ships no vision encoder, so the 🖼️ button does not appear.
   - **Port communautaire** : Google ne publie ce modèle qu'en safetensors et `mlc-ai` n'en a aucun build. Ce dépôt est le seul au format attendu par Transformers.js / **Community port**: Google only publishes this model as safetensors and `mlc-ai` has no build of it. This repository is the only one in the layout Transformers.js expects.
-  - ⚠️ La vérification matérielle le **refusera sur la plupart des machines**, avant tout téléchargement. C'est voulu : un refus coûte moins cher qu'un échec après 17 Go / ⚠️ The hardware check will **refuse it on most machines**, before any download. This is intended: a refusal costs less than a failure after 17 GB.
+  - ⚠️ La vérification matérielle le **refuse dès que le navigateur rapporte moins de 20 Go de mémoire**, avant tout téléchargement, donc sur une machine de 16 Go et moins. Un refus coûte moins cher qu'un échec après 17 Go / ⚠️ The hardware check **refuses it as soon as the browser reports less than 20 GB of memory**, before any download, so on a 16 GB machine or below. A refusal costs less than a failure after 17 GB.
 
 ## 🔄 Comment Changer de Modèle / How to Change Model
 

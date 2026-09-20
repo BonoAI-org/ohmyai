@@ -66,41 +66,57 @@ describe('hasMinimumRam', () => {
 });
 
 describe('estimateHardwareSupport', () => {
-	test('valide une machine confortable', async () => {
-		const out = await estimateHardwareSupport({ vram: '4 GB' }, nav({ ram: 16, gpuBufferGB: 2 }));
+	test('accepte un modèle qui tient dans la mémoire rapportée', async () => {
+		const out = await estimateHardwareSupport({ vram: '8 GB' }, nav({ ram: 32, gpuBufferGB: 4 }));
 		expect(out.supported).toBe(true);
-		expect(out.requiredGB).toBe(4);
-		expect(out.deviceMemoryGB).toBe(16);
-		expect(out.gpuMaxBufferGB).toBe(2);
+		expect(out.reason).toBeNull();
+		expect(out.requiredGB).toBe(8);
+		expect(out.deviceMemoryGB).toBe(32);
+		expect(out.gpuMaxBufferGB).toBe(4);
 	});
 
-	test('refuse quand la RAM déclarée est sous le besoin', async () => {
-		const out = await estimateHardwareSupport({ vram: '6 GB' }, nav({ ram: 4, gpuBufferGB: 4 }));
+	test('un gros modèle passe si la mémoire suffit, quel que soit le buffer', async () => {
+		// C'est l'assouplissement : l'ancienne règle exigeait un buffer couvrant
+		// le quart du modèle, soit 5 Go pour 20 Go, ce qu'aucun Mac ne fournit,
+		// le plafond WebGPU y étant de 4 Gio.
+		const out = await estimateHardwareSupport({ vram: '20 GB' }, nav({ ram: 32, gpuBufferGB: 4 }));
+		expect(out.supported).toBe(true);
+		expect(out.reason).toBeNull();
+	});
+
+	test('refuse quand le modèle dépasse la mémoire rapportée', async () => {
+		const out = await estimateHardwareSupport({ vram: '20 GB' }, nav({ ram: 16, gpuBufferGB: 4 }));
 		expect(out.supported).toBe(false);
+		expect(out.reason).toBe('memory');
 	});
 
-	test('ne conclut rien d\'un deviceMemory au plafond de Chrome', async () => {
-		// 8 signifie « 8 Go ou plus » : un modèle de 10 Go ne doit pas être
-		// refusé sur ce seul indice.
-		const out = await estimateHardwareSupport({ vram: '10 GB' }, nav({ ram: 8, gpuBufferGB: 4 }));
+	test('accepte un modèle égal à la mémoire rapportée', async () => {
+		const out = await estimateHardwareSupport({ vram: '16 GB' }, nav({ ram: 16, gpuBufferGB: 4 }));
 		expect(out.supported).toBe(true);
 	});
 
-	test('refuse un adaptateur dont le buffer maximal est trop petit', async () => {
-		// Besoin 8 Go, le buffer doit couvrir au moins 2 Go.
-		const out = await estimateHardwareSupport({ vram: '8 GB' }, nav({ ram: 32, gpuBufferGB: 1 }));
+	test('refuse un buffer GPU sous le plancher', async () => {
+		const out = await estimateHardwareSupport({ vram: '5 GB' }, nav({ ram: 32, gpuBufferGB: 0.25 }));
 		expect(out.supported).toBe(false);
-		expect(out.gpuMaxBufferGB).toBe(1);
+		expect(out.reason).toBe('gpu-buffer');
 	});
 
-	test('accepte un buffer juste au quart du besoin', async () => {
-		const out = await estimateHardwareSupport({ vram: '8 GB' }, nav({ ram: 32, gpuBufferGB: 2 }));
+	test('accepte un buffer GPU juste au plancher', async () => {
+		const out = await estimateHardwareSupport({ vram: '5 GB' }, nav({ ram: 32, gpuBufferGB: 1 }));
 		expect(out.supported).toBe(true);
 	});
 
-	test('refuse quand aucun adaptateur WebGPU n\'est fourni', async () => {
+	test('refuse sans adaptateur WebGPU', async () => {
 		const out = await estimateHardwareSupport({ vram: '2 GB' }, nav({ ram: 32, noAdapter: true }));
 		expect(out.supported).toBe(false);
+		expect(out.reason).toBe('no-webgpu');
+	});
+
+	test('refuse sans WebGPU du tout', async () => {
+		// Distinct d'une requête qui échoue : l'absence de WebGPU est concluante.
+		const out = await estimateHardwareSupport({ vram: '2 GB' }, { deviceMemory: 32 });
+		expect(out.supported).toBe(false);
+		expect(out.reason).toBe('no-webgpu');
 	});
 
 	test('reste permissif si la requête d\'adaptateur échoue', async () => {
@@ -108,14 +124,19 @@ describe('estimateHardwareSupport', () => {
 		// tenter et échouer avec un message clair.
 		const out = await estimateHardwareSupport({ vram: '2 GB' }, nav({ ram: 32, gpuFails: true }));
 		expect(out.supported).toBe(true);
+		expect(out.reason).toBeNull();
 		expect(out.gpuMaxBufferGB).toBeNull();
 	});
 
-	test('refuse sans WebGPU du tout', async () => {
-		// Distinct du cas précédent : l'absence de WebGPU est concluante, aucun
-		// modèle ne peut tourner.
-		const out = await estimateHardwareSupport({ vram: '2 GB' }, { deviceMemory: 32 });
-		expect(out.supported).toBe(false);
+	test('le manque de mémoire est signalé même si le GPU est correct', async () => {
+		const out = await estimateHardwareSupport({ vram: '64 GB' }, nav({ ram: 8, gpuBufferGB: 4 }));
+		expect(out.reason).toBe('memory');
+	});
+
+	test('sans information de mémoire, ne refuse pas sur ce critère', async () => {
+		const out = await estimateHardwareSupport({ vram: '20 GB' }, { gpu: nav({ gpuBufferGB: 4 }).gpu });
+		expect(out.supported).toBe(true);
+		expect(out.deviceMemoryGB).toBeNull();
 	});
 
 	test('arrondit les valeurs rapportées au dixième', async () => {
@@ -124,8 +145,8 @@ describe('estimateHardwareSupport', () => {
 		expect(out.gpuMaxBufferGB).toBe(1.2);
 	});
 
-	test('un modèle sans information n\'est pas refusé sur la VRAM', async () => {
-		const out = await estimateHardwareSupport({}, nav({ ram: 2, gpuBufferGB: 0.001 }));
+	test('un modèle sans information de taille n\'est jamais refusé', async () => {
+		const out = await estimateHardwareSupport({}, nav({ ram: 2, gpuBufferGB: 4 }));
 		expect(out.requiredGB).toBe(0);
 		expect(out.supported).toBe(true);
 	});
