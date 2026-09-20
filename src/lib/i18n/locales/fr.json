@@ -45,8 +45,12 @@
 		"downloadAnyway": "Télécharger quand même",
 		"hardwareUnsupported": "Cet appareil ne semble pas assez puissant pour ce modèle.",
 		"hardwareRequired": "Mémoire requise",
-		"hardwareDetected": "RAM détectée",
-		"hardwareGpuBuffer": "Buffer GPU max"
+		"hardwareDetected": "Mémoire rapportée",
+		"hardwareGpuBuffer": "Buffer GPU max",
+		"hardwareReasonMemory": "Ce modèle demande ~{required} GB, or le navigateur ne rapporte que {detected} GB de mémoire.",
+		"hardwareReasonGpuBuffer": "Le GPU ne peut allouer que {buffer} GB par tampon, trop peu pour charger un modèle.",
+		"hardwareReasonNoWebgpu": "WebGPU n'est pas disponible dans ce navigateur.",
+		"hardwareMemoryCaveat": "Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle."
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",

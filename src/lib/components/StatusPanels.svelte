@@ -115,38 +115,71 @@
 			</div>
 			{#if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
 				<!-- Avertissement matériel insuffisant / Insufficient hardware warning -->
+				<!--
+					Le message nomme le critère fautif. Auparavant il annonçait un
+					appareil « pas assez puissant » puis listait la mémoire et le
+					buffer GPU sans dire lequel bloquait, si bien qu'une machine
+					dotée de 32 Go voyait un refus en face d'un besoin de 20 Go.
+					The message names the failing criterion. It used to announce a
+					device "not powerful enough" then list memory and GPU buffer
+					without saying which one blocked, so a machine with 32 GB saw a
+					refusal next to a 20 GB requirement.
+				-->
 				<div
 					class="bg-amber-500/15 border border-amber-500/60 rounded-lg p-3 text-sm max-w-md mx-auto"
 				>
-					<p
-						class="font-semibold text-amber-700 dark:text-amber-300"
-					>
-						⚠️ {$_("loading.hardwareUnsupported", {
-							default:
-								"Cet appareil ne semble pas assez puissant pour ce modèle. / This device does not seem powerful enough for this model.",
-						})}
+					<p class="font-semibold text-amber-700 dark:text-amber-300">
+						⚠️
+						{#if llmStore.hardwareCheck.reason === "memory"}
+							{$_("loading.hardwareReasonMemory", {
+								values: {
+									required: llmStore.hardwareCheck.requiredGB,
+									detected: llmStore.hardwareCheck.deviceMemoryGB,
+								},
+								default:
+									"Ce modèle demande ~{required} GB, or le navigateur ne rapporte que {detected} GB de mémoire.",
+							})}
+						{:else if llmStore.hardwareCheck.reason === "gpu-buffer"}
+							{$_("loading.hardwareReasonGpuBuffer", {
+								values: { buffer: llmStore.hardwareCheck.gpuMaxBufferGB },
+								default:
+									"Le GPU ne peut allouer que {buffer} GB par tampon, trop peu pour charger un modèle.",
+							})}
+						{:else if llmStore.hardwareCheck.reason === "no-webgpu"}
+							{$_("loading.hardwareReasonNoWebgpu", {
+								default: "WebGPU n'est pas disponible dans ce navigateur.",
+							})}
+						{:else}
+							{$_("loading.hardwareUnsupported", {
+								default: "Cet appareil ne semble pas assez puissant pour ce modèle.",
+							})}
+						{/if}
 					</p>
-					<p
-						class="text-xs mt-1 text-amber-700/90 dark:text-amber-300/90"
-					>
+					<p class="text-xs mt-1 text-amber-700/90 dark:text-amber-300/90">
 						{$_("loading.hardwareRequired", {
-							default: "Mémoire requise / Required memory",
+							default: "Mémoire requise",
 						})}: ~{llmStore.hardwareCheck.requiredGB} GB
 						{#if llmStore.hardwareCheck.deviceMemoryGB}
 							• {$_("loading.hardwareDetected", {
-								default: "RAM détectée / Detected RAM",
-							})}: {llmStore.hardwareCheck
-								.deviceMemoryGB}{llmStore.hardwareCheck
-								.deviceMemoryGB >= 8
-								? "+"
-								: ""} GB
+								default: "Mémoire rapportée",
+							})}: {llmStore.hardwareCheck.deviceMemoryGB} GB
 						{/if}
 						{#if llmStore.hardwareCheck.gpuMaxBufferGB}
 							• {$_("loading.hardwareGpuBuffer", {
-								default: "Buffer GPU max / Max GPU buffer",
+								default: "Buffer GPU max",
 							})}: {llmStore.hardwareCheck.gpuMaxBufferGB} GB
 						{/if}
 					</p>
+					<!-- La nuance sur l'arrondi ne vaut que si la mémoire est en cause. -->
+					<!-- The rounding caveat only matters when memory is the blocker. -->
+					{#if llmStore.hardwareCheck.reason === "memory"}
+						<p class="text-xs mt-1 text-amber-700/70 dark:text-amber-300/70">
+							{$_("loading.hardwareMemoryCaveat", {
+								default:
+									"Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle.",
+							})}
+						</p>
+					{/if}
 				</div>
 			{/if}
 			<div class="flex gap-4 mt-4">

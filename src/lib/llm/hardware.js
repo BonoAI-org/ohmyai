@@ -23,12 +23,14 @@
 export const MIN_RAM_GB = 4;
 
 /**
- * Plafond de `navigator.deviceMemory` dans Chrome. Une valeur égale au plafond
- * signifie « autant ou plus », donc on ne peut en conclure un manque de RAM.
- * Cap of `navigator.deviceMemory` in Chrome. A value equal to the cap means
- * "that much or more", so it cannot prove a RAM shortage.
+ * Taille minimale d'un buffer GPU en deçà de laquelle aucun de nos modèles ne
+ * peut tourner. C'est un plancher de bon sens, pas une proportion du modèle :
+ * les runtimes répartissent les poids sur de nombreux buffers.
+ * Minimum GPU buffer size below which none of our models can run. It is a
+ * sanity floor, not a proportion of the model: runtimes spread the weights
+ * across many buffers.
  */
-const DEVICE_MEMORY_CAP_GB = 8;
+export const MIN_GPU_BUFFER_GB = 1;
 
 /**
  * Extrait un nombre de gigaoctets d'une chaîne comme « 4.2 GB ».
@@ -80,22 +82,49 @@ export function hasMinimumRam(minGb = MIN_RAM_GB, nav = globalThis.navigator) {
  *
  * @param {{ vram?: string, size?: string } | null | undefined} modelConfig
  * @param {{ deviceMemory?: number, gpu?: { requestAdapter: () => Promise<any> } } | undefined} [nav]
- * @returns {Promise<{ supported: boolean, requiredGB: number, deviceMemoryGB: number | null, gpuMaxBufferGB: number | null }>}
+ * @returns {Promise<{
+ *   supported: boolean,
+ *   reason: 'memory' | 'gpu-buffer' | 'no-webgpu' | null,
+ *   requiredGB: number,
+ *   deviceMemoryGB: number | null,
+ *   gpuMaxBufferGB: number | null
+ * }>}
  */
 export async function estimateHardwareSupport(modelConfig, nav = globalThis.navigator) {
 	const requiredGB = requiredVramGB(modelConfig);
 
 	const result = {
 		supported: true,
+		/** Critère fautif, pour que le message affiché le nomme. */
+		reason: null,
 		requiredGB: Math.round(requiredGB * 10) / 10,
 		deviceMemoryGB: null,
 		gpuMaxBufferGB: null
 	};
 
+	// Budget mémoire. WebGPU n'expose aucune mémoire graphique totale : aucune
+	// limite de l'adaptateur ne la donne. Le seul chiffre disponible est la
+	// mémoire système, qui est le bon budget sur les GPU à mémoire unifiée
+	// (Apple Silicon, puces intégrées) puisque le GPU y puise. Sur une carte
+	// dédiée, elle surestime la mémoire graphique ; le bouton de contournement
+	// reste là pour ce cas.
+	// Memory budget. WebGPU exposes no total graphics memory: no adapter limit
+	// provides it. The only available figure is system memory, which is the
+	// right budget on unified-memory GPUs (Apple Silicon, integrated chips)
+	// since the GPU draws from it. On a discrete card it overestimates graphics
+	// memory; the override button is there for that case.
+	//
+	// `navigator.deviceMemory` est arrondie et plafonnée par le navigateur pour
+	// limiter l'identification : elle sous-estime, jamais l'inverse. Un refus
+	// fondé sur elle est donc prudent par construction.
+	// `navigator.deviceMemory` is rounded and capped by the browser to limit
+	// fingerprinting: it under-reports, never the opposite. A refusal based on
+	// it is therefore conservative by construction.
 	if (nav?.deviceMemory) {
 		result.deviceMemoryGB = nav.deviceMemory;
-		if (nav.deviceMemory < DEVICE_MEMORY_CAP_GB && requiredGB > nav.deviceMemory) {
+		if (requiredGB > nav.deviceMemory) {
 			result.supported = false;
+			result.reason = 'memory';
 		}
 	}
 
@@ -104,17 +133,13 @@ export async function estimateHardwareSupport(modelConfig, nav = globalThis.navi
 		if (adapter) {
 			const maxBufferGB = adapter.limits.maxBufferSize / 1024 ** 3;
 			result.gpuMaxBufferGB = Math.round(maxBufferGB * 10) / 10;
-			// Les poids sont répartis sur plusieurs buffers GPU : on exige que le
-			// buffer maximal couvre au moins le quart du modèle, sinon
-			// l'adaptateur est trop limité pour cette taille.
-			// Weights are split across several GPU buffers: the max buffer must
-			// cover at least a quarter of the model, otherwise the adapter is too
-			// limited for this size.
-			if (requiredGB > 0 && maxBufferGB < requiredGB / 4) {
+			if (maxBufferGB < MIN_GPU_BUFFER_GB) {
 				result.supported = false;
+				result.reason = 'gpu-buffer';
 			}
 		} else {
 			result.supported = false;
+			result.reason = 'no-webgpu';
 		}
 	} catch (_) {
 		// Requête adaptateur échouée : on reste permissif, le chargement

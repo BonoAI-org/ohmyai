@@ -62,12 +62,13 @@ export const AVAILABLE_MODELS = [
 		// Transformers.js expects. It is text-only, with no vision encoder,
 		// unlike the E2B and E4B variants — hence `multimodal: false`.
 		//
-		// À 17 Go de poids, la vérification matérielle le refusera sur la plupart
-		// des machines, ce qui est voulu : mieux vaut un refus avant
-		// téléchargement qu'un échec après.
-		// At 17 GB of weights, the hardware check will refuse it on most
-		// machines, which is intended: a refusal before downloading beats a
-		// failure after.
+		// À 17 Go de poids, la vérification matérielle le refuse dès que le
+		// navigateur rapporte moins de 20 Go de mémoire, donc sur une machine
+		// de 16 Go et moins. Mieux vaut un refus avant téléchargement qu'un
+		// échec après.
+		// At 17 GB of weights, the hardware check refuses it as soon as the
+		// browser reports less than 20 GB of memory, so on a 16 GB machine or
+		// below. A refusal before downloading beats a failure after.
 		id: 'kibitz-coach/gemma-4-26B-A4B-it-ONNX',
 		name: 'Gemma 4 (26B A4B) — WebGPU',
 		size: '~17 GB',

@@ -45,8 +45,12 @@
 		"downloadAnyway": "Download anyway",
 		"hardwareUnsupported": "This device does not seem powerful enough for this model.",
 		"hardwareRequired": "Required memory",
-		"hardwareDetected": "Detected RAM",
-		"hardwareGpuBuffer": "Max GPU buffer"
+		"hardwareDetected": "Reported memory",
+		"hardwareGpuBuffer": "Max GPU buffer",
+		"hardwareReasonMemory": "This model needs ~{required} GB, but the browser only reports {detected} GB of memory.",
+		"hardwareReasonGpuBuffer": "The GPU can only allocate {buffer} GB per buffer, too little to load a model.",
+		"hardwareReasonNoWebgpu": "WebGPU is not available in this browser.",
+		"hardwareMemoryCaveat": "The browser rounds and caps the memory it reports: the figure may be lower than the actual memory."
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
