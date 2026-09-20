@@ -93,6 +93,14 @@ This document lists the LLM models compatible with WebLLM that you can use in th
   - **Port communautaire** : Google ne publie ce modèle qu'en safetensors et `mlc-ai` n'en a aucun build. Ce dépôt est le seul au format attendu par Transformers.js / **Community port**: Google only publishes this model as safetensors and `mlc-ai` has no build of it. This repository is the only one in the layout Transformers.js expects.
   - ⚠️ La vérification matérielle le **refuse dès que le navigateur rapporte moins de 20 Go de mémoire**, avant tout téléchargement, donc sur une machine de 16 Go et moins. Un refus coûte moins cher qu'un échec après 17 Go / ⚠️ The hardware check **refuses it as soon as the browser reports less than 20 GB of memory**, before any download, so on a 16 GB machine or below. A refusal costs less than a failure after 17 GB.
 
+### 8. **Variantes QAT de Gemma 4** 🧪 (Expérimental / Experimental)
+- **Modèles / Models**: `onnx-community/gemma-4-E2B-it-qat-mobile-ONNX` (~2.6 GB), `onnx-community/gemma-4-E4B-it-qat-mobile-ONNX` (~3.6 GB)
+- **Moteur / Engine**: **Transformers.js** (ONNX Runtime Web)
+- **Notes importantes / Important notes**:
+  - **Quantification pendant l'entraînement** et non après : le modèle apprend en tenant compte de la perte de précision, ce qui rend 2 bits utilisable là où une quantification postérieure dégraderait trop. Elles pèsent donc moins que les variantes E2B et E4B pour une qualité proche / **Quantization during training** rather than after: the model learns while accounting for the precision loss, which makes 2 bits usable where post-training quantization would degrade too much. They therefore weigh less than the E2B and E4B variants for comparable quality.
+  - Texte + images comme leurs équivalents non QAT, et elles embarquent aussi un encodeur audio, pas encore branché côté interface / Text + images like their non-QAT counterparts, and they also ship an audio encoder, not wired in the UI yet.
+  - Leur encodeur vision n'est publié qu'en fp16 : le catalogue déclare donc un `dtype` par sous-modèle et non une chaîne unique / Their vision encoder is only published in fp16: the catalog therefore declares a per-submodel `dtype` rather than a single string.
+
 ## 🔄 Comment Changer de Modèle / How to Change Model
 
 ### Méthode 1: Modifier le code / Edit the code
@@ -124,6 +132,14 @@ You can enhance the application by adding a dropdown menu to change models dynam
 | Gemma 4 (E2B) 🧪 | 2.4 GB | ~4 GB | ⚡⚡ | ⭐⭐⭐⭐ | Dernier modèle Google (via Transformers.js) |
 | Gemma 4 (E4B) 🧪 | ~5 GB | ~8 GB | ⚡ | ⭐⭐⭐⭐⭐ | Meilleur Gemma 4 navigateur (via Transformers.js) |
 | Gemma 4 (26B A4B) 🧪 | ~17 GB | ~20 GB | ⚡ | ⭐⭐⭐⭐⭐ | Machines à très forte mémoire graphique, texte seul |
+| Gemma 4 (E2B QAT) 🧪 | ~2.6 GB | ~4 GB | ⚡⚡ | ⭐⭐⭐⭐ | Gemma 4 le plus léger, texte + images |
+| Gemma 4 (E4B QAT) 🧪 | ~3.6 GB | ~5 GB | ⚡⚡ | ⭐⭐⭐⭐ | E4B allégé, texte + images |
+| Qwen 3.5 (2B) | ~1.1 GB | ~2.2 GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Dernier Qwen en version légère |
+| Qwen 3.5 (4B) | ~2.4 GB | ~3.8 GB | ⚡⚡ | ⭐⭐⭐⭐⭐ | Dernier Qwen, bon compromis |
+| Qwen 3.5 (9B) | ~5.1 GB | ~6.3 GB | ⚡ | ⭐⭐⭐⭐⭐ | Le plus capable en navigateur |
+| Phi-4 Mini | ~2.2 GB | ~3.4 GB | ⚡⚡ | ⭐⭐⭐⭐ | Code et raisonnement |
+| DeepSeek R1 Distill (7B) | ~4.3 GB | ~5 GB | ⚡ | ⭐⭐⭐⭐ | Raisonnement |
+| Qwen 2.5 Coder (7B) | ~4.3 GB | ~5 GB | ⚡ | ⭐⭐⭐⭐⭐ | Code |
 
 ## 🔍 Autres Modèles Disponibles / Other Available Models
 
