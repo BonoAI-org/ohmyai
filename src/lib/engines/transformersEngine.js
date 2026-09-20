@@ -236,7 +236,14 @@ export class TransformersEngine {
 	 * @param {string} modelId
 	 * @param {Object} [options]
 	 * @param {(progress:{text:string}) => void} [options.progressCallback]
-	 * @param {string} [options.dtype='q4'] - Quantification (q4, q4f16, q8, fp16, fp32).
+	 * @param {string | Record<string, string>} [options.dtype='q4'] - Quantification
+	 *   (q4, q4f16, q2f16, q8, fp16, fp32). Un objet permet un dtype par
+	 *   sous-modèle, indispensable quand ils ne sont pas tous publiés dans la
+	 *   même précision : les variantes QAT n'ont par exemple qu'un encodeur
+	 *   vision en fp16.
+	 *   An object allows one dtype per submodel, which is required when they are
+	 *   not all published in the same precision: the QAT variants, for instance,
+	 *   only ship an fp16 vision encoder.
 	 * @param {string} [options.device='webgpu']
 	 * @param {boolean} [options.multimodal=false]
 	 * @returns {Promise<TransformersEngine>}

@@ -46,6 +46,57 @@ export const AVAILABLE_MODELS = [
 		recommended: false
 	},
 	{
+		// Variantes QAT « mobile » publiées par onnx-community. Quantifiées
+		// pendant l'entraînement et non après, elles descendent à 2 bits tout en
+		// restant utilisables, et pèsent donc moins que les variantes ci-dessus
+		// pour la même famille.
+		// "Mobile" QAT variants published by onnx-community. Quantized during
+		// training rather than after, they go down to 2 bits while staying
+		// usable, and therefore weigh less than the variants above for the same
+		// family.
+		//
+		// Leur encodeur vision n'existe qu'en fp16 : le dtype doit donc être un
+		// objet par sous-modèle, comme le déclare leur propre config, sinon le
+		// moteur chercherait un vision_encoder_q2f16 inexistant.
+		// Their vision encoder only exists in fp16: the dtype must therefore be
+		// a per-submodel object, as their own config declares, otherwise the
+		// engine would look for a nonexistent vision_encoder_q2f16.
+		id: 'onnx-community/gemma-4-E2B-it-qat-mobile-ONNX',
+		name: 'Gemma 4 (E2B QAT) — WebGPU',
+		size: '~2.6 GB',
+		vram: '~4 GB',
+		description: 'Google Gemma 4 E2B quantifié à l\'entraînement (2 bits, texte + images). Plus léger que E2B pour une qualité proche. Expérimental.',
+		engine: 'transformers',
+		contextWindow: 32768,
+		dtype: {
+			decoder_model_merged: 'q2f16',
+			embed_tokens: 'q2f16',
+			audio_encoder: 'q2f16',
+			vision_encoder: 'fp16'
+		},
+		multimodal: true,
+		experimental: true,
+		recommended: false
+	},
+	{
+		id: 'onnx-community/gemma-4-E4B-it-qat-mobile-ONNX',
+		name: 'Gemma 4 (E4B QAT) — WebGPU',
+		size: '~3.6 GB',
+		vram: '~5 GB',
+		description: 'Google Gemma 4 E4B quantifié à l\'entraînement (2 bits, texte + images). Plus léger que E4B pour une qualité proche. Expérimental.',
+		engine: 'transformers',
+		contextWindow: 32768,
+		dtype: {
+			decoder_model_merged: 'q2f16',
+			embed_tokens: 'q2f16',
+			audio_encoder: 'q2f16',
+			vision_encoder: 'fp16'
+		},
+		multimodal: true,
+		experimental: true,
+		recommended: false
+	},
+	{
 		// Variante 26B A4B : mélange d'experts, 26 milliards de paramètres dont
 		// 4 actifs par jeton. Les experts doivent tous résider en mémoire, donc
 		// le poids à charger reste celui des 26 milliards.
@@ -82,6 +133,64 @@ export const AVAILABLE_MODELS = [
 		dtype: 'q4f16',
 		multimodal: false,
 		experimental: true,
+		recommended: false
+	},
+	{
+		// Familles récemment ajoutées au catalogue préconstruit de web-llm.
+		// Tailles et VRAM relevées sur les dépôts mlc-ai et sur
+		// prebuiltAppConfig, pas estimées.
+		// Families recently added to web-llm's prebuilt catalog. Sizes and VRAM
+		// read from the mlc-ai repositories and from prebuiltAppConfig, not
+		// estimated.
+		id: 'Qwen3.5-9B-q4f16_1-MLC',
+		name: 'Qwen 3.5 (9B) - Reasoning',
+		size: '~5.1 GB',
+		vram: '~6.3 GB',
+		description: 'Dernière génération Qwen, la plus capable qui tienne en navigateur.',
+		recommended: false,
+		supportsThinking: true
+	},
+	{
+		id: 'Qwen3.5-4B-q4f16_1-MLC',
+		name: 'Qwen 3.5 (4B) - Reasoning',
+		size: '~2.4 GB',
+		vram: '~3.8 GB',
+		description: 'Dernière génération Qwen, bon compromis taille et qualité.',
+		recommended: true,
+		supportsThinking: true
+	},
+	{
+		id: 'Qwen3.5-2B-q4f16_1-MLC',
+		name: 'Qwen 3.5 (2B) - Reasoning',
+		size: '~1.1 GB',
+		vram: '~2.2 GB',
+		description: 'Dernière génération Qwen en version légère.',
+		recommended: false,
+		supportsThinking: true
+	},
+	{
+		id: 'Phi-4-mini-instruct-q4f16_1-MLC',
+		name: 'Phi-4 Mini (Instruct)',
+		size: '~2.2 GB',
+		vram: '~3.4 GB',
+		description: 'Dernier Phi de Microsoft, solide en code et en raisonnement.',
+		recommended: false
+	},
+	{
+		id: 'DeepSeek-R1-Distill-Qwen-7B-q4f16_1-MLC',
+		name: 'DeepSeek R1 Distill (Qwen 7B)',
+		size: '~4.3 GB',
+		vram: '~5 GB',
+		description: 'Raisonnement DeepSeek R1 distillé dans Qwen 7B.',
+		recommended: false,
+		supportsThinking: true
+	},
+	{
+		id: 'Qwen2.5-Coder-7B-Instruct-q4f16_1-MLC',
+		name: 'Qwen 2.5 Coder (7B)',
+		size: '~4.3 GB',
+		vram: '~5 GB',
+		description: 'Spécialisé code : génération, complétion et explication.',
 		recommended: false
 	},
 	{
