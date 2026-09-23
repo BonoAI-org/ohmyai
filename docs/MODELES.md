@@ -84,7 +84,7 @@ This document lists the LLM models compatible with WebLLM that you can use in th
 - **Taille / Size**: ~17 GB
 - **RAM requise / Required RAM**: ~20 GB de mémoire graphique / ~20 GB of graphics memory
 - **Moteur / Engine**: **Transformers.js** (ONNX Runtime Web), *pas* WebLLM/MLC
-- **Modèle / Model**: `kibitz-coach/gemma-4-26B-A4B-it-ONNX` (dtype `q4f16`)
+- **Modèle / Model**: `kibitz-coach/gemma-4-26B-A4B-it-ONNX` (dtype `q4f16` pour le décodeur, `fp16` pour `embed_tokens`, seule précision publiée pour ce fichier / `q4f16` for the decoder, `fp16` for `embed_tokens`, the only precision published for that file)
 - **Cas d'usage / Use cases**:
   - La meilleure qualité de la famille Gemma 4 accessible en navigateur, sur une machine qui peut la porter / The best quality in the Gemma 4 family reachable in a browser, on a machine that can carry it
 - **Notes importantes / Important notes**:
