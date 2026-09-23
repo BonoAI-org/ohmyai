@@ -104,10 +104,40 @@ Cross-Origin-Opener-Policy: same-origin
 bun run deploy
 ```
 
-### Méthode Git (auto)
+### Méthode Git (auto) : par GitHub Actions / via GitHub Actions
+
+Le workflow `.github/workflows/ci.yml` déploie `main` sur Cloudflare Pages à chaque
+push, une fois le build, `svelte-check` et les tests unitaires passés. Les PR sont
+vérifiées mais jamais déployées. Un redéploiement manuel se lance depuis l'onglet
+**Actions** (« Run workflow »).
+The `.github/workflows/ci.yml` workflow deploys `main` to Cloudflare Pages on every
+push, once the build, `svelte-check` and unit tests pass. PRs are checked but never
+deployed. A manual redeploy starts from the **Actions** tab ("Run workflow").
+
+Configuration à faire une fois, dans **Settings > Secrets and variables > Actions**
+du dépôt GitHub / One-time setup, under the GitHub repository's
+**Settings > Secrets and variables > Actions**:
+
+1. `CLOUDFLARE_ACCOUNT_ID` : l'identifiant du compte Cloudflare qui possède le
+   projet Pages `ohmyai-app` (visible dans `wrangler whoami`) / the ID of the
+   Cloudflare account owning the `ohmyai-app` Pages project (shown by `wrangler whoami`).
+2. `CLOUDFLARE_API_TOKEN` : un jeton créé sur
+   <https://dash.cloudflare.com/profile/api-tokens>, permission **Account →
+   Cloudflare Pages → Edit**, limité à ce compte / a token created at
+   <https://dash.cloudflare.com/profile/api-tokens>, permission **Account →
+   Cloudflare Pages → Edit**, scoped to that account.
+
 ```bash
-git push
-# Cloudflare redéploie automatiquement !
+# Depuis le dépôt, avec gh : la valeur est demandée sans être affichée
+# From the repository, with gh: the value is prompted for without being shown
+gh secret set CLOUDFLARE_ACCOUNT_ID
+gh secret set CLOUDFLARE_API_TOKEN
+```
+
+Ensuite / Then:
+```bash
+git push origin main
+# GitHub Actions construit, vérifie, puis déploie / builds, checks, then deploys
 ```
 
 ---

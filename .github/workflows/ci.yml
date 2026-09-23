@@ -1,17 +1,22 @@
-# Intégration continue / Continuous integration
+# Intégration continue et déploiement / Continuous integration and deployment
 # Rejoue les portes de qualité automatisables sur chaque PR :
-# build de production, svelte-check, tests unitaires.
+# build de production, svelte-check, tests unitaires. Sur main, si elles
+# passent, le build est déployé tel quel sur Cloudflare Pages.
 # Les parcours d'interface sont vérifiés à part, dans un vrai Chrome piloté
 # par Claude Code ; voir e2e/README.md.
 # Runs the automatable quality gates on every PR: production build,
-# svelte-check, unit tests. Interface journeys are verified separately, in a
-# real Chrome driven by Claude Code; see e2e/README.md.
+# svelte-check, unit tests. On main, if they pass, that same build is deployed
+# to Cloudflare Pages. Interface journeys are verified separately, in a real
+# Chrome driven by Claude Code; see e2e/README.md.
 name: CI
 
 on:
   pull_request:
   push:
     branches: [main]
+  # Redéploiement manuel de main depuis l'onglet Actions, sans nouveau commit.
+  # Manual redeploy of main from the Actions tab, without a new commit.
+  workflow_dispatch:
 
 # Annule les exécutions obsolètes sur une même branche.
 # Cancels superseded runs on the same branch.
@@ -55,3 +60,78 @@ jobs:
 
       - name: Unit tests
         run: bun run test
+
+      # Le build validé est transmis au job de déploiement, pour déployer
+      # exactement ce qui a été vérifié plutôt que de reconstruire.
+      # The validated build is handed to the deploy job, so what gets
+      # deployed is exactly what was checked rather than a rebuild.
+      - name: Upload build
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-build
+          path: .svelte-kit/cloudflare
+          # Le dossier est caché (.svelte-kit) : sans ceci, l'action l'ignore.
+          # The folder is hidden (.svelte-kit): without this, the action skips it.
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    name: deploy to Cloudflare Pages
+    needs: ci
+    # Uniquement main : les PR sont vérifiées, jamais déployées.
+    # main only: PRs are checked, never deployed.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Un seul déploiement à la fois, sans annuler celui en cours : deux
+    # déploiements qui s'entrecroisent pourraient publier un build plus ancien.
+    # One deployment at a time, without cancelling the running one: two
+    # interleaved deployments could publish an older build.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://ohmyai.org
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: cloudflare-build
+          path: .svelte-kit/cloudflare
+
+      # Secrets à créer dans Settings > Secrets and variables > Actions :
+      # CLOUDFLARE_API_TOKEN (jeton avec la permission « Cloudflare Pages: Edit »)
+      # et CLOUDFLARE_ACCOUNT_ID (compte propriétaire du projet Pages).
+      # Voir docs/CLOUDFLARE_QUICKSTART.md, section « Déploiement automatique ».
+      # Secrets to create under Settings > Secrets and variables > Actions:
+      # CLOUDFLARE_API_TOKEN (token with the "Cloudflare Pages: Edit" permission)
+      # and CLOUDFLARE_ACCOUNT_ID (account owning the Pages project).
+      # See docs/CLOUDFLARE_QUICKSTART.md, "Automatic deployment" section.
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: bun
+          # --branch=main cible la branche de production du projet Pages ;
+          # --commit-dirty évite l'avertissement dû au build téléchargé,
+          # non suivi par git.
+          # --branch=main targets the Pages project's production branch;
+          # --commit-dirty avoids the warning caused by the downloaded build,
+          # which git does not track.
+          command: >-
+            pages deploy .svelte-kit/cloudflare
+            --project-name=ohmyai-app
+            --branch=main
+            --commit-hash=${{ github.sha }}
+            --commit-dirty=true
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
