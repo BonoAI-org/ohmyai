@@ -131,7 +131,16 @@ export const AVAILABLE_MODELS = [
 		// The model advertises 262144 tokens, out of reach for a browser
 		// key/value cache. We declare the same conservative value as E2B and E4B.
 		contextWindow: 32768,
-		dtype: 'q4f16',
+		// Ce port ne publie `embed_tokens` qu'en fp16 : un dtype chaîne ferait
+		// demander un embed_tokens_q4f16.onnx inexistant (404 vérifié). Même
+		// règle que pour les variantes QAT : un dtype par fichier ONNX.
+		// This port only ships `embed_tokens` in fp16: a string dtype would
+		// request a nonexistent embed_tokens_q4f16.onnx (404 verified). Same
+		// rule as for the QAT variants: one dtype per ONNX file.
+		dtype: {
+			embed_tokens: 'fp16',
+			decoder_model_merged: 'q4f16'
+		},
 		multimodal: false,
 		experimental: true,
 		recommended: false
