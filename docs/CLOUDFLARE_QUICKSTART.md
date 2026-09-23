@@ -157,6 +157,22 @@ bun run build
 # If it works locally, it's a Cloudflare issue
 ```
 
+### ❌ "Pages only supports files up to 25 MiB in size"
+**Cause** : Cloudflare Pages refuse tout fichier de plus de 25 Mio, et le déploiement
+entier échoue. Le seul fichier concerné est le runtime WebAssembly d'onnxruntime
+(`ort-wasm-*.wasm`, ~26 Mio), émis dans le build par Vite mais jamais téléchargé
+depuis notre origine : Transformers.js le charge depuis le CDN jsdelivr.
+**Solution** : `bun run build` enchaîne `scripts/prune-oversized-assets.js`, qui
+retire ces fichiers. Tout autre fichier trop gros fait échouer le build avec son nom,
+pour être traité en connaissance de cause.
+**Cause**: Cloudflare Pages rejects any file over 25 MiB, and the whole deployment
+fails. The only affected file is onnxruntime's WebAssembly runtime
+(`ort-wasm-*.wasm`, ~26 MiB), emitted into the build by Vite but never fetched from
+our origin: Transformers.js loads it from the jsdelivr CDN.
+**Solution**: `bun run build` chains `scripts/prune-oversized-assets.js`, which
+removes those files. Any other oversized file fails the build with its name, so it
+gets handled knowingly.
+
 ### ❌ "Page not found"
 **Solution** : Vérifiez que `Build output directory` est bien `.svelte-kit/cloudflare`
 
