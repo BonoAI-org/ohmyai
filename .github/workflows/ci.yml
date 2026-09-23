@@ -65,12 +65,24 @@ jobs:
       # exactement ce qui a été vérifié plutôt que de reconstruire.
       # The validated build is handed to the deploy job, so what gets
       # deployed is exactly what was checked rather than a rebuild.
+      #
+      # Trois dossiers, pas un : wrangler assemble `_worker.js` au moment du
+      # déploiement, et celui-ci importe `../output/server/index.js` et
+      # `../cloudflare-tmp/manifest.js`, voisins du dossier de sortie. Leur
+      # ancêtre commun `.svelte-kit` est conservé dans l'artefact.
+      # Three folders, not one: wrangler bundles `_worker.js` at deploy time,
+      # and it imports `../output/server/index.js` and
+      # `../cloudflare-tmp/manifest.js`, siblings of the output folder. Their
+      # common ancestor `.svelte-kit` is preserved in the artifact.
       - name: Upload build
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: cloudflare-build
-          path: .svelte-kit/cloudflare
+          path: |
+            .svelte-kit/cloudflare
+            .svelte-kit/cloudflare-tmp
+            .svelte-kit/output/server
           # Le dossier est caché (.svelte-kit) : sans ceci, l'action l'ignore.
           # The folder is hidden (.svelte-kit): without this, the action skips it.
           include-hidden-files: true
@@ -110,11 +122,26 @@ jobs:
         with:
           bun-version: 1.3.13
 
+      # wrangler assemble `_worker.js` avec esbuild au déploiement, et le
+      # serveur SvelteKit importe des paquets (@sveltejs/kit, devalue, dexie,
+      # svelte-i18n…) qu'esbuild résout dans node_modules. Installe aussi le
+      # wrangler du projet, que l'action réutilise au lieu d'en télécharger un.
+      # wrangler bundles `_worker.js` with esbuild at deploy time, and the
+      # SvelteKit server imports packages (@sveltejs/kit, devalue, dexie,
+      # svelte-i18n…) that esbuild resolves from node_modules. Also installs
+      # the project's wrangler, which the action reuses instead of downloading one.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
       - name: Download build
         uses: actions/download-artifact@v4
         with:
           name: cloudflare-build
-          path: .svelte-kit/cloudflare
+          # Restaure cloudflare/, cloudflare-tmp/ et output/server/ sous
+          # .svelte-kit, comme après `bun run build`.
+          # Restores cloudflare/, cloudflare-tmp/ and output/server/ under
+          # .svelte-kit, as after `bun run build`.
+          path: .svelte-kit
 
       # Secrets à créer dans Settings > Secrets and variables > Actions :
       # CLOUDFLARE_API_TOKEN (jeton avec la permission « Cloudflare Pages: Edit »)
