@@ -1,0 +1,9 @@
+# Spike d'export ONNX. Installer avec : uv venv .venv && uv pip install -r requirements.txt
+# ONNX export spike. Install with: uv venv .venv && uv pip install -r requirements.txt
+torch>=2.9
+transformers>=5.0
+accelerate
+onnx>=1.18
+onnxscript
+onnxruntime>=1.22
+safetensors

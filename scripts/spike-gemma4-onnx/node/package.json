@@ -1,0 +1,12 @@
+{
+  "name": "spike-gemma4-onnx-node",
+  "private": true,
+  "type": "module",
+  "description": "Validation Node du spike (onnxruntime-node, CPU). Le drapeau --no-js-float16array est requis : onnxruntime-node 1.30 ne reconnaît pas le Float16Array natif de Node 24. / Node-side validation (onnxruntime-node, CPU). The --no-js-float16array flag is required: onnxruntime-node 1.30 does not recognise Node 24's native Float16Array.",
+  "dependencies": {
+    "onnxruntime-node": "^1.30.0"
+  },
+  "scripts": {
+    "validate": "node --no-js-float16array validate_node.mjs"
+  }
+}

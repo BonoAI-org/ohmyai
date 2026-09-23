@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Spike ONNX WebGPU</title>
+<style>
+	body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; max-width: 900px; }
+	input { width: 240px; }
+	pre { background: #f4f4f4; padding: 12px; white-space: pre-wrap; }
+	.ok { color: #0a7a0a } .bad { color: #b00020 }
+</style>
+</head>
+<body>
+<h1>Validation WebGPU d'un export ONNX</h1>
+<p>Charge <code>out/&lt;nom&gt;/model.onnx</code> avec onnxruntime-web sur WebGPU, puis rejoue le préremplissage et le décodage glouton de <code>reference.json</code>.</p>
+<label>Nom de l'export : <input id="name" value=""></label>
+<button id="run">Lancer</button>
+<pre id="log"></pre>
+<script type="module">
+import * as ort from '/ort/ort.webgpu.mjs';
+import { validate } from './validate-core.mjs';
+
+ort.env.wasm.wasmPaths = '/ort/';
+const logEl = document.getElementById('log');
+const log = (msg) => { logEl.textContent += msg + '\n'; console.log(msg); };
+const nameInput = document.getElementById('name');
+nameInput.value = new URL(location.href).searchParams.get('model') ?? '';
+
+async function fetchBuffer(url, label) {
+	// Écrit directement dans un tampon préalloué : accumuler des morceaux puis
+	// les copier doublerait la mémoire, ce qui échoue au-delà de quelques Go.
+	// Writes straight into a preallocated buffer: accumulating chunks then
+	// copying them would double the memory, which fails beyond a few GB.
+	const res = await fetch(url);
+	if (!res.ok) throw new Error(`${res.status} ${url}`);
+	const total = Number(res.headers.get('content-length') || 0);
+	if (!total) throw new Error(`Content-Length manquant pour ${url}`);
+	const buf = new Uint8Array(total);
+	const reader = res.body.getReader();
+	let received = 0, lastPct = -1;
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		buf.set(value, received); received += value.length;
+		const pct = Math.floor(received / total * 100);
+		if (pct !== lastPct && pct % 25 === 0) { log(`[fetch] ${label} ${pct}% (${(received / 1e9).toFixed(2)} Go)`); lastPct = pct; }
+	}
+	return buf;
+}
+
+async function run() {
+	logEl.textContent = '';
+	window.__spikeResult = null;
+	const name = nameInput.value.trim();
+	const base = `./out/${name}/`;
+	try {
+		if (!navigator.gpu) throw new Error('WebGPU indisponible dans ce navigateur');
+		const adapter = await navigator.gpu.requestAdapter();
+		log(`[gpu] maxBufferSize=${(adapter.limits.maxBufferSize / 2 ** 30).toFixed(1)} Gio · shader-f16=${adapter.features.has('shader-f16')}`);
+		const meta = await (await fetch(base + 'meta.json')).json();
+		const reference = await (await fetch(base + 'reference.json')).json();
+		log(`[model] ${meta.model} · ${meta.dtype} · ${meta.exporter} · ${meta.num_layers} couches${meta.quantization ? ' · q4' : ''}`);
+
+		const t0 = performance.now();
+		const model = await fetchBuffer(base + meta.files.model, meta.files.model);
+		const externalData = [];
+		for (const f of meta.files.external_data) externalData.push({ path: f, data: await fetchBuffer(base + f, f) });
+		log(`[fetch] terminé en ${Math.round(performance.now() - t0)} ms`);
+
+		const t1 = performance.now();
+		const session = await ort.InferenceSession.create(model, {
+			executionProviders: ['webgpu'],
+			graphOptimizationLevel: 'all',
+			externalData,
+		});
+		log(`[session] créée en ${Math.round(performance.now() - t1)} ms`);
+
+		const result = await validate(ort, session, meta, reference, log);
+		result.runtime = {
+			engine: 'onnxruntime-web', provider: 'webgpu', version: ort.env.versions?.web ?? null,
+			gpu_max_buffer_gib: adapter.limits.maxBufferSize / 2 ** 30, shader_f16: adapter.features.has('shader-f16'),
+			user_agent: navigator.userAgent,
+		};
+		window.__spikeResult = result;
+		logEl.insertAdjacentHTML('beforeend', `<b class="${result.verdict === 'OK' ? 'ok' : 'bad'}">Verdict : ${result.verdict}</b>\n`);
+		log(JSON.stringify(result, null, 2));
+	} catch (e) {
+		window.__spikeResult = { verdict: 'ERREUR', error: String(e?.stack ?? e) };
+		log(`[erreur] ${e?.stack ?? e}`);
+	}
+}
+document.getElementById('run').addEventListener('click', run);
+if (nameInput.value && new URL(location.href).searchParams.get('auto')) run();
+</script>
+</body>
+</html>
