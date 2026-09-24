@@ -2,7 +2,7 @@
 	import "../app.css";
 	import favicon from "$lib/assets/favicon.svg";
 	import { onMount } from "svelte";
-	import { registerServiceWorker, setupInstallPrompt } from "$lib/pwa.js";
+	import { registerServiceWorker } from "$lib/pwa.js";
 	import { initI18n } from "$lib/i18n";
 	import { isLoading } from "svelte-i18n";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
@@ -27,9 +27,6 @@
 
 		// Enregistre le SW / Register SW
 		registerServiceWorker();
-
-		// Configure le prompt d'installation / Setup install prompt
-		setupInstallPrompt();
 	});
 </script>
 

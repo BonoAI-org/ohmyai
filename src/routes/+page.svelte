@@ -19,6 +19,7 @@
 	import AppHeader from "$lib/components/AppHeader.svelte";
 	import StatusPanels from "$lib/components/StatusPanels.svelte";
 	import MessageList from "$lib/components/MessageList.svelte";
+	import WelcomeScreen from "$lib/components/WelcomeScreen.svelte";
 	import ScrollToBottomButton from "$lib/components/ScrollToBottomButton.svelte";
 	import ChatComposer from "$lib/components/ChatComposer.svelte";
 	import AppFooter from "$lib/components/AppFooter.svelte";
@@ -45,6 +46,14 @@
 	// A device below the RAM minimum gets a warning, and the install prompt
 	// stays hidden from it.
 	const hasEnoughRAM = hasMinimumRam();
+
+	// Un seul écran tant que le modèle n'est pas là : ni liste de messages, ni
+	// bandeau « Téléchargement requis » par-dessus.
+	// A single screen while the model is not here: no message list, and no
+	// "Download required" banner on top of it.
+	const showWelcome = $derived(
+		llmStore.needsDownload && !llmStore.isLoading
+	);
 
 	/**
 	 * Amorce les stores et le moteur au montage.
@@ -237,22 +246,30 @@
 				onscroll={handleScroll}
 				class="flex-1 overflow-y-auto"
 			>
-				<div class="container mx-auto p-4 max-w-4xl">
-					<StatusPanels {hasEnoughRAM} />
-
-					<MessageList
-						onreuse={handleReusePrompt}
-						onsave={handleSaveToMemory}
-						onexport={handleExportMarkdown}
-					/>
-
-					{#if isUserScrolling}
-						<ScrollToBottomButton
-							onclick={() => {
-								isUserScrolling = false;
-								scrollToBottom();
-							}}
+				<div class="container mx-auto p-4 max-w-6xl">
+					{#if showWelcome}
+						<WelcomeScreen
+							onmanage={() => (isAddModelModalOpen = true)}
 						/>
+					{:else}
+						<div class="max-w-4xl mx-auto">
+							<StatusPanels {hasEnoughRAM} />
+
+							<MessageList
+								onreuse={handleReusePrompt}
+								onsave={handleSaveToMemory}
+								onexport={handleExportMarkdown}
+							/>
+
+							{#if isUserScrolling}
+								<ScrollToBottomButton
+									onclick={() => {
+										isUserScrolling = false;
+										scrollToBottom();
+									}}
+								/>
+							{/if}
+						</div>
 					{/if}
 				</div>
 			</main>
@@ -260,10 +277,12 @@
 			<!-- Zone d'input / Input area - Fixée en bas / Fixed at bottom -->
 			<div class="flex-shrink-0">
 				<div class="container mx-auto p-4 max-w-4xl">
-					<ChatComposer
-						bind:this={composerRef}
-						onsent={() => (isUserScrolling = false)}
-					/>
+					{#if !showWelcome}
+						<ChatComposer
+							bind:this={composerRef}
+							onsent={() => (isUserScrolling = false)}
+						/>
+					{/if}
 					<AppFooter
 						showInstallButton={installPrompt.available}
 						{hasEnoughRAM}

@@ -1,231 +1,79 @@
 <script>
 	/**
-	 * Bandeaux d'état du moteur, affichés au-dessus de la conversation :
-	 * RAM insuffisante, chargement en cours, écran de téléchargement avec
-	 * vérification matérielle, et erreur.
-	 * Engine status banners shown above the conversation: insufficient RAM,
-	 * loading in progress, download screen with hardware check, and error.
+	 * Bandeaux d'état du moteur affichés au-dessus de la conversation :
+	 * mémoire insuffisante, chargement en cours, erreur.
+	 * Engine status banners shown above the conversation: insufficient memory,
+	 * loading in progress, error.
+	 *
+	 * L'écran de téléchargement n'est plus ici : tant qu'aucun modèle n'est
+	 * installé, `WelcomeScreen` occupe seul la page.
+	 * The download screen is no longer here: while no model is installed,
+	 * `WelcomeScreen` owns the page on its own.
 	 */
 	import { _ } from "svelte-i18n";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
-	import { TRANSFORMERS_MAX_MODEL_GB } from "$lib/llm/hardware.js";
+	import { MIN_RAM_GB } from "$lib/llm/hardware.js";
 
 	/** @type {{ hasEnoughRAM: boolean }} */
 	let { hasEnoughRAM } = $props();
 </script>
 
-<!-- Avertissement RAM insuffisante / Insufficient RAM warning -->
+<!-- Avertissement mémoire insuffisante / Insufficient memory warning -->
 {#if !hasEnoughRAM}
 	<div
-		class="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4 mb-4 flex items-start gap-3"
+		class="mb-4 p-4 rounded-card bg-warn-soft border border-warn-border flex items-start gap-3"
 	>
 		<svg
-			class="w-6 h-6 text-orange-400 flex-shrink-0 mt-0.5"
+			class="w-5 h-5 flex-shrink-0 mt-0.5 text-warn-ink"
+			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			viewBox="0 0 24 24"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"
 		>
-			<path
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				stroke-width="2"
-				d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-			/>
+			<path d="M12 9v4" /><path d="M12 17h.01" />
+			<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
 		</svg>
-		<div class="text-orange-200">
-			<p class="font-semibold mb-1">{$_("ram.warning")}</p>
-			<p class="text-sm text-orange-300">
-				{$_("ram.insufficientMessage", {
-					values: { min: MIN_RAM_GB },
-				})}
+		<div>
+			<p class="font-semibold text-ink">{$_("ram.warning")}</p>
+			<p class="mt-1 text-sm text-warn-ink">
+				{$_("ram.insufficientMessage", { values: { min: MIN_RAM_GB } })}
 			</p>
-			<p class="text-xs text-orange-400 mt-2">
-				{$_("ram.tip")}
-			</p>
+			<p class="mt-2 text-xs text-warn-ink">{$_("ram.tip")}</p>
 		</div>
 	</div>
 {/if}
 
-<!-- Statut du chargement / Loading status -->
+<!-- Chargement du modèle / Model loading -->
 {#if llmStore.isLoading}
 	<div
-		class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 text-center mb-4"
+		class="mb-4 p-8 rounded-card bg-surface border border-border flex flex-col items-center gap-4 text-center"
 	>
-		<div class="flex flex-col items-center gap-4">
-			<div
-				class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"
-			></div>
-			<div class="text-white">
-				<p class="font-semibold">
-					{$_("loading.loadingModel")}
-				</p>
-				<p class="text-sm text-slate-300 mt-2">
-					{llmStore.loadingProgress}
-				</p>
-			</div>
-			<button
-				onclick={() => llmStore.cancelLoading()}
-				class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-			>
-				Annuler / Cancel
-			</button>
+		<div
+			class="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent"
+		></div>
+		<div>
+			<p class="font-semibold text-ink">{$_("loading.loadingModel")}</p>
+			<p class="mt-2 font-mono text-sm text-ink-3">
+				{llmStore.loadingProgress}
+			</p>
 		</div>
-	</div>
-{:else if llmStore.needsDownload}
-	<!-- Demande de téléchargement / Download prompt -->
-	<div
-		class="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 text-center mb-4 border border-purple-500/30"
-	>
-		<div class="flex flex-col items-center gap-4">
-			<svg
-				class="w-12 h-12 text-purple-500 dark:text-purple-400"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
-				/>
-			</svg>
-			<div class="text-slate-900 dark:text-white text-lg">
-				<p class="font-semibold mb-2">
-					{$_("loading.downloadRequired", {
-						default:
-							"Téléchargement requis / Download required",
-					})}
-				</p>
-				<p
-					class="text-sm text-slate-600 dark:text-slate-300"
-				>
-					{$_("loading.notOnDevice", {
-						default:
-							"Le modèle sélectionné n'est pas encore sur cet appareil. / The selected model is not on this device yet.",
-					})}
-				</p>
-				<p
-					class="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto"
-				>
-					{$_("loading.downloadWarning", {
-						default:
-							"Le téléchargement peut prendre plusieurs minutes et consommer des données. Wi-Fi recommandé. / Download may take several minutes and use data. Wi-Fi recommended.",
-					})}
-				</p>
-			</div>
-			{#if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
-				<!-- Avertissement matériel insuffisant / Insufficient hardware warning -->
-				<!--
-					Le message nomme le critère fautif. Auparavant il annonçait un
-					appareil « pas assez puissant » puis listait la mémoire et le
-					buffer GPU sans dire lequel bloquait, si bien qu'une machine
-					dotée de 32 Go voyait un refus en face d'un besoin de 20 Go.
-					The message names the failing criterion. It used to announce a
-					device "not powerful enough" then list memory and GPU buffer
-					without saying which one blocked, so a machine with 32 GB saw a
-					refusal next to a 20 GB requirement.
-				-->
-				<div
-					class="bg-amber-500/15 border border-amber-500/60 rounded-lg p-3 text-sm max-w-md mx-auto"
-				>
-					<p class="font-semibold text-amber-700 dark:text-amber-300">
-						⚠️
-						{#if llmStore.hardwareCheck.reason === "browser-limit"}
-							{$_("loading.hardwareReasonBrowserLimit", {
-								values: { limit: TRANSFORMERS_MAX_MODEL_GB },
-								default:
-									"Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil.",
-							})}
-						{:else if llmStore.hardwareCheck.reason === "memory"}
-							{$_("loading.hardwareReasonMemory", {
-								values: {
-									required: llmStore.hardwareCheck.requiredGB,
-									detected: llmStore.hardwareCheck.deviceMemoryGB,
-								},
-								default:
-									"Ce modèle demande ~{required} GB, or le navigateur ne rapporte que {detected} GB de mémoire.",
-							})}
-						{:else if llmStore.hardwareCheck.reason === "gpu-buffer"}
-							{$_("loading.hardwareReasonGpuBuffer", {
-								values: { buffer: llmStore.hardwareCheck.gpuMaxBufferGB },
-								default:
-									"Le GPU ne peut allouer que {buffer} GB par tampon, trop peu pour charger un modèle.",
-							})}
-						{:else if llmStore.hardwareCheck.reason === "no-webgpu"}
-							{$_("loading.hardwareReasonNoWebgpu", {
-								default: "WebGPU n'est pas disponible dans ce navigateur.",
-							})}
-						{:else}
-							{$_("loading.hardwareUnsupported", {
-								default: "Cet appareil ne semble pas assez puissant pour ce modèle.",
-							})}
-						{/if}
-					</p>
-					<p class="text-xs mt-1 text-amber-700/90 dark:text-amber-300/90">
-						{$_("loading.hardwareRequired", {
-							default: "Mémoire requise",
-						})}: ~{llmStore.hardwareCheck.requiredGB} GB
-						{#if llmStore.hardwareCheck.deviceMemoryGB}
-							• {$_("loading.hardwareDetected", {
-								default: "Mémoire rapportée",
-							})}: {llmStore.hardwareCheck.deviceMemoryGB} GB
-						{/if}
-						{#if llmStore.hardwareCheck.gpuMaxBufferGB}
-							• {$_("loading.hardwareGpuBuffer", {
-								default: "Buffer GPU max",
-							})}: {llmStore.hardwareCheck.gpuMaxBufferGB} GB
-						{/if}
-					</p>
-					<!-- La nuance sur l'arrondi ne vaut que si la mémoire est en cause. -->
-					<!-- The rounding caveat only matters when memory is the blocker. -->
-					{#if llmStore.hardwareCheck.reason === "memory"}
-						<p class="text-xs mt-1 text-amber-700/70 dark:text-amber-300/70">
-							{$_("loading.hardwareMemoryCaveat", {
-								default:
-									"Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle.",
-							})}
-						</p>
-					{/if}
-				</div>
-			{/if}
-			<div class="flex gap-4 mt-4">
-				{#if llmStore.hardwareCheck?.reason === "browser-limit"}
-					<!-- Aucun contournement : le navigateur refuserait quelle que soit la machine. -->
-					<!-- No override: the browser would refuse whatever the machine. -->
-				{:else if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
-					<button
-						onclick={() => llmStore.initEngine(true)}
-						class="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow"
-					>
-						{$_("loading.downloadAnyway", {
-							default:
-								"Télécharger quand même / Download anyway",
-						})}
-					</button>
-				{:else}
-					<button
-						onclick={() => llmStore.initEngine(true)}
-						class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow"
-					>
-						{$_("loading.downloadNow", {
-							default:
-								"Télécharger maintenant / Download now",
-						})}
-					</button>
-				{/if}
-			</div>
-		</div>
+		<button
+			onclick={() => llmStore.cancelLoading()}
+			class="h-touch px-4 rounded-button border border-danger-border bg-danger-soft text-sm font-semibold text-danger hover:bg-danger-soft/70 transition-colors"
+		>
+			{$_("loading.cancel")}
+		</button>
 	</div>
 {/if}
 
 <!-- Erreur / Error -->
 {#if llmStore.error}
-	<div
-		class="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4"
-	>
-		<p class="text-red-200">
-			<strong>{$_("error.title")}:</strong>
+	<div class="mb-4 p-4 rounded-card bg-danger-soft border border-danger-border">
+		<p class="text-danger">
+			<strong class="font-semibold">{$_("error.title")} :</strong>
 			{llmStore.error}
 		</p>
 	</div>

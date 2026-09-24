@@ -60,7 +60,8 @@
 		"hardwareReasonGpuBuffer": "Le GPU ne peut allouer que {buffer} GB par tampon, trop peu pour charger un modèle.",
 		"hardwareReasonNoWebgpu": "WebGPU n'est pas disponible dans ce navigateur.",
 		"hardwareMemoryCaveat": "Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle.",
-		"hardwareReasonBrowserLimit": "Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil."
+		"hardwareReasonBrowserLimit": "Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil.",
+		"cancel": "Annuler le téléchargement"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
@@ -203,5 +204,44 @@
 	"footer": {
 		"builtBy": "Construit par",
 		"sourceCode": "Code source"
+	},
+	"welcome": {
+		"badge": "Aucun serveur, aucun compte",
+		"title": "Une IA qui tourne entièrement sur votre machine.",
+		"lede": "Le modèle se télécharge une fois, puis répond hors ligne. Vos conversations restent dans ce navigateur : rien ne part vers un serveur, il n'y a rien à créer ni à accepter.",
+		"proofs": {
+			"offline": {
+				"title": "Hors ligne une fois installé.",
+				"body": "Le modèle vit dans le navigateur, pas sur un serveur distant."
+			},
+			"nothingLeaves": {
+				"title": "Rien ne sort de l'appareil.",
+				"body": "Ni les messages, ni les fichiers déposés dans la base de connaissances."
+			},
+			"verifiable": {
+				"title": "Vérifiable.",
+				"body": "Code ouvert,"
+			}
+		},
+		"device": {
+			"title": "Votre appareil",
+			"memory": "{gb} Go de mémoire",
+			"memoryUnknown": "mémoire non rapportée",
+			"webgpuOk": "WebGPU est actif : les réponses seront rapides.",
+			"webgpuMissing": "WebGPU n'est pas actif dans ce navigateur",
+			"webgpuConsequence": "Sans accélération GPU, un gros modèle met plusieurs minutes par réponse. Un modèle léger reste confortable.",
+			"webgpuHelp": "Activer WebGPU dans Chrome",
+			"retention": "Le modèle reste dans ce navigateur pour vos prochaines visites. Vous pouvez le supprimer à tout moment depuis les réglages.",
+			"webgpuChecking": "Diagnostic de l'appareil en cours..."
+		},
+		"model": {
+			"recommendedHere": "Recommandé ici",
+			"estimatedTime": "≈ {minutes} min",
+			"storedOffline": "stocké hors ligne"
+		},
+		"actions": {
+			"download": "Télécharger et démarrer",
+			"compare": "Comparer les {count} modèles"
+		}
 	}
 }

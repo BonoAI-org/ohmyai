@@ -42,7 +42,7 @@ async () => {
 	// --- Page principale ---
 	check('titre « Oh my AI! » affiché', /Oh my AI!/.test(body));
 	check('en-tête présent', visible(q('header')));
-	check('zone de saisie présente', visible(q('textarea')));
+	// La zone de saisie n'existe qu'une fois un modèle installé.
 	check(
 		'bouton nouvelle conversation présent',
 		qa('header button').some((b) => /New|Nouvelle/i.test(nom(b)))
@@ -67,9 +67,37 @@ async () => {
 		);
 	}
 
+	// --- Écran d'accueil ---
+	// Tant qu'aucun modèle n'est installé, l'accueil est le seul écran : pas de
+	// composeur, pas de liste de messages, pas de bandeau de téléchargement.
+	const accueil = /Une IA qui tourne|An AI that runs/.test(body);
+	if (accueil) {
+		check('accueil seul : aucune zone de saisie', qa('textarea').length === 0);
+		check(
+			'accueil seul : pas de « Commencez une conversation »',
+			!/Commencez une conversation|Start a conversation/.test(body)
+		);
+		check(
+			'accueil : le diagnostic matériel est affiché',
+			/WebGPU/.test(body)
+		);
+		check(
+			"accueil : plus de « Télécharger quand même »",
+			!/quand même|anyway/i.test(body)
+		);
+		check(
+			"accueil : pas de bandeau d'installation flottant",
+			!document.querySelector('.pwa-install-button')
+		);
+	}
+
 	// --- Zone de chat ---
 	const textarea = q('textarea');
-	check('une seule zone de saisie', qa('textarea').length === 1, `${qa('textarea').length} trouvées`);
+	check(
+		'une seule zone de saisie hors accueil',
+		accueil ? qa('textarea').length === 0 : qa('textarea').length === 1,
+		`${qa('textarea').length} trouvée(s)`
+	);
 	if (textarea) {
 		const native = Object.getOwnPropertyDescriptor(
 			window.HTMLTextAreaElement.prototype,
@@ -82,11 +110,12 @@ async () => {
 		native.call(textarea, '');
 		textarea.dispatchEvent(new Event('input', { bubbles: true }));
 	}
-	check('bouton d\'envoi présent', qa('button[aria-label]').some((b) => /send|envoy/i.test(nom(b))));
-	check(
-		'message d\'accueil affiché quand la conversation est vide',
-		/Start a conversation|Démarrez une conversation|WebAssembly/.test(body)
-	);
+	if (!accueil) {
+		check(
+			'bouton d\'envoi présent',
+			qa('button[aria-label]').some((b) => /send|envoy/i.test(nom(b)))
+		);
+	}
 
 	// --- Panneau historique ---
 	const historyBtn = qa('header button').find((b) => /histori|history/i.test(nom(b)));
@@ -139,8 +168,10 @@ async () => {
 
 	// --- Accessibilité ---
 	check('des boutons portent aria-label ou title', qa('button[aria-label], button[title]').length > 0);
-	const placeholder = q('textarea')?.getAttribute('placeholder');
-	check('la zone de saisie a un placeholder', !!placeholder && placeholder.length > 0);
+	if (!accueil) {
+		const placeholder = q('textarea')?.getAttribute('placeholder');
+		check('la zone de saisie a un placeholder', !!placeholder && placeholder.length > 0);
+	}
 
 	results.total = results.passed.length + results.failed.length;
 	results.ok = results.failed.length === 0;

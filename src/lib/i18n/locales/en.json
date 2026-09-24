@@ -60,7 +60,8 @@
 		"hardwareReasonGpuBuffer": "The GPU can only allocate {buffer} GB per buffer, too little to load a model.",
 		"hardwareReasonNoWebgpu": "WebGPU is not available in this browser.",
 		"hardwareMemoryCaveat": "The browser rounds and caps the memory it reports: the figure may be lower than the actual memory.",
-		"hardwareReasonBrowserLimit": "This model weighs more than {limit} GB: beyond what a browser tab can load, whatever the device's memory."
+		"hardwareReasonBrowserLimit": "This model weighs more than {limit} GB: beyond what a browser tab can load, whatever the device's memory.",
+		"cancel": "Cancel the download"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
@@ -203,5 +204,44 @@
 	"footer": {
 		"builtBy": "Built by",
 		"sourceCode": "Source code"
+	},
+	"welcome": {
+		"badge": "No server, no account",
+		"title": "An AI that runs entirely on your machine.",
+		"lede": "The model downloads once, then answers offline. Your conversations stay in this browser: nothing leaves for a server, there is nothing to create or accept.",
+		"proofs": {
+			"offline": {
+				"title": "Offline once installed.",
+				"body": "The model lives in the browser, not on a remote server."
+			},
+			"nothingLeaves": {
+				"title": "Nothing leaves the device.",
+				"body": "Neither the messages, nor the files dropped into the knowledge base."
+			},
+			"verifiable": {
+				"title": "Verifiable.",
+				"body": "Open source,"
+			}
+		},
+		"device": {
+			"title": "Your device",
+			"memory": "{gb} GB of memory",
+			"memoryUnknown": "memory not reported",
+			"webgpuOk": "WebGPU is active: answers will be fast.",
+			"webgpuMissing": "WebGPU is not active in this browser",
+			"webgpuConsequence": "Without GPU acceleration, a large model takes several minutes per answer. A light model stays comfortable.",
+			"webgpuHelp": "Enable WebGPU in Chrome",
+			"retention": "The model stays in this browser for your next visits. You can delete it at any time from the settings.",
+			"webgpuChecking": "Checking your device..."
+		},
+		"model": {
+			"recommendedHere": "Recommended here",
+			"estimatedTime": "≈ {minutes} min",
+			"storedOffline": "stored offline"
+		},
+		"actions": {
+			"download": "Download and start",
+			"compare": "Compare the {count} models"
+		}
 	}
 }
