@@ -44,7 +44,7 @@
 	"chat": {
 		"startConversation": "Commencez une conversation",
 		"runsInBrowser": "Le modèle s'exécute entièrement dans votre navigateur via WebAssembly",
-		"typePlaceholder": "Tapez votre message...",
+		"typePlaceholder": "Écrivez, ou déposez un document",
 		"send": "Envoyer le message",
 		"clear": "Effacer la conversation",
 		"clearConversation": "🗑️ Effacer la conversation",
@@ -52,7 +52,38 @@
 		"scrollToBottom": "Retour en bas",
 		"contextUsed": "Contexte :",
 		"export": "Exporter",
-		"exportMarkdown": "Exporter la conversation en Markdown"
+		"exportMarkdown": "Exporter la conversation en Markdown",
+		"composer": "Composeur",
+		"yourMessage": "Votre message",
+		"attachment": "Pièce jointe",
+		"removeImage": "Retirer l'image",
+		"stop": "Arrêter la génération",
+		"speed": "{speed} tok/s · hors ligne",
+		"sourceNote": "note enregistrée",
+		"sourceSimilarity": "Similarité : {percent} %",
+		"tools": {
+			"image": "Image",
+			"knowledgeBase": "Base de connaissances",
+			"knowledgeBaseCount": "Base de connaissances · {count} documents",
+			"reasoning": "Raisonnement"
+		},
+		"help": {
+			"shortcuts": "Entrée pour envoyer · Maj + Entrée pour un retour à la ligne",
+			"onDevice": "Tout se passe sur cet appareil"
+		},
+		"drop": {
+			"empty": "Aucun texte lisible dans {name}.",
+			"failed": "Impossible de lire {name} : {reason}"
+		},
+		"empty": {
+			"title": "Posez votre première question.",
+			"lede": "Le modèle est installé sur cet appareil. Rien de ce que vous écrivez ne quitte ce navigateur.",
+			"suggestions": {
+				"summarize": "Résumer un document que je dépose",
+				"rewrite": "Reformuler un courriel",
+				"describe": "Décrire une image"
+			}
+		}
 	},
 	"loading": {
 		"loadingModel": "Chargement du modèle...",

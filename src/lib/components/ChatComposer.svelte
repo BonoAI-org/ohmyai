@@ -1,19 +1,39 @@
 <script>
 	/**
-	 * Zone de saisie : textarea, pièces jointes image pour les modèles
-	 * multimodaux, boutons envoyer/arrêter, et actions sous le champ
-	 * (effacer la conversation, bascule du mode raisonnement).
-	 * Input area: textarea, image attachments for multimodal models,
-	 * send/stop buttons, and below-field actions (clear conversation,
-	 * thinking-mode toggle).
+	 * Composeur : champ de saisie, rangée d'outils nommés (image, base de
+	 * connaissances, raisonnement), bouton d'envoi, et ligne d'aide qui dit
+	 * ce que fait le clavier et où vont les données.
+	 * Composer: input field, named tool row (image, knowledge base, reasoning),
+	 * send button, and a help line stating what the keyboard does and where the
+	 * data goes.
+	 *
+	 * Le champ accepte le dépôt de fichiers : images en pièces jointes,
+	 * documents dans la base de connaissances.
+	 * The field accepts dropped files: images as attachments, documents into
+	 * the knowledge base.
 	 */
 	import { _ } from "svelte-i18n";
+	import { onMount } from "svelte";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
-	import Image from "svelte-material-icons/Image.svelte";
-	import Send from "svelte-material-icons/Send.svelte";
+	import { oramaStore } from "$lib/stores/orama.svelte.js";
+	import { chunkText, extractTextFromFile } from "$lib/rag/ingest.js";
 
-	/** @type {{ onsent?: () => void }} */
-	let { onsent } = $props();
+	/** @type {{ onsent?: () => void, onknowledgebase?: () => void }} */
+	let { onsent, onknowledgebase = () => {} } = $props();
+
+	// Le composeur annonce qu'il accepte un document : il doit donc en accepter
+	// un. Les images rejoignent les pièces jointes, le reste la base de
+	// connaissances.
+	// The composer says it accepts a document, so it must accept one. Images
+	// join the attachments, everything else the knowledge base.
+	let isDraggingOver = $state(false);
+	let ingestError = $state("");
+
+	const documentCount = $derived(oramaStore.documentCount ?? 0);
+
+	onMount(() => {
+		oramaStore.countDocuments();
+	});
 
 	let messageInput = $state("");
 
@@ -122,6 +142,58 @@
 		}
 	}
 
+	function handleDragOver(event) {
+		event.preventDefault();
+		isDraggingOver = true;
+	}
+
+	function handleDragLeave(event) {
+		// Ne relâche qu'en quittant le composeur, pas ses enfants.
+		// Only release when leaving the composer, not its children.
+		if (!event.currentTarget.contains(event.relatedTarget)) {
+			isDraggingOver = false;
+		}
+	}
+
+	/**
+	 * Répartit les fichiers déposés : images en pièces jointes si le modèle
+	 * les accepte, documents dans la base de connaissances.
+	 * Routes dropped files: images as attachments when the model accepts them,
+	 * documents into the knowledge base.
+	 */
+	async function handleDrop(event) {
+		event.preventDefault();
+		isDraggingOver = false;
+		ingestError = "";
+
+		const files = Array.from(event.dataTransfer?.files ?? []);
+		if (files.length === 0) return;
+
+		const images = files.filter((f) => f.type.startsWith("image/"));
+		const documents = files.filter((f) => !f.type.startsWith("image/"));
+
+		if (images.length > 0 && llmStore.isSelectedModelMultimodal()) {
+			await handleImageFiles(images);
+		}
+
+		for (const file of documents) {
+			try {
+				const chunks = chunkText(await extractTextFromFile(file));
+				if (chunks.length === 0) {
+					ingestError = $_("chat.drop.empty", {
+						values: { name: file.name },
+					});
+					continue;
+				}
+				await oramaStore.addChunks(chunks, file.name);
+			} catch (err) {
+				ingestError = $_("chat.drop.failed", {
+					values: { name: file.name, reason: err.message },
+				});
+			}
+		}
+	}
+
 	/**
 	 * Supprime une image de la sélection / Remove an image from selection
 	 */
@@ -131,43 +203,118 @@
 </script>
 
 <div
-	class="bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-slate-300 dark:border-slate-700"
+	class="relative p-3.5 bg-surface border rounded-card-lg shadow-[0_1px_2px_rgba(20,18,13,0.04)] flex flex-col gap-2.5 transition-colors {isDraggingOver
+		? 'border-accent bg-accent-soft/40'
+		: 'border-border'}"
+	ondragover={handleDragOver}
+	ondragleave={handleDragLeave}
+	ondrop={handleDrop}
+	role="group"
+	aria-label={$_("chat.composer")}
 >
-	<div class="flex gap-2 items-end">
-		<textarea
-			bind:this={textareaEl}
-			bind:value={messageInput}
-			onkeydown={handleKeydown}
-			disabled={llmStore.isLoading || llmStore.isGenerating}
-			placeholder={$_("chat.typePlaceholder")}
-			rows="3"
-			autocomplete="off"
-			autocorrect="on"
-			autocapitalize="sentences"
-			class="flex-1 bg-slate-100 dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-base"
-		></textarea>
-		<!-- Bouton d'ajout d'images / Add images button -->
+	<label for="composer-input" class="sr-only">{$_("chat.yourMessage")}</label>
+	<textarea
+		id="composer-input"
+		bind:this={textareaEl}
+		bind:value={messageInput}
+		onkeydown={handleKeydown}
+		disabled={llmStore.isLoading || llmStore.isGenerating}
+		placeholder={$_("chat.typePlaceholder")}
+		rows="2"
+		autocomplete="off"
+		autocorrect="on"
+		autocapitalize="sentences"
+		class="w-full border-0 outline-none bg-transparent resize-none p-0.5 text-[15px] text-ink placeholder:text-ink-3 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
+	></textarea>
+
+	{#if ingestError}
+		<p class="px-3 py-2 rounded-control bg-danger-soft text-[13px] text-danger">
+			{ingestError}
+		</p>
+	{/if}
+
+	<!-- Aperçu des images en attente / Pending image previews -->
+	{#if selectedImages.length > 0}
+		<div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+			{#each selectedImages as img, idx}
+				<div class="relative group">
+					<img
+						src={img}
+						alt={$_("chat.attachment")}
+						class="w-full h-20 object-cover rounded-control border border-border"
+					/>
+					<button
+						onclick={() => removeSelectedImage(idx)}
+						class="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full bg-danger text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+						aria-label={$_("chat.removeImage")}
+					>
+						<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 18 18 6" /><path d="m6 6 12 12" /></svg>
+					</button>
+				</div>
+			{/each}
+		</div>
+	{/if}
+
+	<!-- Rangée d'outils nommés / Named tool row -->
+	<div class="flex items-center gap-2 flex-wrap">
 		{#if llmStore.isSelectedModelMultimodal()}
 			<button
+				type="button"
 				onclick={() => imageInputEl && imageInputEl.click()}
-				disabled={llmStore.isLoading ||
-					llmStore.isGenerating}
-				aria-label="Ajouter des images / Add images"
-				class="px-3 py-2 bg-slate-200 dark:bg-slate-700/60 hover:bg-slate-300 dark:hover:bg-slate-700 active:bg-slate-400 dark:active:bg-slate-600 text-slate-700 dark:text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
+				disabled={llmStore.isLoading || llmStore.isGenerating}
+				class="inline-flex items-center gap-[7px] h-8 px-2.5 border border-border rounded-full bg-surface text-[13px] text-ink hover:bg-bg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
-				<Image class="w-5 h-5" />
+				<svg class="w-3.5 h-3.5 flex-shrink-0 text-ink-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="m5 18 5-5 4 4 2-2 3 3" /></svg>
+				{$_("chat.tools.image")}
+			</button>
+			<input
+				type="file"
+				accept="image/*"
+				multiple
+				bind:this={imageInputEl}
+				onchange={handleImageSelect}
+				class="hidden"
+			/>
+		{/if}
+
+		<button
+			type="button"
+			onclick={onknowledgebase}
+			class="inline-flex items-center gap-[7px] h-8 px-2.5 rounded-full text-[13px] transition-colors {documentCount >
+			0
+				? 'border border-accent/30 bg-accent-soft text-accent font-semibold'
+				: 'border border-border bg-surface text-ink hover:bg-bg'}"
+		>
+			<svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z" /></svg>
+			{documentCount > 0
+				? $_("chat.tools.knowledgeBaseCount", {
+						values: { count: documentCount },
+					})
+				: $_("chat.tools.knowledgeBase")}
+		</button>
+
+		{#if llmStore.isSelectedModelThinkingCapable()}
+			<button
+				type="button"
+				onclick={() => llmStore.toggleThinking()}
+				class="inline-flex items-center gap-[7px] h-8 px-2.5 rounded-full text-[13px] transition-colors {llmStore.thinkingEnabled
+					? 'border border-accent/30 bg-accent-soft text-accent font-semibold'
+					: 'border border-border bg-surface text-ink hover:bg-bg'}"
+				aria-pressed={llmStore.thinkingEnabled}
+			>
+				<svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7V18h8v-3.3A7 7 0 0 0 12 2z" /></svg>
+				{$_("chat.tools.reasoning")}
 			</button>
 		{/if}
+
 		{#if llmStore.isGenerating}
 			<button
 				type="button"
 				onclick={() => llmStore.stopGeneration()}
-				aria-label="Stop"
-				class="px-4 sm:px-6 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg font-semibold transition-colors self-end touch-manipulation animate-pulse"
+				aria-label={$_("chat.stop")}
+				class="ml-auto flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button bg-danger text-white hover:bg-danger/90 transition-colors touch-manipulation"
 			>
-				<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-					<rect x="6" y="6" width="12" height="12" rx="2" />
-				</svg>
+				<svg class="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
 			</button>
 		{:else}
 			<button
@@ -178,99 +325,30 @@
 						(!llmStore.isSelectedModelMultimodal() ||
 							selectedImages.length === 0))}
 				aria-label={$_("chat.send")}
-				class="px-4 sm:px-6 py-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end touch-manipulation"
+				class="ml-auto flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button bg-accent text-white hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors touch-manipulation"
 			>
-				<Send class="w-5 h-5" />
+				<svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V5" /><path d="m6 11 6-6 6 6" /></svg>
 			</button>
-		{/if}
-	</div>
-	{#if llmStore.isSelectedModelMultimodal()}
-		<!-- Input fichier caché / Hidden file input -->
-		<input
-			type="file"
-			accept="image/*"
-			multiple
-			bind:this={imageInputEl}
-			onchange={handleImageSelect}
-			class="hidden"
-		/>
-
-		<!-- Aperçu des images sélectionnées / Selected images preview -->
-		{#if selectedImages.length > 0}
-			<div class="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2">
-				{#each selectedImages as img, idx}
-					<div class="relative group">
-						<img
-							src={img}
-							alt="Pièce jointe / Attachment"
-							class="w-full h-20 object-cover rounded border border-slate-700"
-						/>
-						<button
-							onclick={() => removeSelectedImage(idx)}
-							class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-							aria-label="Supprimer l'image / Remove image"
-						>
-							×
-						</button>
-					</div>
-				{/each}
-			</div>
-		{/if}
-	{/if}
-	<!-- Actions sous le champ / Actions below input -->
-	<div class="mt-2 flex items-center gap-3">
-		{#if llmStore.messages.length > 0}
-			<button
-				onclick={() => llmStore.clearMessages()}
-				class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
-			>
-				{$_("chat.clearConversation")}
-			</button>
-		{/if}
-
-		{#if llmStore.isSelectedModelThinkingCapable()}
-			<button
-				onclick={() => llmStore.toggleThinking()}
-				class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border {llmStore.thinkingEnabled
-					? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/30'
-					: 'bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-600/50'}"
-				title={llmStore.thinkingEnabled ? 'Désactiver le raisonnement' : 'Activer le raisonnement'}
-			>
-				<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-				</svg>
-				Think {llmStore.thinkingEnabled ? 'ON' : 'OFF'}
-			</button>
-		{/if}
-
-		<!-- Ratio de contexte utilisé / Used context ratio -->
-		{#if llmStore.contextUsage}
-			<div
-				class="ml-auto flex items-center gap-2"
-				title={`${llmStore.contextUsage.used.toLocaleString()} / ${llmStore.contextUsage.max.toLocaleString()} tokens`}
-			>
-				<div
-					class="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
-					role="progressbar"
-					aria-valuenow={Math.round(llmStore.contextUsage.ratio * 100)}
-					aria-valuemin="0"
-					aria-valuemax="100"
-					aria-label={$_("chat.contextUsed")}
-				>
-					<div
-						class="h-full rounded-full transition-all duration-300 {llmStore.contextUsage.ratio > 0.9
-							? 'bg-red-500'
-							: llmStore.contextUsage.ratio > 0.7
-								? 'bg-amber-500'
-								: 'bg-emerald-500'}"
-						style="width: {Math.max(llmStore.contextUsage.ratio * 100, 2)}%"
-					></div>
-				</div>
-				<span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-					{$_("chat.contextUsed")}
-					{Math.round(llmStore.contextUsage.ratio * 100)}%
-				</span>
-			</div>
 		{/if}
 	</div>
 </div>
+
+<!-- Ligne d'aide : ce que fait le clavier, et où vont les données -->
+<!-- Help line: what the keyboard does, and where the data goes -->
+<div
+	class="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-ink-3"
+>
+	<span>{$_("chat.help.shortcuts")}</span>
+	<span>{$_("chat.help.onDevice")}</span>
+</div>
+
+{#if llmStore.messages.length > 0}
+	<div class="mt-2">
+		<button
+			onclick={() => llmStore.clearMessages()}
+			class="text-[13px] text-ink-3 hover:text-ink-2 transition-colors"
+		>
+			{$_("chat.clear")}
+		</button>
+	</div>
+{/if}

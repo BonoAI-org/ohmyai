@@ -259,6 +259,7 @@
 								onreuse={handleReusePrompt}
 								onsave={handleSaveToMemory}
 								onexport={handleExportMarkdown}
+								onsuggestion={handleReusePrompt}
 							/>
 
 							{#if isUserScrolling}
@@ -281,6 +282,7 @@
 						<ChatComposer
 							bind:this={composerRef}
 							onsent={() => (isUserScrolling = false)}
+							onknowledgebase={() => (isRagTestOpen = true)}
 						/>
 					{/if}
 					<AppFooter

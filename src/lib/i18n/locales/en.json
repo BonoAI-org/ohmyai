@@ -44,15 +44,46 @@
 	"chat": {
 		"startConversation": "Start a conversation",
 		"runsInBrowser": "The model runs entirely in your browser via WebAssembly",
-		"typePlaceholder": "Type your message...",
+		"typePlaceholder": "Write, or drop a document",
 		"send": "Send message",
-		"clear": "Clear conversation",
+		"clear": "Clear the conversation",
 		"clearConversation": "🗑️ Clear conversation",
 		"generating": "Generating...",
 		"scrollToBottom": "Scroll to bottom",
 		"contextUsed": "Context:",
 		"export": "Export",
-		"exportMarkdown": "Export the conversation as Markdown"
+		"exportMarkdown": "Export the conversation as Markdown",
+		"composer": "Composer",
+		"yourMessage": "Your message",
+		"attachment": "Attachment",
+		"removeImage": "Remove the image",
+		"stop": "Stop generating",
+		"speed": "{speed} tok/s · offline",
+		"sourceNote": "saved note",
+		"sourceSimilarity": "Similarity: {percent}%",
+		"tools": {
+			"image": "Image",
+			"knowledgeBase": "Knowledge base",
+			"knowledgeBaseCount": "Knowledge base · {count} documents",
+			"reasoning": "Reasoning"
+		},
+		"help": {
+			"shortcuts": "Enter to send · Shift + Enter for a line break",
+			"onDevice": "Everything happens on this device"
+		},
+		"drop": {
+			"empty": "No readable text in {name}.",
+			"failed": "Could not read {name}: {reason}"
+		},
+		"empty": {
+			"title": "Ask your first question.",
+			"lede": "The model is installed on this device. Nothing you write leaves this browser.",
+			"suggestions": {
+				"summarize": "Summarize a document I drop",
+				"rewrite": "Rewrite an email",
+				"describe": "Describe an image"
+			}
+		}
 	},
 	"loading": {
 		"loadingModel": "Loading model...",

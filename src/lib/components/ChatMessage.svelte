@@ -1,4 +1,5 @@
 <script>
+	import { _ } from "svelte-i18n";
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
@@ -294,17 +295,28 @@
 		     Context provided to the model from the knowledge base (RAG).
 		     "Context consulted", not "Sources": we know what was given to the
 		     model, not what it actually used. -->
-		{#if message.sources && message.sources.length > 0}
-			<div class="mt-3 flex flex-wrap items-center gap-1.5">
-				<span class="text-[11px] text-slate-400 dark:text-slate-500">📚 Contexte consulté / Context used :</span>
-				{#each message.sources as s}
-					<span
-						class="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700"
-						title="Similarité / Similarity: {(s.score * 100).toFixed(0)}%"
-					>
-						{s.source === 'note' ? '📝 note' : `📄 ${s.source}`}
+		{#if (message.sources && message.sources.length > 0) || message.tokensPerSecond}
+			<div class="mt-3 flex flex-wrap items-center gap-2.5">
+				{#if message.sources && message.sources.length > 0}
+					{#each message.sources as s}
+						<span
+							class="inline-flex items-center gap-[7px] px-2.5 py-1 rounded-full bg-surface border border-border text-xs text-ink-2"
+							title={$_("chat.sourceSimilarity", {
+								values: { percent: (s.score * 100).toFixed(0) },
+							})}
+						>
+							<svg class="w-3.5 h-3.5 flex-shrink-0 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z" /></svg>
+							{s.source === "note" ? $_("chat.sourceNote") : s.source}
+						</span>
+					{/each}
+				{/if}
+				{#if message.tokensPerSecond}
+					<span class="font-mono text-xs text-ink-3">
+						{$_("chat.speed", {
+							values: { speed: message.tokensPerSecond },
+						})}
 					</span>
-				{/each}
+				{/if}
 			</div>
 		{/if}
 
