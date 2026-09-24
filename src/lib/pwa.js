@@ -37,34 +37,55 @@ export async function registerServiceWorker() {
 
 		console.log('🔄 Enregistrement du Service Worker / Registering Service Worker...');
 
+		// Type classique, comme les enregistrements précédents de SvelteKit : le
+		// script compilé n'a aucune syntaxe de module, et changer de type à
+		// chaque chargement forçait une réinstallation (voir svelte.config.js).
+		// Classic type, like SvelteKit's previous registrations: the built
+		// script has no module syntax, and switching type on every load forced
+		// a reinstall (see svelte.config.js).
 		const registration = await navigator.serviceWorker.register('/service-worker.js', {
-			scope: '/',
-			type: 'module'
+			scope: '/'
 		});
 
 		console.log('✅ Service Worker enregistré / Service Worker registered');
 
-		// Gère les mises à jour / Handle updates
+		// Une nouvelle version n'est installée que si le build a changé : le
+		// manifeste de précache, haché, modifie le script à chaque déploiement.
+		// On ne compare donc pas de numéros de version. Ils ne changeaient
+		// jamais (0.0.0 des deux côtés), si bien que le bandeau ne s'affichait
+		// pas et que la nouvelle version restait en attente indéfiniment.
+		// A new version only installs when the build changed: the hashed
+		// precache manifest changes the script on every deploy. We therefore
+		// compare no version numbers. They never changed (0.0.0 on both sides),
+		// so the banner never showed and the new version waited forever.
+		if (registration.waiting && navigator.serviceWorker.controller) {
+			// Installée lors d'une visite précédente, jamais activée.
+			// Installed during a previous visit, never activated.
+			showUpdateNotification(registration);
+		}
+
 		registration.addEventListener('updatefound', () => {
 			const newWorker = registration.installing;
 			console.log('🆕 Nouvelle version détectée / New version detected');
 
-			newWorker?.addEventListener('statechange', async () => {
+			newWorker?.addEventListener('statechange', () => {
+				// Sans contrôleur, c'est la première installation : rien à proposer.
+				// Without a controller, it is the first install: nothing to offer.
 				if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-					const oldVersion = await getSWVersion(navigator.serviceWorker.controller);
-					const newVersion = await getSWVersion(newWorker);
-					console.log(`[PWA] Version installée: ${oldVersion}, Nouvelle version: ${newVersion}`);
-					if (newVersion && newVersion !== oldVersion) {
-						console.log('📦 Nouvelle version prête / New version ready');
-						showUpdateNotification(registration);
-					}
+					console.log('📦 Nouvelle version prête / New version ready');
+					showUpdateNotification(registration);
 				}
 			});
 		});
 
-		// Vérifie les mises à jour toutes les heures / Check for updates every hour
+		// Vérifie les mises à jour toutes les heures. Un échec réseau (hors
+		// ligne, connexion saturée par un téléchargement de modèle) n'a rien
+		// d'anormal : on le journalise au lieu de le laisser en « Uncaught ».
+		// Check for updates every hour. A network failure (offline, connection
+		// saturated by a model download) is nothing abnormal: log it instead of
+		// leaving it "Uncaught".
 		setInterval(() => {
-			registration.update();
+			checkForUpdate(registration);
 		}, 60 * 60 * 1000);
 
 		return registration;
@@ -75,28 +96,47 @@ export async function registerServiceWorker() {
 }
 
 /**
- * Affiche une notification de mise à jour
- * Show update notification
+ * Demande au navigateur de vérifier la présence d'une nouvelle version.
+ * Asks the browser to check for a new version.
+ * @param {ServiceWorkerRegistration} registration
+ * @returns {Promise<void>}
  */
-async function getSWVersion(worker) {
-	return new Promise((resolve, reject) => {
-		const messageChannel = new MessageChannel();
-		messageChannel.port1.onmessage = (event) => {
-			if (event.data.error) {
-				reject(event.data.error);
-			} else {
-				resolve(event.data.version);
-			}
-		};
-		try {
-			worker.postMessage({ type: 'GET_VERSION' }, [messageChannel.port2]);
-		} catch (e) {
-			reject(e);
-		}
+export async function checkForUpdate(registration) {
+	try {
+		await registration.update();
+	} catch (error) {
+		console.warn('⚠️ Vérification de mise à jour impossible / Update check failed:', error?.message ?? error);
+	}
+}
+
+/**
+ * Active la version en attente puis recharge la page une fois qu'elle a pris
+ * le contrôle. Le message doit aller au service worker en attente : l'envoyer
+ * au contrôleur actuel, comme auparavant, n'activait rien.
+ * Activates the waiting version then reloads the page once it has taken
+ * control. The message must go to the waiting service worker: sending it to
+ * the current controller, as before, activated nothing.
+ * @param {ServiceWorkerRegistration} registration
+ */
+export function activateWaitingWorker(registration) {
+	const waiting = registration.waiting;
+	if (!waiting) {
+		window.location.reload();
+		return;
+	}
+	let reloading = false;
+	navigator.serviceWorker.addEventListener('controllerchange', () => {
+		if (reloading) return;
+		reloading = true;
+		window.location.reload();
 	});
+	waiting.postMessage({ type: 'SKIP_WAITING' });
 }
 
 function showUpdateNotification(registration) {
+	// Un seul bandeau à la fois / One banner at a time
+	if (document.querySelector('.pwa-update-banner')) return;
+
 	// Crée une bannière de notification / Create notification banner
 	const banner = document.createElement('div');
 	banner.className = 'pwa-update-banner';
@@ -113,13 +153,13 @@ function showUpdateNotification(registration) {
 				</div>
 			</div>
 			<button
-				onclick="this.parentElement.remove(); if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({type: 'SKIP_WAITING'}); } window.location.reload();"
+				data-pwa-action="refresh"
 				class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-transform hover:scale-105"
 			>
 				Actualiser / Refresh
 			</button>
-			<button 
-				onclick="this.parentElement.remove();"
+			<button
+				data-pwa-action="later"
 				class="bg-transparent text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold py-2 px-4 rounded-lg transition-colors"
 			>
 				Plus tard / Later
@@ -147,6 +187,14 @@ function showUpdateNotification(registration) {
 	}
 
 	document.body.appendChild(banner);
+
+	banner.querySelector('[data-pwa-action="refresh"]')?.addEventListener('click', () => {
+		banner.remove();
+		activateWaitingWorker(registration);
+	});
+	banner.querySelector('[data-pwa-action="later"]')?.addEventListener('click', () => {
+		banner.remove();
+	});
 
 	// Auto-fermeture après 30 secondes / Auto-close after 30 seconds
 	setTimeout(() => {
