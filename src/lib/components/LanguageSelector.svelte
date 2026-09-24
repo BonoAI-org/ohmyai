@@ -3,7 +3,7 @@
 	 * Composant de sélection de langue / Language selector component
 	 * Permet de basculer entre français et anglais / Allows switching between French and English
 	 */
-	import { locale, locales } from "svelte-i18n";
+	import { _, locale, locales } from "svelte-i18n";
 
 	// État du menu déroulant / Dropdown state
 	let isOpen = $state(false);
@@ -75,8 +75,8 @@
 >
 	<button
 		onclick={toggleMenu}
-		class="flex items-center gap-2 bg-transparent hover:bg-slate-200/50 active:bg-slate-300/50 dark:hover:bg-slate-700/80 dark:active:bg-slate-600/80 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg transition-colors touch-manipulation font-medium border border-transparent dark:border-slate-600/50"
-		aria-label="Sélectionner la langue / Select language"
+		class="flex items-center gap-2 min-h-touch bg-transparent hover:bg-slate-200/50 active:bg-slate-300/50 dark:hover:bg-slate-700/80 dark:active:bg-slate-600/80 text-slate-900 dark:text-white px-3 rounded-button transition-colors touch-manipulation font-medium border border-transparent dark:border-slate-600/50"
+		aria-label={$_('settings.selectLanguage')}
 		title="Langue / Language"
 		aria-expanded={isOpen}
 	>

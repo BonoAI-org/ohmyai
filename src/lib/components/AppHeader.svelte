@@ -142,7 +142,7 @@
 	<div class="hidden lg:flex items-center gap-2.5 w-[228px] flex-shrink-0">
 		<button
 			onclick={() => (isHistoryOpen = !isHistoryOpen)}
-			class="flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-control text-ink-2 hover:bg-border-soft transition-colors"
+			class="hit-44 flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-control text-ink-2 hover:bg-border-soft transition-colors"
 			aria-label={isHistoryOpen
 				? $_("header.hideHistory")
 				: $_("header.showHistory")}
@@ -162,7 +162,7 @@
 				<path d="M9 4v16" />
 			</svg>
 		</button>
-		<a href="/" class="flex items-center gap-2 min-w-0 group">
+		<a href="/" class="hit-44 flex items-center gap-2 min-w-0 group">
 			<img
 				src={themeStore.isLight ? logoDark : logo}
 				alt=""
@@ -216,14 +216,14 @@
 	<div class="hidden lg:flex items-center gap-1.5 flex-shrink-0">
 		<button
 			onclick={onnew}
-			class="h-9 px-3.5 rounded-control bg-ink text-white text-sm font-semibold hover:bg-ink-2 transition-colors touch-manipulation"
+			class="hit-44 h-9 px-3.5 rounded-control bg-ink text-white text-sm font-semibold hover:bg-ink-2 transition-colors touch-manipulation"
 			title={$_("header.startNewConversation")}
 		>
 			{$_("header.newConversation")}
 		</button>
 		<button
 			onclick={() => (isSettingsModalOpen = true)}
-			class="flex items-center justify-center w-9 h-9 rounded-control bg-surface border border-border text-ink-2 hover:bg-bg transition-colors"
+			class="hit-44 flex items-center justify-center w-9 h-9 rounded-control bg-surface border border-border text-ink-2 hover:bg-bg transition-colors"
 			aria-label={$_("settings.title")}
 			title={$_("settings.title")}
 		>

@@ -124,7 +124,7 @@
 			if (!isOpen) query = "";
 		}}
 		disabled={llmStore.isLoading || llmStore.isGenerating}
-		class="flex items-center gap-2 h-[30px] px-2.5 bg-surface border border-border rounded-full text-[13px] text-ink hover:bg-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation whitespace-nowrap"
+		class="hit-44 flex items-center gap-2 h-[30px] px-2.5 bg-surface border border-border rounded-full text-[13px] text-ink hover:bg-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation whitespace-nowrap"
 		aria-label={$_("header.selectModel")}
 		aria-expanded={isOpen}
 	>
@@ -165,7 +165,7 @@
 							bind:value={query}
 							onclick={(e) => e.stopPropagation()}
 							placeholder={$_("model.searchPlaceholder")}
-							class="flex-grow min-w-0 border-0 outline-none bg-transparent p-0 text-sm text-ink placeholder:text-ink-3 focus:ring-0"
+							class="flex-grow self-stretch min-w-0 border-0 outline-none bg-transparent p-0 text-sm text-ink placeholder:text-ink-3 focus:ring-0"
 						/>
 					</label>
 				{/if}

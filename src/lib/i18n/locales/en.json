@@ -218,7 +218,8 @@
 		},
 		"modelsAndAccess": "Token, cache and installed models",
 		"installedModels": "Installed models",
-		"cacheHint": "Downloaded models stay in this browser. Model management lets you delete them to reclaim space."
+		"cacheHint": "Downloaded models stay in this browser. Model management lets you delete them to reclaim space.",
+		"selectLanguage": "Select the language"
 	},
 	"mcp": {
 		"title": "MCP Servers",

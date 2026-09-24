@@ -215,7 +215,7 @@
 
 		<!-- Recherche / Search -->
 		<label
-			class="flex items-center gap-2 h-9 px-2.5 mt-12 lg:mt-0 mr-12 lg:mr-0 border border-border rounded-control bg-surface focus-within:border-accent transition-colors"
+			class="flex items-center gap-2 h-touch px-2.5 mt-12 lg:mt-0 mr-12 lg:mr-0 border border-border rounded-control bg-surface focus-within:border-accent transition-colors"
 		>
 			<svg
 				class="w-[15px] h-[15px] flex-shrink-0 text-ink-3"
@@ -235,7 +235,7 @@
 				bind:value={searchQuery}
 				oninput={(e) => handleSearch(e.target.value)}
 				placeholder={$t("history.searchPlaceholder")}
-				class="flex-grow min-w-0 border-0 outline-none bg-transparent p-0 text-sm text-ink placeholder:text-ink-3 focus:ring-0"
+				class="flex-grow self-stretch min-w-0 border-0 outline-none bg-transparent p-0 text-sm text-ink placeholder:text-ink-3 focus:ring-0"
 			/>
 		</label>
 
@@ -272,14 +272,14 @@
 									/>
 									<button
 										onclick={saveRename}
-										class="flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-control text-accent hover:bg-accent-soft transition-colors"
+										class="hit-44 flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-control text-accent hover:bg-accent-soft transition-colors"
 										aria-label={$t("history.save")}
 									>
 										<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7" /></svg>
 									</button>
 									<button
 										onclick={cancelRename}
-										class="flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-control text-danger hover:bg-danger-soft transition-colors"
+										class="hit-44 flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-control text-danger hover:bg-danger-soft transition-colors"
 										aria-label={$t("history.cancel")}
 									>
 										<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6" /><path d="m6 6 12 12" /></svg>
@@ -308,7 +308,7 @@
 												e.stopPropagation();
 												startRenaming(conversation);
 											}}
-											class="flex items-center justify-center w-7 h-7 rounded-md bg-surface border border-border text-ink-2 hover:text-ink transition-colors"
+											class="hit-44 flex items-center justify-center w-7 h-7 rounded-md bg-surface border border-border text-ink-2 hover:text-ink transition-colors"
 											aria-label={$t("history.rename")}
 											title={$t("history.rename")}
 										>
@@ -317,7 +317,7 @@
 										<button
 											onclick={(e) =>
 												handleDelete(conversation.id, e)}
-											class="flex items-center justify-center w-7 h-7 rounded-md bg-surface border border-border text-danger hover:bg-danger-soft transition-colors"
+											class="hit-44 flex items-center justify-center w-7 h-7 rounded-md bg-surface border border-border text-danger hover:bg-danger-soft transition-colors"
 											aria-label={$t("history.delete")}
 											title={$t("history.delete")}
 										>
@@ -339,7 +339,7 @@
 					onknowledgebase();
 					closeOnMobile();
 				}}
-				class="flex items-center gap-2.5 h-touch lg:h-[38px] px-2.5 rounded-control text-sm text-ink hover:bg-border-soft transition-colors text-left"
+				class="flex items-center gap-2.5 h-touch px-2.5 rounded-control text-sm text-ink hover:bg-border-soft transition-colors text-left"
 			>
 				<svg class="w-4 h-4 flex-shrink-0 text-ink-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z" /></svg>
 				{$t("history.knowledgeBase")}
@@ -352,7 +352,7 @@
 					onmodels();
 					closeOnMobile();
 				}}
-				class="flex items-center gap-2.5 h-touch lg:h-[38px] px-2.5 rounded-control text-sm text-ink hover:bg-border-soft transition-colors text-left"
+				class="flex items-center gap-2.5 h-touch px-2.5 rounded-control text-sm text-ink hover:bg-border-soft transition-colors text-left"
 			>
 				<svg class="w-4 h-4 flex-shrink-0 text-ink-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="14" width="18" height="6" rx="2" /></svg>
 				{$t("history.installedModels")}
@@ -366,7 +366,7 @@
 		<div class="flex-shrink-0 flex items-center gap-1 pt-1">
 			<button
 				onclick={handleExport}
-				class="flex items-center gap-2 h-touch lg:h-8 flex-grow px-2.5 rounded-control font-mono text-[11px] uppercase tracking-[0.06em] text-ink-3 hover:bg-border-soft hover:text-ink-2 transition-colors"
+				class="flex items-center gap-2 h-touch flex-grow px-2.5 rounded-control font-mono text-[11px] uppercase tracking-[0.06em] text-ink-3 hover:bg-border-soft hover:text-ink-2 transition-colors"
 				aria-label={$t("history.exportHistory")}
 				title={$t("history.exportHistory")}
 			>
@@ -375,7 +375,7 @@
 			</button>
 			<button
 				onclick={handleImport}
-				class="flex items-center gap-2 h-touch lg:h-8 flex-grow px-2.5 rounded-control font-mono text-[11px] uppercase tracking-[0.06em] text-ink-3 hover:bg-border-soft hover:text-ink-2 transition-colors"
+				class="flex items-center gap-2 h-touch flex-grow px-2.5 rounded-control font-mono text-[11px] uppercase tracking-[0.06em] text-ink-3 hover:bg-border-soft hover:text-ink-2 transition-colors"
 				aria-label={$t("history.importHistory")}
 				title={$t("history.importHistory")}
 			>

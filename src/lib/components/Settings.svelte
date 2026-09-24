@@ -142,7 +142,7 @@
 						{#each colorThemes as theme}
 							<button
 								onclick={() => themeStore.setColorTheme(theme.id)}
-								class="w-touch h-touch rounded-full {theme.color} {themeStore.colorTheme ===
+								class="w-touch h-touch flex-shrink-0 rounded-full {theme.color} {themeStore.colorTheme ===
 								theme.id
 									? 'ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ring-purple-500'
 									: 'opacity-70 hover:opacity-100 transition-opacity'}"
@@ -214,7 +214,7 @@
 						/>
 						<button
 							onclick={saveToken}
-							class="mt-2 h-touch px-4 rounded-button bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
+							class="mt-2 min-h-touch px-4 rounded-button bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
 						>
 							{$_('settings.save')}
 						</button>
@@ -230,7 +230,7 @@
 						</div>
 						<button
 							onclick={() => { close(); onmanagemodels(); }}
-							class="w-full h-touch px-4 rounded-button border border-slate-300 dark:border-slate-600 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+							class="w-full min-h-touch px-4 rounded-button border border-slate-300 dark:border-slate-600 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
 						>
 							{$_('model.manage')}
 						</button>
@@ -459,11 +459,11 @@
 	<div class="flex gap-3 mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
 		<button
 			onclick={saveToken}
-			class="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all shadow-sm font-medium text-sm active:scale-[0.98]"
+			class="flex-1 min-h-touch px-4 bg-accent hover:bg-accent-hover text-white rounded-button transition-colors font-medium text-sm"
 		>{$_('settings.save')}</button>
 		<button
 			onclick={() => llmStore.clearCache()}
-			class="flex-1 px-4 py-2.5 border border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-all font-medium text-sm active:scale-[0.98]"
+			class="flex-1 min-h-touch px-4 border border-danger-border text-danger rounded-button hover:bg-danger-soft transition-colors font-medium text-sm"
 		>{$_('settings.clearCache')}</button>
 	</div>
 </div>

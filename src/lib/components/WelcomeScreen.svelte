@@ -218,7 +218,7 @@
 							href={WEBGPU_HELP_URL}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="inline-block mt-1.5 text-[13px] font-semibold text-warn-ink hover:underline"
+							class="inline-flex items-center min-h-touch mt-0.5 text-[13px] font-semibold text-warn-ink hover:underline"
 						>
 							{$_("welcome.device.webgpuHelp")}
 						</a>

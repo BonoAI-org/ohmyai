@@ -388,3 +388,62 @@
 	--color-emerald-900: var(--color-green-900);
 	--color-emerald-950: var(--color-green-950);
 }
+
+/* ==========================================================================
+   Cible tactile
+   --------------------------------------------------------------------------
+   Les maquettes dessinent des contrôles de 30 à 38 px sur grand écran, alors
+   que la cible minimale du système est de 44 px. Plutôt que de trancher entre
+   les deux, `hit-44` garde la boîte visible telle qu'elle est dessinée et
+   étend la zone cliquable à 44 px par un pseudo-élément. C'est la technique
+   employée par les systèmes d'exploitation pour leurs propres barres denses.
+
+   The mockups draw 30 to 38 px controls on a large screen, while the system's
+   minimum target is 44 px. Rather than choosing between the two, `hit-44`
+   keeps the visible box as drawn and extends the clickable area to 44 px with
+   a pseudo-element.
+   ========================================================================== */
+@utility hit-44 {
+	position: relative;
+
+	&::after {
+		content: "";
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: max(100%, var(--spacing-touch));
+		height: max(100%, var(--spacing-touch));
+		transform: translate(-50%, -50%);
+	}
+}
+
+/* ==========================================================================
+   Focus clavier
+   --------------------------------------------------------------------------
+   Les bordures du thème sont volontairement discrètes (1,42:1 sur blanc), ce
+   qui convient à un séparateur mais ne suffirait pas à signaler le focus. Un
+   anneau accent, posé sur `:focus-visible`, le rend lisible au clavier sans
+   l'imposer à la souris. Le décalage le détache des fonds clairs.
+
+   The theme's borders are deliberately quiet (1.42:1 on white), which suits a
+   separator but would not be enough to signal focus. An accent ring on
+   `:focus-visible` makes it legible to the keyboard without imposing it on
+   the mouse.
+   ========================================================================== */
+@layer base {
+	:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+		border-radius: var(--radius-control);
+	}
+
+	/* Une étiquette qui sert de contrôle porte le focus de son champ. */
+	label:has(:focus-visible) {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	label:has(:focus-visible) :focus-visible {
+		outline: none;
+	}
+}

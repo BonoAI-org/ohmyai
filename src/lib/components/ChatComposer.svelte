@@ -262,7 +262,7 @@
 				type="button"
 				onclick={() => imageInputEl && imageInputEl.click()}
 				disabled={llmStore.isLoading || llmStore.isGenerating}
-				class="inline-flex items-center gap-[7px] h-8 px-2.5 border border-border rounded-full bg-surface text-[13px] text-ink hover:bg-bg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				class="hit-44 inline-flex items-center gap-[7px] h-8 px-2.5 border border-border rounded-full bg-surface text-[13px] text-ink hover:bg-bg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
 				<svg class="w-3.5 h-3.5 flex-shrink-0 text-ink-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="m5 18 5-5 4 4 2-2 3 3" /></svg>
 				{$_("chat.tools.image")}
@@ -280,7 +280,7 @@
 		<button
 			type="button"
 			onclick={onknowledgebase}
-			class="inline-flex items-center gap-[7px] h-8 px-2.5 rounded-full text-[13px] transition-colors {documentCount >
+			class="hit-44 inline-flex items-center gap-[7px] h-8 px-2.5 rounded-full text-[13px] transition-colors {documentCount >
 			0
 				? 'border border-accent/30 bg-accent-soft text-accent font-semibold'
 				: 'border border-border bg-surface text-ink hover:bg-bg'}"
@@ -297,7 +297,7 @@
 			<button
 				type="button"
 				onclick={() => llmStore.toggleThinking()}
-				class="inline-flex items-center gap-[7px] h-8 px-2.5 rounded-full text-[13px] transition-colors {llmStore.thinkingEnabled
+				class="hit-44 inline-flex items-center gap-[7px] h-8 px-2.5 rounded-full text-[13px] transition-colors {llmStore.thinkingEnabled
 					? 'border border-accent/30 bg-accent-soft text-accent font-semibold'
 					: 'border border-border bg-surface text-ink hover:bg-bg'}"
 				aria-pressed={llmStore.thinkingEnabled}

@@ -32,7 +32,7 @@
 		href="https://bonoai.org"
 		target="_blank"
 		rel="noopener noreferrer"
-		class="font-semibold text-accent hover:text-accent-hover transition-colors"
+		class="py-3 -my-3 font-semibold text-accent hover:text-accent-hover transition-colors"
 	>
 		BonoAI
 	</a>
@@ -41,7 +41,7 @@
 		href="https://github.com/BonoAI-org/ohmyai"
 		target="_blank"
 		rel="noopener noreferrer"
-		class="flex items-center gap-1.5 hover:text-ink-2 transition-colors"
+		class="flex items-center gap-1.5 py-3 -my-3 hover:text-ink-2 transition-colors"
 	>
 		<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 			<path

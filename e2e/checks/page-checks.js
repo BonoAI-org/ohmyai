@@ -127,6 +127,11 @@ async () => {
 			'le panneau historique s\'ouvre',
 			qa('h2, h3').some((h) => /histori|history/i.test(h.innerText))
 		);
+		check(
+			'le panneau fait 248 px',
+			Math.round(q('nav')?.getBoundingClientRect().width) === 248,
+			`${Math.round(q('nav')?.getBoundingClientRect().width)} px`
+		);
 		const close = qa('button[aria-label]').find((b) =>
 			/^(Fermer|Close)$/i.test(b.getAttribute('aria-label').trim())
 		);
@@ -138,12 +143,16 @@ async () => {
 	const settingsBtn = qa('header button').find((b) => /ettings|aramètre/i.test(nom(b)));
 	check('bouton paramètres présent', !!settingsBtn);
 	if (settingsBtn) {
+		settingsBtn.focus();
 		settingsBtn.click();
-		await wait(400);
-		check('la modale des paramètres s\'ouvre', visible(q('.fixed.inset-0')));
+		await wait(500);
+		check('la modale des réglages s\'ouvre', visible(q('[role="dialog"]')));
+		check('trois sections dans les réglages', qa('[role="dialog"] h3').length === 3);
+		// Échap est écouté au niveau de la fenêtre : l'événement doit y remonter.
 		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-		q('.fixed.inset-0')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-		await wait(300);
+		await wait(400);
+		check('Échap ferme la modale', !q('[role="dialog"]'));
+		check('le focus revient au bouton d\'origine', document.activeElement === settingsBtn);
 	}
 
 	// --- Thème ---
@@ -172,6 +181,43 @@ async () => {
 		const placeholder = q('textarea')?.getAttribute('placeholder');
 		check('la zone de saisie a un placeholder', !!placeholder && placeholder.length > 0);
 	}
+
+	// --- Cibles tactiles, critère de la phase 7 ---
+	// La taille retenue est la plus grande de la boîte et du pseudo-élément que
+	// pose `hit-44`, qui élargit la zone cliquable sans grossir le dessin.
+	// Deux exemptions, conformes à WCAG 2.5.8 : les liens en ligne dans un
+	// paragraphe, et un champ dont l'étiquette de 44 px est la vraie cible.
+	const tailleCible = (el) => {
+		const r = el.getBoundingClientRect();
+		const a = getComputedStyle(el, '::after');
+		const pose = a.content !== 'none';
+		return [
+			Math.max(r.width, pose ? parseFloat(a.width) || 0 : 0),
+			Math.max(r.height, pose ? parseFloat(a.height) || 0 : 0)
+		];
+	};
+	const exempte = (el) =>
+		(el.tagName === 'A' && ['P', 'LI'].includes(el.parentElement?.tagName)) ||
+		(el.tagName === 'INPUT' &&
+			el.closest('label')?.getBoundingClientRect().height >= 43.5);
+	const petites = qa('button, a[href], input, textarea, [role="button"]')
+		.filter(visible)
+		.filter((el) => {
+			const [w, h] = tailleCible(el);
+			return (w < 43.5 || h < 43.5) && !exempte(el);
+		})
+		.map((el) => `${nom(el).trim().slice(0, 24)} ${tailleCible(el).map(Math.round).join('x')}`);
+	check('aucune cible sous 44 px', petites.length === 0, petites.join(' ; '));
+
+	check(
+		'aucun bouton icône sans nom accessible',
+		qa('button').filter(visible).every((b) => nom(b).trim().length > 0)
+	);
+	check(
+		'pas de défilement horizontal',
+		document.documentElement.scrollWidth <= window.innerWidth,
+		`${document.documentElement.scrollWidth} px pour ${window.innerWidth} px`
+	);
 
 	results.total = results.passed.length + results.failed.length;
 	results.ok = results.failed.length === 0;

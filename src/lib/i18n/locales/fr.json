@@ -218,7 +218,8 @@
 		},
 		"modelsAndAccess": "Jeton, cache et modèles installés",
 		"installedModels": "Modèles installés",
-		"cacheHint": "Les modèles téléchargés restent dans ce navigateur. La gestion des modèles permet de les supprimer pour récupérer de l'espace."
+		"cacheHint": "Les modèles téléchargés restent dans ce navigateur. La gestion des modèles permet de les supprimer pour récupérer de l'espace.",
+		"selectLanguage": "Sélectionner la langue"
 	},
 	"mcp": {
 		"title": "Serveurs MCP",
