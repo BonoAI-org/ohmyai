@@ -13,6 +13,7 @@
 	import { _ } from "svelte-i18n";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { MIN_RAM_GB } from "$lib/llm/hardware.js";
+	import { formatBytes } from "$lib/llm/downloadProgress.js";
 
 	/** @type {{ hasEnoughRAM: boolean }} */
 	let { hasEnoughRAM } = $props();
@@ -48,21 +49,53 @@
 
 <!-- Chargement du modèle / Model loading -->
 {#if llmStore.isLoading}
-	<div
-		class="mb-4 p-8 rounded-card bg-surface border border-border flex flex-col items-center gap-4 text-center"
-	>
-		<div
-			class="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent"
-		></div>
-		<div>
+	{@const pct = llmStore.loadingPercent}
+	<div class="mb-4 p-6 rounded-card bg-surface border border-border flex flex-col gap-4">
+		<div class="flex items-baseline justify-between gap-4">
 			<p class="font-semibold text-ink">{$_("loading.loadingModel")}</p>
-			<p class="mt-2 font-mono text-sm text-ink-3">
-				{llmStore.loadingProgress}
-			</p>
+			{#if pct !== null}
+				<span class="font-mono text-sm text-ink-2 tabular-nums">{pct} %</span>
+			{/if}
 		</div>
+
+		<!-- Barre de progression. Sans pourcentage mesurable, elle reste
+		     indéterminée : une barre à zéro laisserait croire à un blocage. -->
+		<!-- Progress bar. With no measurable percentage it stays indeterminate:
+		     a bar at zero would suggest a stall. -->
+		<div
+			class="h-2 rounded-full bg-border-soft overflow-hidden"
+			role="progressbar"
+			aria-valuemin="0"
+			aria-valuemax="100"
+			aria-valuenow={pct ?? undefined}
+			aria-label={$_("loading.loadingModel")}
+		>
+			{#if pct === null}
+				<div class="h-full w-2/5 rounded-full bg-accent animate-progress-indeterminate"></div>
+			{:else}
+				<div
+					class="h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
+					style="width: {Math.max(pct, 2)}%"
+				></div>
+			{/if}
+		</div>
+
+		<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+			<p class="font-mono text-xs text-ink-3 truncate max-w-full">
+				{llmStore.loadingFile || llmStore.loadingProgress}
+			</p>
+			{#if llmStore.loadingBytes}
+				<p class="font-mono text-xs text-ink-3 whitespace-nowrap tabular-nums">
+					{formatBytes(llmStore.loadingBytes.loaded)} / {formatBytes(
+						llmStore.loadingBytes.total
+					)}
+				</p>
+			{/if}
+		</div>
+
 		<button
 			onclick={() => llmStore.cancelLoading()}
-			class="h-touch px-4 rounded-button border border-danger-border bg-danger-soft text-sm font-semibold text-danger hover:bg-danger-soft/70 transition-colors"
+			class="self-start h-touch px-4 rounded-button border border-danger-border bg-danger-soft text-sm font-semibold text-danger hover:bg-danger-soft/70 transition-colors"
 		>
 			{$_("loading.cancel")}
 		</button>

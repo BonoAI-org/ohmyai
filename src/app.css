@@ -447,3 +447,37 @@
 		outline: none;
 	}
 }
+
+/* ==========================================================================
+   Barre de progression indéterminée
+   --------------------------------------------------------------------------
+   Employée quand le téléchargement n'expose pas encore de taille : une barre
+   figée à zéro laisserait croire à un blocage. Le mouvement dit « ça
+   travaille », sans prétendre mesurer quoi que ce soit.
+
+   Used when the download does not expose a size yet: a bar frozen at zero
+   would suggest a stall. The motion says "work is happening" without claiming
+   to measure anything.
+   ========================================================================== */
+@keyframes progress-indeterminate {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(250%);
+	}
+}
+
+@utility animate-progress-indeterminate {
+	animation: progress-indeterminate 1.4s ease-in-out infinite;
+}
+
+/* Un mouvement perpétuel gêne qui l'a désactivé au niveau du système. */
+/* Perpetual motion bothers anyone who turned it off system-wide. */
+@media (prefers-reduced-motion: reduce) {
+	.animate-progress-indeterminate {
+		animation: none;
+		width: 100%;
+		opacity: 0.4;
+	}
+}

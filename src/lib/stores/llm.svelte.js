@@ -1,4 +1,5 @@
 import { hasWebLLMModelInCache, createWebLLMEngine, getModelContextWindow } from '$lib/engines/webllm.js';
+import { createDownloadTracker } from '$lib/llm/downloadProgress.js';
 import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
 import {
 	isTransformersModelCached,
@@ -82,6 +83,17 @@ class LLMStore {
 	// Progression du chargement / Loading progress
 	loadingProgress = $state('');
 
+	// Progression du téléchargement, pour la barre. `null` quand elle n'est
+	// pas mesurable : une étape sans taille connue reste indéterminée plutôt
+	// que d'afficher un zéro trompeur.
+	// Download progress, for the bar. `null` when it cannot be measured: a
+	// step with no known size stays indeterminate rather than showing a
+	// misleading zero.
+	_downloadTracker = createDownloadTracker();
+	loadingPercent = $state(null);
+	loadingFile = $state('');
+	loadingBytes = $state(null);
+
 	// Modèle sélectionné / Selected model
 	selectedModel = $state('onnx-community/gemma-4-e2b-it-ONNX');
 
@@ -152,6 +164,17 @@ class LLMStore {
 		const declared = findModel(this.selectedModel, this.customModels)?.contextWindow;
 		if (declared) return declared;
 		return (await getModelContextWindow(this.selectedModel)) || 4096;
+	}
+
+	/**
+	 * Remet la progression de téléchargement à zéro.
+	 * Resets the download progress.
+	 */
+	_resetDownloadProgress() {
+		this._downloadTracker.reset();
+		this.loadingPercent = null;
+		this.loadingFile = '';
+		this.loadingBytes = null;
 	}
 
 	/**
@@ -453,9 +476,14 @@ class LLMStore {
 				}
 			}
 
-			// Callback pour suivre la progression du téléchargement
+			// Callback pour suivre la progression du téléchargement.
+			// WebLLM rapporte une progression déjà globale, de 0 à 1.
+			// WebLLM reports an already global progress, from 0 to 1.
 			const progressCallback = (progress) => {
 				this.loadingProgress = progress.text;
+				this.loadingPercent = Number.isFinite(progress.progress)
+					? Math.min(Math.round(progress.progress * 100), 99)
+					: null;
 			};
 
 			if (useOpfs) {
@@ -531,6 +559,7 @@ class LLMStore {
 			this.engineType = 'webllm';
 			this.isLoading = false;
 			this.loadingProgress = '';
+			this._resetDownloadProgress();
 			this.needsDownload = false;
 
 			// Le modèle vient d'être chargé/téléchargé, on met à jour le statut
@@ -601,8 +630,17 @@ class LLMStore {
 				dtype: modelConfig?.dtype || 'q4',
 				device: 'webgpu',
 				multimodal: !!modelConfig?.multimodal,
-				progressCallback: (progress) => {
-					this.loadingProgress = progress.text;
+				progressCallback: (raw) => {
+					const p = this._downloadTracker.update(raw);
+					this.loadingPercent = p.percent;
+					this.loadingFile = p.file;
+					this.loadingBytes =
+						p.totalBytes > 0
+							? { loaded: p.loadedBytes, total: p.totalBytes }
+							: null;
+					this.loadingProgress = t
+						? t('loading.downloadingFiles')
+						: 'Downloading the model...';
 				}
 			});
 			this.engineType = 'transformers';
@@ -612,6 +650,7 @@ class LLMStore {
 
 			this.isLoading = false;
 			this.loadingProgress = '';
+			this._resetDownloadProgress();
 			this.needsDownload = false;
 			// Tous les fichiers sont désormais en cache : le modèle peut être
 			// rechargé d'office aux prochaines visites.
@@ -1018,6 +1057,7 @@ class LLMStore {
 		// Réinitialise l'état de l'application
 		this.isLoading = false;
 		this.loadingProgress = '';
+		this._resetDownloadProgress();
 		this.error = 'Le chargement a été annulé. Les caches sont en cours de nettoyage. Veuillez recharger la page dans quelques instants.';
 
 		// Un rechargement est toujours une bonne idée pour s'assurer que tout est propre
