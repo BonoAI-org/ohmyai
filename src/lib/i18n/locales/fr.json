@@ -14,7 +14,14 @@
 		"install": "Installer l'app",
 		"installApp": "Installer Oh my AI! sur votre appareil",
 		"selectModel": "Sélectionner un modèle",
-		"chooseModel": "Choisir un modèle"
+		"chooseModel": "Choisir un modèle",
+		"untitledConversation": "Nouvelle conversation",
+		"showHistory": "Afficher l'historique",
+		"hideHistory": "Masquer l'historique",
+		"contextUsed": "contexte {percent} %",
+		"modelLocal": "local",
+		"modelOffline": "hors ligne",
+		"modelToDownload": "à télécharger"
 	},
 	"model": {
 		"recommended": "Recommandé",
@@ -32,7 +39,9 @@
 		"clearConversation": "🗑️ Effacer la conversation",
 		"generating": "Génération en cours...",
 		"scrollToBottom": "Retour en bas",
-		"contextUsed": "Contexte :"
+		"contextUsed": "Contexte :",
+		"export": "Exporter",
+		"exportMarkdown": "Exporter la conversation en Markdown"
 	},
 	"loading": {
 		"loadingModel": "Chargement du modèle...",
@@ -98,7 +107,15 @@
 		"conversationCount": "{count} conversation(s) sauvegardée(s)",
 		"today": "Aujourd'hui",
 		"yesterday": "Hier",
-		"minutesAgo": "Il y a {minutes} min"
+		"minutesAgo": "Il y a {minutes} min",
+		"conversationHistory": "Historique des conversations",
+		"searchInHistory": "Rechercher dans l'historique",
+		"groupToday": "Aujourd'hui",
+		"groupWeek": "7 derniers jours",
+		"groupOlder": "Plus ancien",
+		"noResults": "Aucune conversation ne correspond",
+		"knowledgeBase": "Base de connaissances",
+		"installedModels": "Modèles installés"
 	},
 	"settings": {
 		"title": "Paramètres",
@@ -149,7 +166,8 @@
 		"presencePenalty": "Pénalité de présence",
 		"presencePenaltyHelp": "Encourage les nouveaux sujets",
 		"saveGeneration": "Sauvegarder les paramètres",
-		"generationSaved": "Paramètres sauvegardés !"
+		"generationSaved": "Paramètres sauvegardés !",
+		"language": "Langue"
 	},
 	"mcp": {
 		"title": "Serveurs MCP",
@@ -181,5 +199,9 @@
 		"requiresToolModel": "Les outils nécessitent un modèle Hermes",
 		"tools": "Tools",
 		"toolsBadge": "Outils"
+	},
+	"footer": {
+		"builtBy": "Construit par",
+		"sourceCode": "Code source"
 	}
 }

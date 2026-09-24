@@ -98,7 +98,9 @@ async () => {
 			'le panneau historique s\'ouvre',
 			qa('h2, h3').some((h) => /histori|history/i.test(h.innerText))
 		);
-		const close = qa('button').find((b) => /^(✕|×|Fermer|Close)$/.test(b.innerText.trim()));
+		const close = qa('button[aria-label]').find((b) =>
+			/^(Fermer|Close)$/i.test(b.getAttribute('aria-label').trim())
+		);
 		close?.click();
 		await wait(300);
 	}
@@ -117,7 +119,20 @@ async () => {
 
 	// --- Thème ---
 	const root = q('div.h-screen');
-	check('fond dégradé sur la racine', !!root && /from-slate/.test(root.className));
+	check(
+		'thème atelier appliqué à la racine',
+		document.documentElement.getAttribute('data-theme') === 'atelier' &&
+			!!root &&
+			/bg-bg-raised/.test(root.className)
+	);
+
+	// --- En-tête, critère de la phase 2 ---
+	const header = q('header');
+	check(
+		"l'en-tête fait 56 px",
+		!!header && Math.round(header.getBoundingClientRect().height) === 56,
+		header ? `${Math.round(header.getBoundingClientRect().height)} px` : 'absent'
+	);
 
 	// --- Internationalisation ---
 	check('aucune clé i18n brute affichée', !/header\.new|chat\.typePlaceholder/.test(body));

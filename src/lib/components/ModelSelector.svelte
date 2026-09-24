@@ -17,8 +17,15 @@
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { AVAILABLE_MODELS, getModelDisplayName } from "$lib/llm/models.js";
 
-	/** @type {{ onselect: (modelId: string) => void, onmanage: () => void }} */
-	let { onselect, onmanage } = $props();
+	/**
+	 * @type {{
+	 *   onselect: (modelId: string) => void,
+	 *   onmanage: () => void,
+	 *   isModelLocal?: boolean,
+	 *   modelSize?: string
+	 * }}
+	 */
+	let { onselect, onmanage, isModelLocal = false, modelSize = "" } = $props();
 
 	let isOpen = $state(false);
 	let showAllModels = $state(false);
@@ -72,30 +79,24 @@
 		}}
 		disabled={llmStore.isLoading ||
 			llmStore.isGenerating}
-		class="flex items-center gap-2 px-3 py-1.5 bg-slate-100/80 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:active:bg-slate-600 text-slate-900 dark:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus:outline-none border border-transparent dark:border-slate-600/50 shadow-[0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-none"
+		class="flex items-center gap-2 h-[30px] px-2.5 bg-surface border border-border rounded-full text-[13px] text-ink hover:bg-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation whitespace-nowrap"
 		aria-label={$_("header.selectModel")}
 		aria-expanded={isOpen}
 	>
 		<span
-			class="text-sm truncate max-w-[150px] sm:max-w-none font-medium"
-		>
+			class="w-[7px] h-[7px] flex-shrink-0 rounded-full {isModelLocal
+				? 'bg-accent'
+				: 'bg-warn'}"
+			aria-hidden="true"
+		></span>
+		<span class="truncate max-w-[150px]">
 			{getModelDisplayName(llmStore.selectedModel, llmStore.customModels)}
 		</span>
-		<svg
-			class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 flex-shrink-0 transition-transform {isOpen
-				? 'rotate-180'
-				: ''}"
-			fill="none"
-			stroke="currentColor"
-			viewBox="0 0 24 24"
-		>
-			<path
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				stroke-width="2"
-				d="M19 9l-7 7-7-7"
-			/>
-		</svg>
+		<span class="font-mono text-xs text-ink-3 whitespace-nowrap">
+			{modelSize ? `${modelSize} · ` : ""}{isModelLocal
+				? $_("header.modelLocal")
+				: $_("header.modelToDownload")}
+		</span>
 	</button>
 
 	<!-- Menu déroulant / Dropdown menu -->

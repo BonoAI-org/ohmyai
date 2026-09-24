@@ -211,57 +211,70 @@
 <SettingsModal bind:isOpen={isSettingsModalOpen} />
 <KnowledgeBaseModal bind:isOpen={isRagTestOpen} />
 
-<div
-	class="h-screen bg-gradient-to-br from-slate-100 dark:from-slate-900 via-purple-100 dark:via-purple-900 to-slate-100 dark:to-slate-900 flex flex-col overflow-hidden"
->
-	<!-- En-tête / Header - Fixé en haut / Fixed at top -->
+<div class="h-screen bg-bg-raised flex flex-col overflow-hidden">
+	<!-- En-tête, une rangée de 56 px / Header, a single 56 px row -->
 	<AppHeader
-		showInstallButton={installPrompt.available}
-		{hasEnoughRAM}
-		deferredInstall={installPrompt.captured}
 		onnew={handleNewConversation}
-		onexport={handleExportMarkdown}
-		oninstall={handleInstallClick}
 		onmodelselect={handleModelChange}
 		bind:isHistoryOpen
 		bind:isSettingsModalOpen
-		bind:isRagTestOpen
 		bind:isAddModelModalOpen
 	/>
 
-	<!-- Zone principale / Main area - Scrollable -->
-	<main
-		bind:this={mainElement}
-		onscroll={handleScroll}
-		class="flex-1 overflow-y-auto"
-	>
-		<div class="container mx-auto p-4 max-w-4xl">
-			<StatusPanels {hasEnoughRAM} />
+	<!-- Panneau latéral et conversation côte à côte -->
+	<!-- Side panel and conversation, side by side -->
+	<div class="flex-1 flex min-h-0">
+		<ConversationHistory
+			bind:isOpen={isHistoryOpen}
+			onknowledgebase={() => (isRagTestOpen = true)}
+			onmodels={() => (isAddModelModalOpen = true)}
+		/>
 
-			<MessageList onreuse={handleReusePrompt} onsave={handleSaveToMemory} />
+		<div class="flex-1 min-w-0 flex flex-col">
+			<!-- Zone principale / Main area - Scrollable -->
+			<main
+				bind:this={mainElement}
+				onscroll={handleScroll}
+				class="flex-1 overflow-y-auto"
+			>
+				<div class="container mx-auto p-4 max-w-4xl">
+					<StatusPanels {hasEnoughRAM} />
 
-			{#if isUserScrolling}
-				<ScrollToBottomButton
-					onclick={() => {
-						isUserScrolling = false;
-						scrollToBottom();
-					}}
-				/>
-			{/if}
-		</div>
-	</main>
+					<MessageList
+						onreuse={handleReusePrompt}
+						onsave={handleSaveToMemory}
+						onexport={handleExportMarkdown}
+					/>
 
-	<!-- Zone d'input / Input area - Fixée en bas / Fixed at bottom -->
-	<div class="flex-shrink-0 backdrop-blur-sm">
-		<div class="container mx-auto p-4 max-w-4xl">
-			<ChatComposer bind:this={composerRef} onsent={() => (isUserScrolling = false)} />
-			<AppFooter />
+					{#if isUserScrolling}
+						<ScrollToBottomButton
+							onclick={() => {
+								isUserScrolling = false;
+								scrollToBottom();
+							}}
+						/>
+					{/if}
+				</div>
+			</main>
+
+			<!-- Zone d'input / Input area - Fixée en bas / Fixed at bottom -->
+			<div class="flex-shrink-0">
+				<div class="container mx-auto p-4 max-w-4xl">
+					<ChatComposer
+						bind:this={composerRef}
+						onsent={() => (isUserScrolling = false)}
+					/>
+					<AppFooter
+						showInstallButton={installPrompt.available}
+						{hasEnoughRAM}
+						deferredInstall={installPrompt.captured}
+						oninstall={handleInstallClick}
+					/>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
 
 <!-- Modals de configuration / Config modals -->
 <ManageModelsModal bind:isOpen={isAddModelModalOpen} />
-
-<!-- Panneau d'historique des conversations / Conversation history panel -->
-<ConversationHistory bind:isOpen={isHistoryOpen} />

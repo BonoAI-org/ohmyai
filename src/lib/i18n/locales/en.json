@@ -14,7 +14,14 @@
 		"install": "Install app",
 		"installApp": "Install Oh my AI! on your device",
 		"selectModel": "Select a model",
-		"chooseModel": "Choose a model"
+		"chooseModel": "Choose a model",
+		"untitledConversation": "New conversation",
+		"showHistory": "Show history",
+		"hideHistory": "Hide history",
+		"contextUsed": "context {percent}%",
+		"modelLocal": "local",
+		"modelOffline": "offline",
+		"modelToDownload": "to download"
 	},
 	"model": {
 		"recommended": "Recommended",
@@ -32,7 +39,9 @@
 		"clearConversation": "🗑️ Clear conversation",
 		"generating": "Generating...",
 		"scrollToBottom": "Scroll to bottom",
-		"contextUsed": "Context:"
+		"contextUsed": "Context:",
+		"export": "Export",
+		"exportMarkdown": "Export the conversation as Markdown"
 	},
 	"loading": {
 		"loadingModel": "Loading model...",
@@ -98,7 +107,15 @@
 		"conversationCount": "{count} conversation(s) saved",
 		"today": "Today",
 		"yesterday": "Yesterday",
-		"minutesAgo": "{minutes} min ago"
+		"minutesAgo": "{minutes} min ago",
+		"conversationHistory": "Conversation history",
+		"searchInHistory": "Search the history",
+		"groupToday": "Today",
+		"groupWeek": "Last 7 days",
+		"groupOlder": "Older",
+		"noResults": "No conversation matches",
+		"knowledgeBase": "Knowledge base",
+		"installedModels": "Installed models"
 	},
 	"settings": {
 		"title": "Settings",
@@ -149,7 +166,8 @@
 		"presencePenalty": "Presence penalty",
 		"presencePenaltyHelp": "Encourages new topics",
 		"saveGeneration": "Save parameters",
-		"generationSaved": "Parameters saved!"
+		"generationSaved": "Parameters saved!",
+		"language": "Language"
 	},
 	"mcp": {
 		"title": "MCP Servers",
@@ -181,5 +199,9 @@
 		"requiresToolModel": "Tools require a Hermes model",
 		"tools": "Tools",
 		"toolsBadge": "Tools"
+	},
+	"footer": {
+		"builtBy": "Built by",
+		"sourceCode": "Source code"
 	}
 }

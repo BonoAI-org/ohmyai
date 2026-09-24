@@ -9,12 +9,31 @@
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import ChatMessage from "$lib/components/ChatMessage.svelte";
 
-	/** @type {{ onreuse: (content: string) => void, onsave: (content: string) => void }} */
-	let { onreuse, onsave } = $props();
+	/**
+	 * @type {{
+	 *   onreuse: (content: string) => void,
+	 *   onsave: (content: string) => void,
+	 *   onexport?: () => void
+	 * }}
+	 */
+	let { onreuse, onsave, onexport = () => {} } = $props();
 </script>
 
 <!-- Messages de chat / Chat messages -->
 <div class="space-y-4 pb-4">
+	{#if llmStore.messages.length > 0}
+		<div class="flex justify-end">
+			<button
+				onclick={onexport}
+				class="flex items-center gap-2 h-9 px-3 rounded-control border border-border bg-surface text-[13px] text-ink-2 hover:text-ink hover:bg-bg transition-colors"
+				aria-label={$_("chat.exportMarkdown")}
+				title={$_("chat.exportMarkdown")}
+			>
+				<svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M4 19h16" /></svg>
+				{$_("chat.export")}
+			</button>
+		</div>
+	{/if}
 	{#if llmStore.messages.length === 0 && !llmStore.isLoading}
 		<div class="text-center text-slate-400 py-12">
 			<svg

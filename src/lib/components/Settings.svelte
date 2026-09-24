@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
+	import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 	import { mcpStore } from "$lib/stores/mcp.svelte.js";
 	import { _ } from "svelte-i18n";
 	import MCPConfigModal from "./MCPConfigModal.svelte";
@@ -141,6 +142,14 @@
 								title={$_(`settings.themes.${theme.id}`)}
 							></button>
 						{/each}
+					</div>
+
+					<!-- Langue, sortie de l'en-tête / Language, moved out of the header -->
+					<div class="flex items-center justify-between gap-3 mb-5">
+						<span class="text-xs font-medium text-slate-600 dark:text-slate-400">
+							{$_('settings.language')}
+						</span>
+						<LanguageSelector />
 					</div>
 
 					<!-- Hugging Face Token -->
