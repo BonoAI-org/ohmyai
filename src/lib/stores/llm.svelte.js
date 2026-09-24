@@ -1,6 +1,10 @@
 import { hasWebLLMModelInCache, createWebLLMEngine, getModelContextWindow } from '$lib/engines/webllm.js';
 import { isOpfsSupported, getModelDirectory, saveFileToOpfs, checkModelInOpfs, getFileFromOpfs, deleteModelDirectory, isModelFullyInOpfs } from '$lib/opfs.js';
-import { isTransformersModelCached, clearTransformersCache } from '$lib/engines/transformersCache.js';
+import {
+	isTransformersModelCached,
+	clearTransformersCache,
+	markTransformersModelComplete
+} from '$lib/engines/transformersCache.js';
 import { get } from 'svelte/store';
 import { _ } from 'svelte-i18n';
 import { mcpStore } from '$lib/stores/mcp.svelte.js';
@@ -609,12 +613,27 @@ class LLMStore {
 			this.isLoading = false;
 			this.loadingProgress = '';
 			this.needsDownload = false;
+			// Tous les fichiers sont désormais en cache : le modèle peut être
+			// rechargé d'office aux prochaines visites.
+			// Every file is now cached: the model may be reloaded outright on
+			// later visits.
+			markTransformersModelComplete(this.selectedModel);
 			this.downloadedModels[this.selectedModel] = true;
 			this.updateModelsCacheStatus();
 		} catch (err) {
 			const t = get(_);
 			const errorTitle = t ? t('error.title') : 'Error';
-			this.error = `❌ ${errorTitle}: ${err.message}`;
+			// Un échec d'allocation signifie que l'onglet n'a plus de mémoire
+			// pour les fichiers du modèle. Les téléchargements déjà lancés
+			// continuent en arrière-plan : seul un rechargement de la page les
+			// arrête et rend la mémoire.
+			// An allocation failure means the tab ran out of memory for the
+			// model's files. Downloads already started keep running in the
+			// background: only a page reload stops them and frees the memory.
+			const message = err?.name === 'ModelLoadError' && err.kind === 'browser-memory'
+				? (t ? t('error.browserMemory') : 'The browser tab ran out of memory while loading this model. Reload the page and choose a lighter model.')
+				: err.message;
+			this.error = `❌ ${errorTitle}: ${message}`;
 			console.error('Erreur chargement Transformers.js / Transformers.js loading error:', err);
 			console.error('Stack trace:', err.stack);
 		} finally {

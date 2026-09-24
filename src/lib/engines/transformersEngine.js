@@ -26,6 +26,8 @@ export {
 	clearTransformersCache
 } from './transformersCache.js';
 
+import { failOnUnhandledLoadError } from './loadFailure.js';
+
 // Référence mémoïsée vers la librairie chargée dynamiquement.
 // Memoized reference to the lazily loaded library.
 let _lib = null;
@@ -254,22 +256,28 @@ export class TransformersEngine {
 			if (progressCallback) progressCallback({ text: formatProgress(p), raw: p });
 		};
 
-		if (multimodal) {
-			const processor = await lib.AutoProcessor.from_pretrained(modelId, { progress_callback });
-			const model = await lib.Gemma4ForConditionalGeneration.from_pretrained(modelId, {
-				dtype,
+		// Sans ce garde-fou, l'échec d'une tranche de données externes laisse
+		// le chargement en attente pour toujours (voir loadFailure.js).
+		// Without this guard, a failing external data chunk leaves the load
+		// pending forever (see loadFailure.js).
+		return failOnUnhandledLoadError(async () => {
+			if (multimodal) {
+				const processor = await lib.AutoProcessor.from_pretrained(modelId, { progress_callback });
+				const model = await lib.Gemma4ForConditionalGeneration.from_pretrained(modelId, {
+					dtype,
+					device,
+					progress_callback
+				});
+				return new TransformersEngine({ processor, model }, lib, true);
+			}
+
+			const pipe = await lib.pipeline('text-generation', modelId, {
 				device,
+				dtype,
 				progress_callback
 			});
-			return new TransformersEngine({ processor, model }, lib, true);
-		}
-
-		const pipe = await lib.pipeline('text-generation', modelId, {
-			device,
-			dtype,
-			progress_callback
+			return new TransformersEngine(pipe, lib);
 		});
-		return new TransformersEngine(pipe, lib);
 	}
 
 	/**
