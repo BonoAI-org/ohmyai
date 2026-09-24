@@ -19,6 +19,7 @@
 	import AppHeader from "$lib/components/AppHeader.svelte";
 	import StatusPanels from "$lib/components/StatusPanels.svelte";
 	import MessageList from "$lib/components/MessageList.svelte";
+	import WelcomeScreen from "$lib/components/WelcomeScreen.svelte";
 	import ScrollToBottomButton from "$lib/components/ScrollToBottomButton.svelte";
 	import ChatComposer from "$lib/components/ChatComposer.svelte";
 	import AppFooter from "$lib/components/AppFooter.svelte";
@@ -45,6 +46,14 @@
 	// A device below the RAM minimum gets a warning, and the install prompt
 	// stays hidden from it.
 	const hasEnoughRAM = hasMinimumRam();
+
+	// Un seul écran tant que le modèle n'est pas là : ni liste de messages, ni
+	// bandeau « Téléchargement requis » par-dessus.
+	// A single screen while the model is not here: no message list, and no
+	// "Download required" banner on top of it.
+	const showWelcome = $derived(
+		llmStore.needsDownload && !llmStore.isLoading
+	);
 
 	/**
 	 * Amorce les stores et le moteur au montage.
@@ -208,60 +217,88 @@
 	});
 </script>
 
-<SettingsModal bind:isOpen={isSettingsModalOpen} />
+<SettingsModal
+	bind:isOpen={isSettingsModalOpen}
+	onmanagemodels={() => (isAddModelModalOpen = true)}
+/>
 <KnowledgeBaseModal bind:isOpen={isRagTestOpen} />
 
-<div
-	class="h-screen bg-gradient-to-br from-slate-100 dark:from-slate-900 via-purple-100 dark:via-purple-900 to-slate-100 dark:to-slate-900 flex flex-col overflow-hidden"
->
-	<!-- En-tête / Header - Fixé en haut / Fixed at top -->
+<div class="h-screen bg-bg-raised flex flex-col overflow-hidden">
+	<!-- En-tête, une rangée de 56 px / Header, a single 56 px row -->
 	<AppHeader
-		showInstallButton={installPrompt.available}
-		{hasEnoughRAM}
-		deferredInstall={installPrompt.captured}
 		onnew={handleNewConversation}
-		onexport={handleExportMarkdown}
-		oninstall={handleInstallClick}
 		onmodelselect={handleModelChange}
 		bind:isHistoryOpen
 		bind:isSettingsModalOpen
-		bind:isRagTestOpen
 		bind:isAddModelModalOpen
 	/>
 
-	<!-- Zone principale / Main area - Scrollable -->
-	<main
-		bind:this={mainElement}
-		onscroll={handleScroll}
-		class="flex-1 overflow-y-auto"
-	>
-		<div class="container mx-auto p-4 max-w-4xl">
-			<StatusPanels {hasEnoughRAM} />
+	<!-- Panneau latéral et conversation côte à côte -->
+	<!-- Side panel and conversation, side by side -->
+	<div class="flex-1 flex min-h-0">
+		<ConversationHistory
+			bind:isOpen={isHistoryOpen}
+			onknowledgebase={() => (isRagTestOpen = true)}
+			onmodels={() => (isAddModelModalOpen = true)}
+		/>
 
-			<MessageList onreuse={handleReusePrompt} onsave={handleSaveToMemory} />
+		<div class="flex-1 min-w-0 flex flex-col">
+			<!-- Zone principale / Main area - Scrollable -->
+			<main
+				bind:this={mainElement}
+				onscroll={handleScroll}
+				class="flex-1 overflow-y-auto"
+			>
+				<div class="container mx-auto p-4 max-w-6xl">
+					{#if showWelcome}
+						<WelcomeScreen
+							onmanage={() => (isAddModelModalOpen = true)}
+						/>
+					{:else}
+						<div class="max-w-4xl mx-auto">
+							<StatusPanels {hasEnoughRAM} />
 
-			{#if isUserScrolling}
-				<ScrollToBottomButton
-					onclick={() => {
-						isUserScrolling = false;
-						scrollToBottom();
-					}}
-				/>
-			{/if}
-		</div>
-	</main>
+							<MessageList
+								onreuse={handleReusePrompt}
+								onsave={handleSaveToMemory}
+								onexport={handleExportMarkdown}
+								onsuggestion={handleReusePrompt}
+							/>
 
-	<!-- Zone d'input / Input area - Fixée en bas / Fixed at bottom -->
-	<div class="flex-shrink-0 backdrop-blur-sm">
-		<div class="container mx-auto p-4 max-w-4xl">
-			<ChatComposer bind:this={composerRef} onsent={() => (isUserScrolling = false)} />
-			<AppFooter />
+							{#if isUserScrolling}
+								<ScrollToBottomButton
+									onclick={() => {
+										isUserScrolling = false;
+										scrollToBottom();
+									}}
+								/>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			</main>
+
+			<!-- Zone d'input / Input area - Fixée en bas / Fixed at bottom -->
+			<div class="flex-shrink-0">
+				<div class="container mx-auto p-4 max-w-4xl">
+					{#if !showWelcome}
+						<ChatComposer
+							bind:this={composerRef}
+							onsent={() => (isUserScrolling = false)}
+							onknowledgebase={() => (isRagTestOpen = true)}
+						/>
+					{/if}
+					<AppFooter
+						showInstallButton={installPrompt.available}
+						{hasEnoughRAM}
+						deferredInstall={installPrompt.captured}
+						oninstall={handleInstallClick}
+					/>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
 
 <!-- Modals de configuration / Config modals -->
 <ManageModelsModal bind:isOpen={isAddModelModalOpen} />
-
-<!-- Panneau d'historique des conversations / Conversation history panel -->
-<ConversationHistory bind:isOpen={isHistoryOpen} />

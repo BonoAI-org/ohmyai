@@ -14,25 +14,81 @@
 		"install": "Installer l'app",
 		"installApp": "Installer Oh my AI! sur votre appareil",
 		"selectModel": "Sélectionner un modèle",
-		"chooseModel": "Choisir un modèle"
+		"chooseModel": "Choisir un modèle",
+		"untitledConversation": "Nouvelle conversation",
+		"showHistory": "Afficher l'historique",
+		"hideHistory": "Masquer l'historique",
+		"contextUsed": "contexte {percent} %",
+		"modelLocal": "local",
+		"modelOffline": "hors ligne",
+		"modelToDownload": "à télécharger"
 	},
 	"model": {
 		"recommended": "Recommandé",
 		"custom": "Custom",
 		"customModels": "Modèles Personnalisés",
 		"addCustomModel": "Ajouter un modèle personnalisé",
-		"deleteModel": "Supprimer ce modèle personnalisé ?"
+		"deleteModel": "Supprimer ce modèle personnalisé ?",
+		"searchLabel": "Rechercher un modèle",
+		"searchPlaceholder": "Rechercher",
+		"noResults": "Aucun modèle ne correspond",
+		"manage": "Gérer les modèles",
+		"fit": {
+			"installed": "Déjà installé",
+			"suitable": "Adapté",
+			"slow": "Lent ici",
+			"incompatible": "Incompatible",
+			"loading": "En cours"
+		}
 	},
 	"chat": {
 		"startConversation": "Commencez une conversation",
 		"runsInBrowser": "Le modèle s'exécute entièrement dans votre navigateur via WebAssembly",
-		"typePlaceholder": "Tapez votre message...",
+		"typePlaceholder": "Écrivez, ou déposez un document",
 		"send": "Envoyer le message",
 		"clear": "Effacer la conversation",
 		"clearConversation": "🗑️ Effacer la conversation",
 		"generating": "Génération en cours...",
 		"scrollToBottom": "Retour en bas",
-		"contextUsed": "Contexte :"
+		"contextUsed": "Contexte :",
+		"export": "Exporter",
+		"exportMarkdown": "Exporter la conversation en Markdown",
+		"composer": "Composeur",
+		"yourMessage": "Votre message",
+		"attachment": "Pièce jointe",
+		"removeImage": "Retirer l'image",
+		"stop": "Arrêter la génération",
+		"speed": "{speed} tok/s · hors ligne",
+		"sourceNote": "note enregistrée",
+		"sourceSimilarity": "Similarité : {percent} %",
+		"tools": {
+			"image": "Image",
+			"knowledgeBase": "Base de connaissances",
+			"knowledgeBaseCount": "Base de connaissances · {count} documents",
+			"reasoning": "Raisonnement"
+		},
+		"help": {
+			"shortcuts": "Entrée pour envoyer · Maj + Entrée pour un retour à la ligne",
+			"onDevice": "Tout se passe sur cet appareil"
+		},
+		"drop": {
+			"empty": "Aucun texte lisible dans {name}.",
+			"failed": "Impossible de lire {name} : {reason}"
+		},
+		"empty": {
+			"title": "Posez votre première question.",
+			"lede": "Le modèle est installé sur cet appareil. Rien de ce que vous écrivez ne quitte ce navigateur.",
+			"suggestions": {
+				"summarize": "Résumer un document que je dépose",
+				"rewrite": "Reformuler un courriel",
+				"describe": "Décrire une image"
+			}
+		},
+		"roleUser": "Vous",
+		"roleAssistant": "Assistant",
+		"copy": "Copier",
+		"reusePrompt": "Réutiliser ce message",
+		"saveToMemory": "Enregistrer dans la base de connaissances"
 	},
 	"loading": {
 		"loadingModel": "Chargement du modèle...",
@@ -51,11 +107,12 @@
 		"hardwareReasonGpuBuffer": "Le GPU ne peut allouer que {buffer} GB par tampon, trop peu pour charger un modèle.",
 		"hardwareReasonNoWebgpu": "WebGPU n'est pas disponible dans ce navigateur.",
 		"hardwareMemoryCaveat": "Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle.",
-		"hardwareReasonBrowserLimit": "Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil."
+		"hardwareReasonBrowserLimit": "Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil.",
+		"cancel": "Annuler le téléchargement"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
-		"webgpuExperimentalTitle": "Exécuté via Transformers.js (ONNX Runtime Web) sur WebGPU — support expérimental."
+		"webgpuExperimentalTitle": "Exécuté via Transformers.js (ONNX Runtime Web) sur WebGPU, support expérimental."
 	},
 	"error": {
 		"title": "Erreur",
@@ -98,11 +155,29 @@
 		"conversationCount": "{count} conversation(s) sauvegardée(s)",
 		"today": "Aujourd'hui",
 		"yesterday": "Hier",
-		"minutesAgo": "Il y a {minutes} min"
+		"minutesAgo": "Il y a {minutes} min",
+		"conversationHistory": "Historique des conversations",
+		"searchInHistory": "Rechercher dans l'historique",
+		"groupToday": "Aujourd'hui",
+		"groupWeek": "7 derniers jours",
+		"groupOlder": "Plus ancien",
+		"noResults": "Aucune conversation ne correspond",
+		"knowledgeBase": "Base de connaissances",
+		"installedModels": "Modèles installés"
 	},
 	"settings": {
 		"title": "Paramètres",
 		"colorTheme": "Thème de couleur",
+		"themeOption": "Thème {name}",
+		"themes": {
+			"atelier": "Atelier",
+			"purple": "Améthyste",
+			"blue": "Océan",
+			"emerald": "Émeraude",
+			"rose": "Rose",
+			"amber": "Ambre",
+			"paper": "Papier"
+		},
 		"hfToken": "Token Hugging Face",
 		"hfGetToken": "Obtenir un token",
 		"hfDescription": "Un token est requis pour télécharger certains modèles.",
@@ -125,7 +200,7 @@
 		"rulesPlaceholder": "Ex : Réponds toujours en français. Utilise un ton professionnel...",
 		"saveRules": "Sauvegarder les règles",
 		"rulesSaved": "Règles sauvegardées !",
-		"save": "Sauvegarder",
+		"save": "Enregistrer",
 		"clearCache": "Vider le cache",
 		"builtBy": "Créé par",
 		"generationTitle": "Paramètres de génération",
@@ -139,7 +214,17 @@
 		"presencePenalty": "Pénalité de présence",
 		"presencePenaltyHelp": "Encourage les nouveaux sujets",
 		"saveGeneration": "Sauvegarder les paramètres",
-		"generationSaved": "Paramètres sauvegardés !"
+		"generationSaved": "Paramètres sauvegardés !",
+		"language": "Langue",
+		"sections": {
+			"appearance": "Apparence",
+			"models": "Modèles et accès",
+			"advanced": "Avancé"
+		},
+		"modelsAndAccess": "Jeton, cache et modèles installés",
+		"installedModels": "Modèles installés",
+		"cacheHint": "Les modèles téléchargés restent dans ce navigateur. La gestion des modèles permet de les supprimer pour récupérer de l'espace.",
+		"selectLanguage": "Sélectionner la langue"
 	},
 	"mcp": {
 		"title": "Serveurs MCP",
@@ -171,5 +256,56 @@
 		"requiresToolModel": "Les outils nécessitent un modèle Hermes",
 		"tools": "Tools",
 		"toolsBadge": "Outils"
+	},
+	"footer": {
+		"builtBy": "Construit par",
+		"sourceCode": "Code source"
+	},
+	"welcome": {
+		"badge": "Aucun serveur, aucun compte",
+		"title": "Une IA qui tourne entièrement sur votre machine.",
+		"lede": "Le modèle se télécharge une fois, puis répond hors ligne. Vos conversations restent dans ce navigateur : rien ne part vers un serveur, il n'y a rien à créer ni à accepter.",
+		"proofs": {
+			"offline": {
+				"title": "Hors ligne une fois installé.",
+				"body": "Le modèle vit dans le navigateur, pas sur un serveur distant."
+			},
+			"nothingLeaves": {
+				"title": "Rien ne sort de l'appareil.",
+				"body": "Ni les messages, ni les fichiers déposés dans la base de connaissances."
+			},
+			"verifiable": {
+				"title": "Vérifiable.",
+				"body": "Code ouvert,"
+			}
+		},
+		"device": {
+			"title": "Votre appareil",
+			"memory": "{gb} Go de mémoire",
+			"memoryUnknown": "mémoire non rapportée",
+			"webgpuOk": "WebGPU est actif : les réponses seront rapides.",
+			"webgpuMissing": "WebGPU n'est pas actif dans ce navigateur",
+			"webgpuConsequence": "Sans accélération GPU, un gros modèle met plusieurs minutes par réponse. Un modèle léger reste confortable.",
+			"webgpuHelp": "Activer WebGPU dans Chrome",
+			"retention": "Le modèle reste dans ce navigateur pour vos prochaines visites. Vous pouvez le supprimer à tout moment depuis les réglages.",
+			"webgpuChecking": "Diagnostic de l'appareil en cours..."
+		},
+		"model": {
+			"recommendedHere": "Recommandé ici",
+			"estimatedTime": "≈ {minutes} min",
+			"storedOffline": "stocké hors ligne"
+		},
+		"actions": {
+			"download": "Télécharger et démarrer",
+			"compare": "Comparer les {count} modèles"
+		}
+	},
+	"common": {
+		"close": "Fermer",
+		"delete": "Supprimer"
+	},
+	"knowledge": {
+		"filesToImport": "Fichiers à importer",
+		"noResultAboveThreshold": "Aucun résultat au-dessus du seuil"
 	}
 }

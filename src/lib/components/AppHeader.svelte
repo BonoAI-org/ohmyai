@@ -1,11 +1,16 @@
 <script>
 	/**
-	 * En-tête de l'application : boutons de conversation (versions mobile et
-	 * bureau), marque, export markdown, invite d'installation PWA, sélecteurs
-	 * de langue et de modèle, accès aux paramètres et à la base de connaissances.
-	 * Application header: conversation buttons (mobile and desktop variants),
-	 * branding, markdown export, PWA install prompt, language and model
-	 * selectors, access to settings and to the knowledge base.
+	 * En-tête de l'application : une seule rangée de 56 px, trois zones.
+	 *   identité  : bouton du panneau, marque
+	 *   contexte  : titre de la conversation, puce du modèle, jauge de contexte
+	 *   actions   : nouvelle conversation, réglages
+	 * Application header: a single 56 px row, three zones: identity, context,
+	 * actions.
+	 *
+	 * La langue et la base de connaissances ont quitté l'en-tête : la première
+	 * vit dans les réglages, la seconde dans le panneau latéral.
+	 * Language and knowledge base left the header: the former lives in the
+	 * settings, the latter in the side panel.
 	 *
 	 * Les deux boutons mobiles doivent conserver leur classe `lg:hidden` : les
 	 * tests end-to-end s'en servent pour vérifier le comportement responsive.
@@ -15,297 +20,229 @@
 	import { _ } from "svelte-i18n";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
-	import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 	import ModelSelector from "$lib/components/ModelSelector.svelte";
+	import { findModel, getModelDisplayName } from "$lib/llm/models.js";
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
 
 	/**
 	 * @type {{
-	 *   showInstallButton: boolean,
-	 *   hasEnoughRAM: boolean,
-	 *   deferredInstall: boolean,
 	 *   onnew: () => void,
-	 *   onexport: () => void,
-	 *   oninstall: () => void,
 	 *   onmodelselect: (modelId: string) => void,
 	 *   isHistoryOpen?: boolean,
 	 *   isSettingsModalOpen?: boolean,
-	 *   isRagTestOpen?: boolean,
 	 *   isAddModelModalOpen?: boolean
 	 * }}
 	 */
 	let {
-		showInstallButton,
-		hasEnoughRAM,
-		deferredInstall,
 		onnew,
-		onexport,
-		oninstall,
 		onmodelselect,
 		isHistoryOpen = $bindable(false),
 		isSettingsModalOpen = $bindable(false),
-		isRagTestOpen = $bindable(false),
 		isAddModelModalOpen = $bindable(false)
 	} = $props();
+
+	// Titre de la conversation en cours, ou le libellé d'une conversation neuve.
+	// Current conversation title, or the label of a fresh conversation.
+	// Vide tant que la conversation n'a pas de titre : l'en-tête ne répète pas
+	// le libellé du bouton d'à côté.
+	// Empty until the conversation has a title: the header does not echo the
+	// label of the button next to it.
+	const conversationTitle = $derived(
+		llmStore.conversationHistory.find(
+			(c) => c.id === llmStore.currentConversationId
+		)?.title ?? ""
+	);
+
+	// Le modèle est-il déjà sur l'appareil ?
+	// Is the model already on the device?
+	const isModelLocal = $derived(
+		Boolean(llmStore.downloadedModels[llmStore.selectedModel])
+	);
+
+	const modelSize = $derived(
+		findModel(llmStore.selectedModel, llmStore.customModels)?.size ?? ""
+	);
+
+	// Pourcentage de la fenêtre de contexte consommée, arrondi.
+	// Percentage of the context window consumed, rounded.
+	const contextPercent = $derived(
+		llmStore.contextUsage
+			? Math.round(llmStore.contextUsage.ratio * 100)
+			: null
+	);
 </script>
 
 <header
-	class="relative z-50 flex-shrink-0 bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 p-4"
+	class="relative z-50 flex-shrink-0 h-14 px-2 lg:px-5 bg-bg-raised border-b border-border-soft flex items-center gap-2 lg:gap-4"
 >
-	<div class="container mx-auto">
-		<div class="flex items-center justify-between flex-wrap gap-4">
-			<div class="flex items-center gap-3">
-				<!-- Bouton nouveau mobile / New button mobile -->
-				<button
-					onclick={onnew}
-					class="lg:hidden flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white rounded-lg transition-all shadow-lg touch-manipulation"
-					aria-label={$_("header.newConversation")}
-					title={$_("header.startNewConversation")}
-				>
-					<svg
-						class="w-5 h-5"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v16m8-8H4"
-						/>
-					</svg>
-				</button>
-				<button
-					onclick={() => (isHistoryOpen = true)}
-					class="lg:hidden flex items-center justify-center w-10 h-10 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg transition-colors touch-manipulation"
-					aria-label={$_("header.history")}
-					title={$_("header.conversationHistory")}
-				>
-					<svg
-						class="w-5 h-5"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</button>
-				<div class="flex items-center gap-3">
-					<a href="/" class="flex items-center gap-2 group">
-						<img
-							src={!themeStore.isDark ||
-							themeStore.colorTheme === "paper"
-								? logoDark
-								: logo}
-							alt="Logo"
-							class="w-6 h-6 group-hover:scale-110 transition-transform"
-						/>
-						<span
-							class="text-lg font-bold text-slate-900 dark:text-white"
-						>
-							Oh my AI!
-						</span>
-					</a>
-					<span
-						class="hidden md:inline-block text-sm text-slate-500 dark:text-slate-400 pl-1"
-					>
-						{$_("app.tagline")}
-					</span>
-				</div>
-			</div>
+	<!-- ==================== Mobile ==================== -->
 
-			<!-- Boutons d'action / Action buttons -->
-			<div class="flex items-center gap-2">
-				<!-- Bouton nouvelle conversation / New conversation button -->
-				<button
-					onclick={onnew}
-					class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:from-purple-800 active:to-purple-900 text-white px-4 py-2 rounded-lg transition-all shadow-lg hover:shadow-purple-500/50 touch-manipulation"
-					aria-label={$_("header.newConversation")}
-					title={$_("header.startNewConversation")}
-				>
-					<svg
-						class="w-5 h-5"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v16m8-8H4"
-						/>
-					</svg>
-					<span class="text-sm font-medium hidden sm:inline"
-						>{$_("header.new")}</span
-					>
-				</button>
+	<!-- Bouton du panneau / Panel button -->
+	<button
+		onclick={() => (isHistoryOpen = true)}
+		class="lg:hidden flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button text-ink-2 hover:bg-border-soft transition-colors touch-manipulation"
+		aria-label={$_("header.conversationHistory")}
+	>
+		<svg
+			class="w-5 h-5"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.9"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"
+		>
+			<path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" />
+		</svg>
+	</button>
 
-				<!-- Bouton historique (desktop) / History button (desktop) -->
-				<button
-					onclick={() => (isHistoryOpen = true)}
-					class="hidden lg:flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors touch-manipulation"
-					aria-label={$_("header.history")}
-				>
-					<svg
-						class="w-5 h-5"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					<span class="text-sm">{$_("header.history")}</span>
-					{#if llmStore.conversationHistory.length > 0}
-						<span
-							class="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded-full"
-						>
-							{llmStore.conversationHistory.length}
-						</span>
-					{/if}
-				</button>
-
-				<!-- Bouton Exporter Markdown / Export Markdown button -->
-				{#if llmStore.messages && llmStore.messages.length > 0}
-					<button
-						onclick={onexport}
-						class="hidden lg:flex items-center justify-center w-10 h-10 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 text-white rounded-lg transition-colors touch-manipulation"
-						aria-label="Exporter en Markdown / Export to Markdown"
-						title="Exporter la conversation / Export conversation"
-					>
-						<!-- Icône disquette (sauvegarder) / Floppy disk icon (save) -->
-						<svg
-							class="w-5 h-5 flex-shrink-0"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
-							/>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17 21v-8H7v8M7 3v5h8"
-							/>
-						</svg>
-					</button>
-				{/if}
-
-				<!-- Bouton installation PWA / PWA install button -->
-				{#if showInstallButton}
-					<button
-						onclick={oninstall}
-						class="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 active:from-green-800 active:to-green-900 text-white rounded-lg transition-all shadow-lg hover:shadow-green-500/50 touch-manipulation"
-						aria-label={$_("header.install")}
-						title={$_("header.installApp")}
-					>
-						<svg
-							class="w-5 h-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-							/>
-						</svg>
-					</button>
-				{:else if !hasEnoughRAM && deferredInstall}
-					<!-- Message RAM insuffisante / Insufficient RAM message -->
-					<div
-						class="flex items-center justify-center w-10 h-10 bg-orange-600/20 border border-orange-600/50 text-orange-400 rounded-lg"
-						title={$_("ram.insufficientForInstall", {
-							values: { min: MIN_RAM_GB },
-						})}
-					>
-						<svg
-							class="w-5 h-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-							/>
-						</svg>
-					</div>
-				{/if}
-
-				<!-- Settings + Language + Model Selector Container aligned to the right -->
-				<div
-					class="flex flex-wrap items-center gap-3 mt-2 sm:mt-0 ml-auto"
-				>
-					<!-- Composant de Langue / Language Selector -->
-					<div class="flex-shrink-0">
-						<LanguageSelector />
-					</div>
-
-					<!-- Bouton Paramètres / Settings button -->
-					<button
-						onclick={() => (isSettingsModalOpen = true)}
-						class="flex items-center justify-center w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-colors touch-manipulation hover:bg-slate-50 dark:hover:bg-slate-700/80 shadow-sm flex-shrink-0"
-						aria-label="Paramètres / Settings"
-						title="Paramètres / Settings"
-					>
-						<svg
-							class="w-4 h-4"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="1.5"
-								d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-							></path>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="1.5"
-								d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-							></path>
-						</svg>
-					</button>
-
-					<ModelSelector
-						onselect={onmodelselect}
-						onmanage={() => (isAddModelModalOpen = true)}
-					/>
-
-					<!-- Base de connaissances (RAG) / Knowledge base (RAG) -->
-					<button
-						onclick={() => (isRagTestOpen = !isRagTestOpen)}
-						class="flex items-center justify-center w-10 h-10 bg-slate-200/50 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:active:bg-slate-600 text-slate-900 dark:text-white rounded-lg transition-colors touch-manipulation"
-						title="Base de connaissances / Knowledge base"
-					>
-						<span class="text-xl">🧠</span>
-					</button>
-				</div>
-			</div>
+	<!-- Marque et modèle / Brand and model -->
+	<div class="lg:hidden flex-grow min-w-0">
+		<div class="text-[15px] font-semibold text-ink truncate">
+			{$_("app.title")}
 		</div>
+		<div class="font-mono text-[11px] text-ink-3 truncate">
+			{getModelDisplayName(
+				llmStore.selectedModel,
+				llmStore.customModels
+			)}
+			·
+			{isModelLocal
+				? $_("header.modelOffline")
+				: $_("header.modelToDownload")}
+		</div>
+	</div>
+
+	<!-- Nouvelle conversation / New conversation -->
+	<button
+		onclick={onnew}
+		class="lg:hidden flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button bg-ink text-bg-raised hover:bg-ink-2 transition-colors touch-manipulation"
+		aria-label={$_("header.newConversation")}
+		title={$_("header.startNewConversation")}
+	>
+		<svg
+			class="w-[18px] h-[18px]"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"
+		>
+			<path d="M12 5v14" /><path d="M5 12h14" />
+		</svg>
+	</button>
+
+	<!-- ==================== Bureau / Desktop ==================== -->
+
+	<!-- Zone identité / Identity zone -->
+	<div class="hidden lg:flex items-center gap-2.5 w-[228px] flex-shrink-0">
+		<button
+			onclick={() => (isHistoryOpen = !isHistoryOpen)}
+			class="hit-44 flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-control text-ink-2 hover:bg-border-soft transition-colors"
+			aria-label={isHistoryOpen
+				? $_("header.hideHistory")
+				: $_("header.showHistory")}
+			aria-expanded={isHistoryOpen}
+		>
+			<svg
+				class="w-[18px] h-[18px]"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.9"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<rect x="3" y="4" width="18" height="16" rx="2" />
+				<path d="M9 4v16" />
+			</svg>
+		</button>
+		<a href="/" class="hit-44 flex items-center gap-2 min-w-0 group">
+			<img
+				src={themeStore.isLight ? logoDark : logo}
+				alt=""
+				class="w-6 h-6 flex-shrink-0 group-hover:scale-110 transition-transform"
+			/>
+			<span
+				class="font-display font-extrabold text-base text-ink truncate"
+			>
+				{$_("app.title")}
+			</span>
+		</a>
+	</div>
+
+	<!-- Zone contexte / Context zone -->
+	<div class="hidden lg:flex flex-grow items-center gap-3 min-w-0">
+		{#if conversationTitle}
+			<div class="text-[15px] font-semibold text-ink truncate">
+				{conversationTitle}
+			</div>
+		{/if}
+
+		<div class="flex-shrink-0 max-w-[340px]">
+			<ModelSelector
+				onselect={onmodelselect}
+				onmanage={() => (isAddModelModalOpen = true)}
+				{isModelLocal}
+				{modelSize}
+			/>
+		</div>
+
+		{#if contextPercent !== null}
+			<div class="flex items-center gap-[7px] flex-shrink-0 whitespace-nowrap">
+				<div
+					class="w-21 h-1.5 rounded-full bg-border-soft overflow-hidden"
+				>
+					<div
+						class="h-full bg-accent"
+						style="width: {contextPercent}%"
+					></div>
+				</div>
+				<span class="font-mono text-xs text-ink-3">
+					{$_("header.contextUsed", {
+						values: { percent: contextPercent },
+					})}
+				</span>
+			</div>
+		{/if}
+	</div>
+
+	<!-- Zone actions / Actions zone -->
+	<div class="hidden lg:flex items-center gap-1.5 flex-shrink-0">
+		<button
+			onclick={onnew}
+			class="hit-44 h-9 px-3.5 rounded-control bg-ink text-white text-sm font-semibold hover:bg-ink-2 transition-colors touch-manipulation"
+			title={$_("header.startNewConversation")}
+		>
+			{$_("header.newConversation")}
+		</button>
+		<button
+			onclick={() => (isSettingsModalOpen = true)}
+			class="hit-44 flex items-center justify-center w-9 h-9 rounded-control bg-surface border border-border text-ink-2 hover:bg-bg transition-colors"
+			aria-label={$_("settings.title")}
+			title={$_("settings.title")}
+		>
+			<svg
+				class="w-4 h-4"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.8"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<circle cx="12" cy="12" r="3" />
+				<path d="M4 12h2" /><path d="M18 12h2" />
+				<path d="M12 4v2" /><path d="M12 18v2" />
+				<path d="m6.3 6.3 1.4 1.4" /><path d="m16.3 16.3 1.4 1.4" />
+				<path d="m17.7 6.3-1.4 1.4" /><path d="m7.7 16.3-1.4 1.4" />
+			</svg>
+		</button>
 	</div>
 </header>

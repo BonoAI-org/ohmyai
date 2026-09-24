@@ -2,16 +2,23 @@
 	import { onMount } from "svelte";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
+	import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 	import { mcpStore } from "$lib/stores/mcp.svelte.js";
 	import { _ } from "svelte-i18n";
 	import MCPConfigModal from "./MCPConfigModal.svelte";
+	import { AVAILABLE_MODELS } from "$lib/llm/models.js";
 
-	let { close = () => {} } = $props();
+	let { close = () => {}, onmanagemodels = () => {} } = $props();
 	let isMCPModalOpen = $state(false);
 	let huggingFaceToken = $state("");
 
 	// Drawer states
 	let openDrawer = $state('theme');
+
+	// Modèles présents sur l'appareil / Models present on the device
+	const installedModelCount = $derived(
+		AVAILABLE_MODELS.filter((m) => llmStore.downloadedModels[m.id]).length
+	);
 
 	function toggleDrawer(id) {
 		openDrawer = openDrawer === id ? null : id;
@@ -36,17 +43,15 @@
 	let presencePenalty = $state(0.5);
 	let generationSaved = $state(false);
 
+	// Le libellé de chaque thème passe par l'i18n (settings.themes.*)
 	const colorThemes = [
-		{ id: "purple", name: "Amethyst", color: "bg-[#a855f7]" },
-		{ id: "blue", name: "Ocean", color: "bg-[#3b82f6]" },
-		{ id: "emerald", name: "Emerald", color: "bg-[#10b981]" },
-		{ id: "rose", name: "Rose", color: "bg-[#f43f5e]" },
-		{ id: "amber", name: "Amber", color: "bg-[#f59e0b]" },
-		{
-			id: "paper",
-			name: "Paper",
-			color: "bg-white border-2 border-slate-900",
-		},
+		{ id: "atelier", color: "bg-[#0f5c4a] border-2 border-[#e0d8c8]" },
+		{ id: "purple", color: "bg-[#a855f7]" },
+		{ id: "blue", color: "bg-[#3b82f6]" },
+		{ id: "emerald", color: "bg-[#10b981]" },
+		{ id: "rose", color: "bg-[#f43f5e]" },
+		{ id: "amber", color: "bg-[#f59e0b]" },
+		{ id: "paper", color: "bg-white border-2 border-slate-900" },
 	];
 
 	function saveToken() {
@@ -111,7 +116,11 @@
 
 	<div class="space-y-2">
 
-		<!-- Drawer: Theme & Token -->
+		<h3 class="pt-3 pb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+			{$_('settings.sections.appearance')}
+		</h3>
+
+		<!-- Apparence : thème et langue / Appearance: theme and language -->
 		<div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
 			<button
 				onclick={() => toggleDrawer('theme')}
@@ -133,41 +142,109 @@
 						{#each colorThemes as theme}
 							<button
 								onclick={() => themeStore.setColorTheme(theme.id)}
-								class="w-10 h-10 rounded-full {theme.color} {themeStore.colorTheme ===
+								class="w-touch h-touch flex-shrink-0 rounded-full {theme.color} {themeStore.colorTheme ===
 								theme.id
 									? 'ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ring-purple-500'
 									: 'opacity-70 hover:opacity-100 transition-opacity'}"
-								aria-label="Theme {theme.name}"
-								title={theme.name}
+								aria-label={$_('settings.themeOption', {
+									values: { name: $_(`settings.themes.${theme.id}`) },
+								})}
+								title={$_(`settings.themes.${theme.id}`)}
 							></button>
 						{/each}
 					</div>
 
-					<!-- Hugging Face Token -->
-					<div class="flex justify-between items-center mb-2">
-						<label for="hf-token" class="block text-xs font-medium text-slate-600 dark:text-slate-400">{$_('settings.hfToken')}</label>
-						<a
-							href="https://huggingface.co/settings/tokens"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="text-xs text-purple-500 dark:text-purple-400 hover:underline"
-						>
-							{$_('settings.hfGetToken')}
-						</a>
+					<!-- Langue, sortie de l'en-tête / Language, moved out of the header -->
+					<div class="flex items-center justify-between gap-3 mb-5">
+						<span class="text-xs font-medium text-slate-600 dark:text-slate-400">
+							{$_('settings.language')}
+						</span>
+						<LanguageSelector />
 					</div>
-					<p class="text-[10px] text-slate-400 dark:text-slate-500 mb-2">
-						{$_('settings.hfDescription')}
-					</p>
-					<input
-						type="password"
-						id="hf-token"
-						bind:value={huggingFaceToken}
-						class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm"
-						placeholder="hf_..."
-					/>
+
 				</div>
 			{/if}
 		</div>
+
+
+		<h3 class="pt-3 pb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+			{$_('settings.sections.models')}
+		</h3>
+
+		<!-- Modèles et accès / Models and access -->
+		<div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+			<button
+				onclick={() => toggleDrawer('models')}
+				class="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+			>
+				<div class="flex items-center gap-2.5">
+					<svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7M4 7a2 2 0 012-2h12a2 2 0 012 2M4 7h16M8 12h8" />
+					</svg>
+					<span class="font-medium text-sm">{$_('settings.modelsAndAccess')}</span>
+				</div>
+				<svg class="w-4 h-4 text-slate-400 transition-transform {openDrawer === 'models' ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			{#if openDrawer === 'models'}
+				<div class="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-3 space-y-4">
+					<!-- Jeton Hugging Face / Hugging Face token -->
+					<div>
+						<div class="flex justify-between items-center mb-2">
+							<label for="hf-token" class="block text-xs font-medium text-slate-600 dark:text-slate-400">{$_('settings.hfToken')}</label>
+							<a
+								href="https://huggingface.co/settings/tokens"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="text-xs text-accent hover:underline"
+							>
+								{$_('settings.hfGetToken')}
+							</a>
+						</div>
+						<p class="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+							{$_('settings.hfDescription')}
+						</p>
+						<input
+							type="password"
+							id="hf-token"
+							bind:value={huggingFaceToken}
+							class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent focus:outline-none text-sm"
+							placeholder="hf_..."
+						/>
+						<button
+							onclick={saveToken}
+							class="mt-2 min-h-touch px-4 rounded-button bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
+						>
+							{$_('settings.save')}
+						</button>
+					</div>
+
+					<!-- Modèles installés et cache / Installed models and cache -->
+					<div>
+						<div class="flex items-center justify-between gap-3 mb-2">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">
+								{$_('settings.installedModels')}
+							</span>
+							<span class="font-mono text-xs text-ink-3">{installedModelCount}</span>
+						</div>
+						<button
+							onclick={() => { close(); onmanagemodels(); }}
+							class="w-full min-h-touch px-4 rounded-button border border-slate-300 dark:border-slate-600 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+						>
+							{$_('model.manage')}
+						</button>
+						<p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
+							{$_('settings.cacheHint')}
+						</p>
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<h3 class="pt-3 pb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+			{$_('settings.sections.advanced')}
+		</h3>
 
 		<!-- Drawer: User Profile -->
 		<div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
@@ -382,11 +459,11 @@
 	<div class="flex gap-3 mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
 		<button
 			onclick={saveToken}
-			class="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all shadow-sm font-medium text-sm active:scale-[0.98]"
+			class="flex-1 min-h-touch px-4 bg-accent hover:bg-accent-hover text-white rounded-button transition-colors font-medium text-sm"
 		>{$_('settings.save')}</button>
 		<button
 			onclick={() => llmStore.clearCache()}
-			class="flex-1 px-4 py-2.5 border border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-all font-medium text-sm active:scale-[0.98]"
+			class="flex-1 min-h-touch px-4 border border-danger-border text-danger rounded-button hover:bg-danger-soft transition-colors font-medium text-sm"
 		>{$_('settings.clearCache')}</button>
 	</div>
 </div>

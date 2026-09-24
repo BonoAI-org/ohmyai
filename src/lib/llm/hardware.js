@@ -199,3 +199,28 @@ export function exceedsBrowserLimit(modelConfig) {
 	const sizeGB = parseGigabytes(modelConfig.size);
 	return sizeGB !== null && sizeGB > TRANSFORMERS_MAX_MODEL_GB;
 }
+
+/**
+ * Teste si WebGPU est réellement utilisable, en demandant un adaptateur.
+ *
+ * La présence de `navigator.gpu` ne suffit pas : Chrome expose l'API dans des
+ * contextes où aucun adaptateur n'est disponible (machine sans GPU, pilote
+ * sur liste noire, exécution sans affichage). L'écran d'accueil annonce un
+ * diagnostic, il doit donc poser la vraie question.
+ *
+ * Tells whether WebGPU is actually usable, by requesting an adapter. The
+ * presence of `navigator.gpu` is not enough: Chrome exposes the API in
+ * contexts where no adapter is available, so the welcome screen, which states
+ * a diagnosis, must ask the real question.
+ *
+ * @param {{ gpu?: { requestAdapter: () => Promise<unknown> } } | undefined} [nav]
+ * @returns {Promise<boolean>}
+ */
+export async function hasUsableWebGPU(nav = globalThis.navigator) {
+	if (!nav?.gpu?.requestAdapter) return false;
+	try {
+		return Boolean(await nav.gpu.requestAdapter());
+	} catch {
+		return false;
+	}
+}

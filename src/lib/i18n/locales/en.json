@@ -14,25 +14,81 @@
 		"install": "Install app",
 		"installApp": "Install Oh my AI! on your device",
 		"selectModel": "Select a model",
-		"chooseModel": "Choose a model"
+		"chooseModel": "Choose a model",
+		"untitledConversation": "New conversation",
+		"showHistory": "Show history",
+		"hideHistory": "Hide history",
+		"contextUsed": "context {percent}%",
+		"modelLocal": "local",
+		"modelOffline": "offline",
+		"modelToDownload": "to download"
 	},
 	"model": {
 		"recommended": "Recommended",
 		"custom": "Custom",
 		"customModels": "Custom Models",
 		"addCustomModel": "Add custom model",
-		"deleteModel": "Delete this custom model?"
+		"deleteModel": "Delete this custom model?",
+		"searchLabel": "Search for a model",
+		"searchPlaceholder": "Search",
+		"noResults": "No model matches",
+		"manage": "Manage models",
+		"fit": {
+			"installed": "Already installed",
+			"suitable": "Suitable",
+			"slow": "Slow here",
+			"incompatible": "Incompatible",
+			"loading": "Loading"
+		}
 	},
 	"chat": {
 		"startConversation": "Start a conversation",
 		"runsInBrowser": "The model runs entirely in your browser via WebAssembly",
-		"typePlaceholder": "Type your message...",
+		"typePlaceholder": "Write, or drop a document",
 		"send": "Send message",
-		"clear": "Clear conversation",
+		"clear": "Clear the conversation",
 		"clearConversation": "🗑️ Clear conversation",
 		"generating": "Generating...",
 		"scrollToBottom": "Scroll to bottom",
-		"contextUsed": "Context:"
+		"contextUsed": "Context:",
+		"export": "Export",
+		"exportMarkdown": "Export the conversation as Markdown",
+		"composer": "Composer",
+		"yourMessage": "Your message",
+		"attachment": "Attachment",
+		"removeImage": "Remove the image",
+		"stop": "Stop generating",
+		"speed": "{speed} tok/s · offline",
+		"sourceNote": "saved note",
+		"sourceSimilarity": "Similarity: {percent}%",
+		"tools": {
+			"image": "Image",
+			"knowledgeBase": "Knowledge base",
+			"knowledgeBaseCount": "Knowledge base · {count} documents",
+			"reasoning": "Reasoning"
+		},
+		"help": {
+			"shortcuts": "Enter to send · Shift + Enter for a line break",
+			"onDevice": "Everything happens on this device"
+		},
+		"drop": {
+			"empty": "No readable text in {name}.",
+			"failed": "Could not read {name}: {reason}"
+		},
+		"empty": {
+			"title": "Ask your first question.",
+			"lede": "The model is installed on this device. Nothing you write leaves this browser.",
+			"suggestions": {
+				"summarize": "Summarize a document I drop",
+				"rewrite": "Rewrite an email",
+				"describe": "Describe an image"
+			}
+		},
+		"roleUser": "You",
+		"roleAssistant": "Assistant",
+		"copy": "Copy",
+		"reusePrompt": "Reuse this message",
+		"saveToMemory": "Save to the knowledge base"
 	},
 	"loading": {
 		"loadingModel": "Loading model...",
@@ -51,11 +107,12 @@
 		"hardwareReasonGpuBuffer": "The GPU can only allocate {buffer} GB per buffer, too little to load a model.",
 		"hardwareReasonNoWebgpu": "WebGPU is not available in this browser.",
 		"hardwareMemoryCaveat": "The browser rounds and caps the memory it reports: the figure may be lower than the actual memory.",
-		"hardwareReasonBrowserLimit": "This model weighs more than {limit} GB: beyond what a browser tab can load, whatever the device's memory."
+		"hardwareReasonBrowserLimit": "This model weighs more than {limit} GB: beyond what a browser tab can load, whatever the device's memory.",
+		"cancel": "Cancel the download"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
-		"webgpuExperimentalTitle": "Runs via Transformers.js (ONNX Runtime Web) on WebGPU — experimental support."
+		"webgpuExperimentalTitle": "Runs via Transformers.js (ONNX Runtime Web) on WebGPU, experimental support."
 	},
 	"error": {
 		"title": "Error",
@@ -98,11 +155,29 @@
 		"conversationCount": "{count} conversation(s) saved",
 		"today": "Today",
 		"yesterday": "Yesterday",
-		"minutesAgo": "{minutes} min ago"
+		"minutesAgo": "{minutes} min ago",
+		"conversationHistory": "Conversation history",
+		"searchInHistory": "Search the history",
+		"groupToday": "Today",
+		"groupWeek": "Last 7 days",
+		"groupOlder": "Older",
+		"noResults": "No conversation matches",
+		"knowledgeBase": "Knowledge base",
+		"installedModels": "Installed models"
 	},
 	"settings": {
 		"title": "Settings",
-		"colorTheme": "Color Theme",
+		"colorTheme": "Color theme",
+		"themeOption": "{name} theme",
+		"themes": {
+			"atelier": "Atelier",
+			"purple": "Amethyst",
+			"blue": "Ocean",
+			"emerald": "Emerald",
+			"rose": "Rose",
+			"amber": "Amber",
+			"paper": "Paper"
+		},
 		"hfToken": "Hugging Face Token",
 		"hfGetToken": "Get a token",
 		"hfDescription": "A token is required to download some models.",
@@ -139,7 +214,17 @@
 		"presencePenalty": "Presence penalty",
 		"presencePenaltyHelp": "Encourages new topics",
 		"saveGeneration": "Save parameters",
-		"generationSaved": "Parameters saved!"
+		"generationSaved": "Parameters saved!",
+		"language": "Language",
+		"sections": {
+			"appearance": "Appearance",
+			"models": "Models and access",
+			"advanced": "Advanced"
+		},
+		"modelsAndAccess": "Token, cache and installed models",
+		"installedModels": "Installed models",
+		"cacheHint": "Downloaded models stay in this browser. Model management lets you delete them to reclaim space.",
+		"selectLanguage": "Select the language"
 	},
 	"mcp": {
 		"title": "MCP Servers",
@@ -171,5 +256,56 @@
 		"requiresToolModel": "Tools require a Hermes model",
 		"tools": "Tools",
 		"toolsBadge": "Tools"
+	},
+	"footer": {
+		"builtBy": "Built by",
+		"sourceCode": "Source code"
+	},
+	"welcome": {
+		"badge": "No server, no account",
+		"title": "An AI that runs entirely on your machine.",
+		"lede": "The model downloads once, then answers offline. Your conversations stay in this browser: nothing leaves for a server, there is nothing to create or accept.",
+		"proofs": {
+			"offline": {
+				"title": "Offline once installed.",
+				"body": "The model lives in the browser, not on a remote server."
+			},
+			"nothingLeaves": {
+				"title": "Nothing leaves the device.",
+				"body": "Neither the messages, nor the files dropped into the knowledge base."
+			},
+			"verifiable": {
+				"title": "Verifiable.",
+				"body": "Open source,"
+			}
+		},
+		"device": {
+			"title": "Your device",
+			"memory": "{gb} GB of memory",
+			"memoryUnknown": "memory not reported",
+			"webgpuOk": "WebGPU is active: answers will be fast.",
+			"webgpuMissing": "WebGPU is not active in this browser",
+			"webgpuConsequence": "Without GPU acceleration, a large model takes several minutes per answer. A light model stays comfortable.",
+			"webgpuHelp": "Enable WebGPU in Chrome",
+			"retention": "The model stays in this browser for your next visits. You can delete it at any time from the settings.",
+			"webgpuChecking": "Checking your device..."
+		},
+		"model": {
+			"recommendedHere": "Recommended here",
+			"estimatedTime": "≈ {minutes} min",
+			"storedOffline": "stored offline"
+		},
+		"actions": {
+			"download": "Download and start",
+			"compare": "Compare the {count} models"
+		}
+	},
+	"common": {
+		"close": "Close",
+		"delete": "Delete"
+	},
+	"knowledge": {
+		"filesToImport": "Files to import",
+		"noResultAboveThreshold": "No result above the threshold"
 	}
 }

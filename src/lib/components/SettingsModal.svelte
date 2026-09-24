@@ -1,28 +1,67 @@
 <script>
 	/**
-	 * Enveloppe modale des paramètres : fond assombri, fermeture au clic sur
-	 * le fond ou à la touche Échap.
-	 * Settings modal wrapper: dimmed backdrop, closes on backdrop click or
-	 * Escape key.
+	 * Enveloppe modale des réglages.
+	 * Settings modal wrapper.
+	 *
+	 * Échap fermait déjà en apparence : l'écouteur vivait sur le conteneur,
+	 * qui portait `tabindex="-1"` mais ne recevait jamais le focus, si bien
+	 * qu'aucune touche ne lui parvenait. L'écoute se fait désormais au niveau
+	 * de la fenêtre, et le focus entre dans la modale à l'ouverture puis
+	 * retourne au bouton d'origine à la fermeture.
+	 * Escape only appeared to close: the listener lived on the container,
+	 * which carried `tabindex="-1"` but never received focus, so no key ever
+	 * reached it. Listening now happens at the window level, and focus enters
+	 * the modal on open then returns to the origin button on close.
 	 */
+	import { tick } from "svelte";
 	import Settings from "$lib/components/Settings.svelte";
+	import { _ } from "svelte-i18n";
 
-	/** @type {{ isOpen?: boolean }} */
-	let { isOpen = $bindable(false) } = $props();
+	/** @type {{ isOpen?: boolean, onmanagemodels?: () => void }} */
+	let { isOpen = $bindable(false), onmanagemodels = () => {} } = $props();
+
+	let dialogEl = $state(null);
+
+	// Élément qui avait le focus avant l'ouverture, pour le lui rendre.
+	// Element that held focus before opening, to give it back.
+	let previouslyFocused = null;
+
+	$effect(() => {
+		if (isOpen) {
+			previouslyFocused =
+				typeof document !== "undefined" ? document.activeElement : null;
+			tick().then(() => dialogEl?.focus());
+		} else if (previouslyFocused) {
+			previouslyFocused.focus?.();
+			previouslyFocused = null;
+		}
+	});
+
+	function handleKeydown(event) {
+		if (isOpen && event.key === "Escape") {
+			event.preventDefault();
+			isOpen = false;
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
-		role="dialog"
-		aria-modal="true"
-		aria-label="Paramètres / Settings"
-		tabindex="-1"
+		class="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-4"
+		role="presentation"
 		onclick={(e) => e.target === e.currentTarget && (isOpen = false)}
-		onkeydown={(e) => e.key === 'Escape' && (isOpen = false)}
 	>
-		<div class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md">
-			<Settings close={() => (isOpen = false)} />
+		<div
+			bind:this={dialogEl}
+			class="bg-surface rounded-card-lg shadow-[0_24px_64px_rgba(20,18,13,0.24)] w-full max-w-md outline-none"
+			role="dialog"
+			aria-modal="true"
+			aria-label={$_("settings.title")}
+			tabindex="-1"
+		>
+			<Settings close={() => (isOpen = false)} {onmanagemodels} />
 		</div>
 	</div>
 {/if}

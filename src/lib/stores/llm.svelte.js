@@ -692,6 +692,18 @@ class LLMStore {
 			const useTools = this.isSelectedModelToolCapable() && mcpStore.availableTools.length > 0;
 			const toolsParam = useTools ? mcpStore.getToolsForLLM() : undefined;
 
+			// Chrono de génération, pour annoncer une vitesse réelle sous la
+			// réponse. On mesure du premier jeton à la fin du flux, ce qui exclut
+			// le temps d'assemblage du contexte.
+			// Generation timer, to state a real speed under the answer. Measured
+			// from the first token to the end of the stream, which leaves out the
+			// context assembly time.
+			let firstTokenAt = null;
+			let completionTokens = null;
+			const markFirstToken = () => {
+				if (firstTokenAt === null) firstTokenAt = performance.now();
+			};
+
 			// Ajoute un message assistant vide pour la réponse
 			// Add an empty assistant message for the response
 			let assistantMessageIndex = this.messages.length;
@@ -719,13 +731,17 @@ class LLMStore {
 					max_new_tokens: this.generationParams.maxTokens,
 					onToken: (delta) => {
 						if (this._abortController?.signal.aborted) return;
+						markFirstToken();
 						batcher.push(delta);
 					}
 				});
 
 				// Usage mesuré par le moteur (tokenizer local) / Usage measured by the engine (local tokenizer)
 				const usage = this.engine.getLastUsage?.();
-				if (usage) await this._updateContextUsage(usage.total_tokens);
+				if (usage) {
+					completionTokens = usage.completion_tokens ?? null;
+					await this._updateContextUsage(usage.total_tokens);
+				}
 			} else {
 				// --- Génération WebLLM, avec allers-retours d'appels d'outils ---
 				// --- WebLLM generation, with tool-calling round-trips ---
@@ -746,8 +762,14 @@ class LLMStore {
 						if (!serverId) throw new Error(`No server found for tool: ${name}`);
 						return mcpStore.callTool(serverId, name, args);
 					},
-					onDelta: (delta) => batcher.push(delta),
-					onUsage: (usage) => this._updateContextUsage(usage.total_tokens),
+					onDelta: (delta) => {
+						markFirstToken();
+						batcher.push(delta);
+					},
+					onUsage: (usage) => {
+						completionTokens = usage.completion_tokens ?? completionTokens;
+						this._updateContextUsage(usage.total_tokens);
+					},
 					onToolCalls: (assistantContent, toolCalls) => {
 						// Le message assistant est réécrit en entier : on jette le
 						// texte partiel encore en attente de poussée.
@@ -796,6 +818,23 @@ class LLMStore {
 			// Pousse ce qui reste en attente une fois le flux terminé.
 			// Push whatever remains pending once the stream is over.
 			batcher.flush();
+
+			// Vitesse réelle, portée par le message pour rester juste même après
+			// rechargement de la conversation. Sans compteur de jetons fiable, on
+			// n'affiche rien plutôt qu'un chiffre inventé.
+			// Real speed, carried by the message so it stays true even after the
+			// conversation is reloaded. Without a reliable token count we show
+			// nothing rather than an invented figure.
+			const elapsedSeconds =
+				firstTokenAt === null ? null : (performance.now() - firstTokenAt) / 1000;
+			if (completionTokens > 0 && elapsedSeconds > 0.2) {
+				const speed = Math.round((completionTokens / elapsedSeconds) * 10) / 10;
+				this.messages = this.messages.map((msg, idx) =>
+					idx === assistantMessageIndex
+						? { ...msg, tokensPerSecond: speed }
+						: msg
+				);
+			}
 		} catch (err) {
 			if (err.name !== 'AbortError') {
 				this.error = err.message;
