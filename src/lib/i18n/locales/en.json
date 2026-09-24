@@ -28,7 +28,18 @@
 		"custom": "Custom",
 		"customModels": "Custom Models",
 		"addCustomModel": "Add custom model",
-		"deleteModel": "Delete this custom model?"
+		"deleteModel": "Delete this custom model?",
+		"searchLabel": "Search for a model",
+		"searchPlaceholder": "Search",
+		"noResults": "No model matches",
+		"manage": "Manage models",
+		"fit": {
+			"installed": "Already installed",
+			"suitable": "Suitable",
+			"slow": "Slow here",
+			"incompatible": "Incompatible",
+			"loading": "Loading"
+		}
 	},
 	"chat": {
 		"startConversation": "Start a conversation",
@@ -65,7 +76,7 @@
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
-		"webgpuExperimentalTitle": "Runs via Transformers.js (ONNX Runtime Web) on WebGPU — experimental support."
+		"webgpuExperimentalTitle": "Runs via Transformers.js (ONNX Runtime Web) on WebGPU, experimental support."
 	},
 	"error": {
 		"title": "Error",

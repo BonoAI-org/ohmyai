@@ -1,21 +1,26 @@
 <script>
 	/**
-	 * Sélecteur de modèle : bouton déclencheur et menu déroulant listant les
-	 * modèles du catalogue puis les modèles personnalisés, avec leur état de
-	 * téléchargement.
-	 * Model selector: trigger button and dropdown listing catalog models then
-	 * custom models, with their download state.
+	 * Sélecteur de modèle : une puce qui dit l'état du modèle courant, et un
+	 * menu qui trie tous les modèles par compatibilité avec la machine.
+	 * Model selector: a chip stating the current model's state, and a menu that
+	 * sorts every model by fit with the machine.
 	 *
-	 * Le composant gère lui-même sa fermeture au clic extérieur. La classe
-	 * `model-selector-container` de sa racine sert à la fois à ce test et aux
-	 * tests end-to-end : elle doit rester sur l'élément racine.
-	 * The component handles its own close-on-outside-click. The
-	 * `model-selector-container` class on its root serves both that test and
-	 * the end-to-end tests: it must stay on the root element.
+	 * Le catalogue et les modèles personnalisés forment une seule liste : ils
+	 * se distinguent par un badge, plus par deux blocs de markup jumeaux.
+	 * The catalog and the custom models form a single list: they are told apart
+	 * by a badge, no longer by two twin blocks of markup.
+	 *
+	 * La classe `model-selector-container` de la racine sert aux tests unitaires
+	 * et end-to-end : elle doit y rester.
+	 * The `model-selector-container` class on the root serves the unit and
+	 * end-to-end tests: it must stay there.
 	 */
 	import { _ } from "svelte-i18n";
+	import { onMount } from "svelte";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { AVAILABLE_MODELS, getModelDisplayName } from "$lib/llm/models.js";
+	import { hasUsableWebGPU } from "$lib/llm/hardware.js";
+	import { classifyModel, sortByFit } from "$lib/llm/modelFit.js";
 
 	/**
 	 * @type {{
@@ -28,17 +33,61 @@
 	let { onselect, onmanage, isModelLocal = false, modelSize = "" } = $props();
 
 	let isOpen = $state(false);
-	let showAllModels = $state(false);
-	const VISIBLE_MODEL_COUNT = 3;
+	let query = $state("");
 
-	// Tri des modèles : téléchargés en premier / Sort models: downloaded first
-	const sortedModels = $derived(
-		[...AVAILABLE_MODELS].sort((a, b) => {
-			const aLocal = llmStore.downloadedModels[a.id] ? 1 : 0;
-			const bLocal = llmStore.downloadedModels[b.id] ? 1 : 0;
-			return bLocal - aLocal;
-		})
+	// Au-delà de ce nombre d'entrées, la recherche apparaît.
+	// Past this many entries, the search field appears.
+	const SEARCH_THRESHOLD = 10;
+
+	// Diagnostic matériel, pour classer les modèles. `null` tant qu'inconnu.
+	// Hardware diagnosis, to rank the models. `null` while unknown.
+	let hasWebGPU = $state(null);
+	const deviceMemoryGB =
+		typeof navigator !== "undefined" &&
+		typeof navigator.deviceMemory === "number"
+			? navigator.deviceMemory
+			: null;
+
+	onMount(async () => {
+		hasWebGPU = await hasUsableWebGPU();
+	});
+
+	/** Tous les modèles, catalogue puis personnalisés, marqués de leur origine. */
+	const allModels = $derived([
+		...AVAILABLE_MODELS.map((m) => ({ ...m, isCustom: false })),
+		...llmStore.customModels.map((m) => ({ ...m, isCustom: true })),
+	]);
+
+	/** @param {{ id: string }} model */
+	function fitOf(model) {
+		return classifyModel(model, {
+			isInstalled: Boolean(llmStore.downloadedModels[model.id]),
+			hasWebGPU,
+			deviceMemoryGB,
+		});
+	}
+
+	const filtered = $derived(
+		query.trim()
+			? allModels.filter((m) =>
+					`${m.name} ${m.description ?? ""}`
+						.toLowerCase()
+						.includes(query.trim().toLowerCase())
+				)
+			: allModels
 	);
+
+	const ranked = $derived(sortByFit(filtered, fitOf));
+
+	const showSearch = $derived(allModels.length > SEARCH_THRESHOLD);
+
+	// Classes du badge d'état, une par verdict.
+	const FIT_STYLES = {
+		installed: "bg-accent-soft text-accent",
+		suitable: "bg-surface border border-border text-ink-2",
+		slow: "bg-warn-soft text-warn-ink",
+		incompatible: "bg-danger-soft text-danger",
+	};
 
 	/**
 	 * Ferme le menu puis délègue le changement de modèle à la page, qui porte
@@ -49,7 +98,7 @@
 	 */
 	function selectModel(modelId) {
 		isOpen = false;
-		showAllModels = false;
+		query = "";
 		onselect(modelId);
 	}
 
@@ -60,25 +109,21 @@
 	function handleClickOutside(event) {
 		if (isOpen && !event.target.closest(".model-selector-container")) {
 			isOpen = false;
-			showAllModels = false;
+			query = "";
 		}
 	}
 </script>
 
 <svelte:window onclick={handleClickOutside} />
 
-<!-- Sélecteur de modèle / Model selector -->
-<div
-	class="relative model-selector-container flex-shrink-0"
->
+<div class="relative model-selector-container flex-shrink-0">
 	<button
 		onclick={(e) => {
 			e.stopPropagation();
 			isOpen = !isOpen;
-			if (!isOpen) showAllModels = false;
+			if (!isOpen) query = "";
 		}}
-		disabled={llmStore.isLoading ||
-			llmStore.isGenerating}
+		disabled={llmStore.isLoading || llmStore.isGenerating}
 		class="flex items-center gap-2 h-[30px] px-2.5 bg-surface border border-border rounded-full text-[13px] text-ink hover:bg-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation whitespace-nowrap"
 		aria-label={$_("header.selectModel")}
 		aria-expanded={isOpen}
@@ -99,363 +144,112 @@
 		</span>
 	</button>
 
-	<!-- Menu déroulant / Dropdown menu -->
 	{#if isOpen}
 		<div
-			class="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-0 mt-2 mx-4 sm:mx-0 sm:w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-[100] max-h-[70vh] overflow-y-auto"
+			class="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-0 mt-2 mx-4 sm:mx-0 sm:w-[420px] bg-surface border border-border rounded-card shadow-[0_12px_32px_rgba(20,18,13,0.12)] z-[100] max-h-[70vh] flex flex-col overflow-hidden"
 		>
-			<div class="p-2">
+			<div class="flex-shrink-0 p-2.5 border-b border-border-soft">
 				<div
-					class="text-xs text-slate-500 dark:text-slate-400 px-3 py-2 font-semibold uppercase"
+					class="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3 px-1 pb-2"
 				>
 					{$_("header.chooseModel")}
 				</div>
-				{#each showAllModels ? sortedModels : sortedModels.slice(0, VISIBLE_MODEL_COUNT) as model}
-					<button
-						onclick={() =>
-							selectModel(model.id)}
-						class="w-full text-left px-3 py-3 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors {model.id ===
-						llmStore.selectedModel
-							? 'bg-purple-50 dark:bg-purple-600/20 border border-purple-200 dark:border-purple-500/50'
-							: ''}"
+				{#if showSearch}
+					<label
+						class="flex items-center gap-2 h-touch px-2.5 border border-border rounded-control bg-bg-raised focus-within:border-accent transition-colors"
 					>
-						<div
-							class="flex items-start justify-between gap-2"
-						>
-							<div class="flex-1">
-								<div
-									class="flex items-center gap-2 flex-wrap gap-y-1"
-								>
-									<span
-										class="font-semibold text-slate-900 dark:text-white break-words"
-										>{model.name}</span
-									>
+						<svg class="w-[15px] h-[15px] flex-shrink-0 text-ink-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+						<span class="sr-only">{$_("model.searchLabel")}</span>
+						<input
+							type="search"
+							bind:value={query}
+							onclick={(e) => e.stopPropagation()}
+							placeholder={$_("model.searchPlaceholder")}
+							class="flex-grow min-w-0 border-0 outline-none bg-transparent p-0 text-sm text-ink placeholder:text-ink-3 focus:ring-0"
+						/>
+					</label>
+				{/if}
+			</div>
+
+			<div class="flex-grow min-h-0 overflow-y-auto p-1.5">
+				{#if ranked.length === 0}
+					<p class="px-3 py-6 text-sm text-ink-3 text-center">
+						{$_("model.noResults")}
+					</p>
+				{/if}
+
+				{#each ranked as model (model.id)}
+					{@const fit = fitOf(model)}
+					{@const isCurrent = model.id === llmStore.selectedModel}
+					{@const isBusy = llmStore.isLoading && isCurrent}
+					<button
+						onclick={() => selectModel(model.id)}
+						class="w-full text-left p-3 rounded-control transition-colors {isCurrent
+							? 'bg-accent-soft'
+							: 'hover:bg-bg'}"
+					>
+						<div class="flex items-start justify-between gap-2.5">
+							<div class="min-w-0">
+								<div class="flex items-center gap-2 flex-wrap">
+									<span class="font-semibold text-ink">
+										{model.name}
+									</span>
+									{#if model.isCustom}
+										<span
+											class="px-2 py-0.5 rounded-full bg-surface border border-border text-[11px] text-ink-2"
+										>
+											{$_("model.custom")}
+										</span>
+									{/if}
 									{#if model.recommended}
 										<span
-											class="text-[10px] bg-green-500/20 text-green-500 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-500/30"
+											class="px-2 py-0.5 rounded-full bg-accent-soft text-accent text-[11px] font-semibold"
 										>
-											{$_(
-												"model.recommended",
-											)}
+											{$_("model.recommended")}
 										</span>
-									{/if}
-									{#if model.supportsTools}
-										<span
-											class="text-[10px] bg-purple-500/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30"
-										>
-											Tools
-										</span>
-									{/if}
-
-									<!-- Status Indicator -->
-									{#if llmStore.isLoading && llmStore.selectedModel === model.id}
-										<span
-											class="text-[10px] bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/30 flex items-center gap-1 truncate"
-										>
-											<svg
-												class="w-3 h-3 animate-spin flex-shrink-0"
-												viewBox="0 0 24 24"
-												fill="none"
-												stroke="currentColor"
-												><path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-												/></svg
-											>
-											En cours
-										</span>
-									{:else if llmStore.downloadedModels[model.id]}
-										<span
-											class="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1 truncate"
-											title="Modèle téléchargé sur cet appareil"
-										>
-											<svg
-												class="w-3 h-3 flex-shrink-0"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-												><path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M5 13l4 4L19 7"
-												/></svg
-											>
-											Local
-										</span>
-									{:else}
-										<span
-											class="text-[10px] bg-slate-500/10 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-500/20 flex items-center gap-1 truncate"
-											title="Nécessite un téléchargement"
-										>
-											<svg
-												class="w-3 h-3 flex-shrink-0"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-												><path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-												/></svg
-											>
-											À télécharger
-										</span>
-									{/if}
-
-									{#if model.id === llmStore.selectedModel}
-										<svg
-											class="w-4 h-4 text-purple-400"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fill-rule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clip-rule="evenodd"
-											/>
-										</svg>
 									{/if}
 								</div>
-								<div
-									class="text-xs text-slate-500 dark:text-slate-400 mt-1"
+								{#if model.description}
+									<p class="mt-1 text-[13px] leading-[1.4] text-ink-2">
+										{model.description}
+									</p>
+								{/if}
+							</div>
+
+							<!-- Poids et état en badges, plus noyés dans la description -->
+							<!-- Weight and state as badges, no longer buried in the description -->
+							<div class="flex-shrink-0 flex flex-col items-end gap-1">
+								<span
+									class="px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap {isBusy
+										? 'bg-warn-soft text-warn-ink'
+										: FIT_STYLES[fit]}"
 								>
-									{model.size} • {model.description}
-								</div>
+									{isBusy
+										? $_("model.fit.loading")
+										: $_(`model.fit.${fit}`)}
+								</span>
+								{#if model.size}
+									<span class="font-mono text-xs text-ink-3 whitespace-nowrap">
+										{model.size}
+									</span>
+								{/if}
 							</div>
 						</div>
 					</button>
 				{/each}
+			</div>
 
-				{#if !showAllModels && sortedModels.length > VISIBLE_MODEL_COUNT}
-					<button
-						onclick={(e) => { e.stopPropagation(); showAllModels = true; }}
-						class="w-full text-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded transition-colors font-medium"
-					>
-						Voir plus ({sortedModels.length - VISIBLE_MODEL_COUNT} autres)
-					</button>
-				{:else if showAllModels && sortedModels.length > VISIBLE_MODEL_COUNT}
-					<button
-						onclick={(e) => { e.stopPropagation(); showAllModels = false; }}
-						class="w-full text-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded transition-colors font-medium"
-					>
-						Voir moins
-					</button>
-				{/if}
-
-				<!-- Modèles personnalisés / Custom models -->
-				{#if llmStore.customModels.length > 0}
-					<div
-						class="border-t border-slate-700 mt-2 pt-2"
-					>
-						<div
-							class="text-xs text-slate-400 px-3 py-2 font-semibold uppercase flex items-center gap-2"
-						>
-							<svg
-								class="w-4 h-4"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
-								/>
-							</svg>
-							{$_("model.customModels")}
-						</div>
-						{#each llmStore.customModels as model}
-							<div class="relative group">
-								<button
-									onclick={() =>
-										selectModel(
-											model.id,
-										)}
-									class="w-full text-left px-3 py-3 rounded hover:bg-slate-700/50 transition-colors {model.id ===
-									llmStore.selectedModel
-										? 'bg-purple-600/20 border border-purple-500/50'
-										: ''}"
-								>
-									<div
-										class="flex items-start justify-between gap-2"
-									>
-										<div
-											class="flex-1 min-w-0"
-										>
-											<div
-												class="flex items-center gap-2 flex-wrap gap-y-1"
-											>
-												<span
-													class="font-semibold text-white break-words"
-													>{model.name}</span
-												>
-												<span
-													class="text-[10px] bg-purple-500/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30"
-												>
-													Custom
-												</span>
-
-												<!-- Status Indicator -->
-												{#if llmStore.isLoading && llmStore.selectedModel === model.id}
-													<span
-														class="text-[10px] bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/30 flex items-center gap-1 truncate"
-													>
-														<svg
-															class="w-3 h-3 animate-spin flex-shrink-0"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															><path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-															/></svg
-														>
-														En
-														cours
-													</span>
-												{:else if llmStore.downloadedModels[model.id]}
-													<span
-														class="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1 truncate"
-														title="Modèle téléchargé sur cet appareil"
-													>
-														<svg
-															class="w-3 h-3 flex-shrink-0"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-															><path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M5 13l4 4L19 7"
-															/></svg
-														>
-														Local
-													</span>
-												{:else}
-													<span
-														class="text-[10px] bg-slate-500/10 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-500/20 flex items-center gap-1 truncate"
-														title="Nécessite un téléchargement"
-													>
-														<svg
-															class="w-3 h-3 flex-shrink-0"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-															><path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-															/></svg
-														>
-														À
-														télécharger
-													</span>
-												{/if}
-
-												{#if model.id === llmStore.selectedModel}
-													<svg
-														class="w-4 h-4 text-purple-400"
-														fill="currentColor"
-														viewBox="0 0 20 20"
-													>
-														<path
-															fill-rule="evenodd"
-															d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-															clip-rule="evenodd"
-														/>
-													</svg>
-												{/if}
-											</div>
-											<div
-												class="text-xs text-slate-400 mt-1"
-											>
-												{model.size}
-												• {model.description}
-											</div>
-										</div>
-									</div>
-								</button>
-								<!-- Bouton supprimer / Delete button -->
-								<button
-									onclick={(e) => {
-										e.stopPropagation();
-										if (
-											confirm(
-												"Supprimer ce modèle personnalisé ? / Delete this custom model?",
-											)
-										) {
-											llmStore.removeCustomModel(
-												model.id,
-											);
-										}
-									}}
-									class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300"
-									aria-label="Supprimer / Delete"
-								>
-									<svg
-										class="w-4 h-4"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-										/>
-									</svg>
-								</button>
-							</div>
-						{/each}
-					</div>
-				{/if}
-
-				<!-- Bouton pour gérer les modèles / Manage models button -->
-				<div
-					class="border-t border-slate-200 dark:border-slate-700 mt-2 pt-2"
+			<div class="flex-shrink-0 p-1.5 border-t border-border-soft">
+				<button
+					onclick={(e) => {
+						e.stopPropagation();
+						isOpen = false;
+						onmanage();
+					}}
+					class="w-full h-touch px-3 rounded-control text-sm font-medium text-ink hover:bg-bg transition-colors"
 				>
-					<button
-						onclick={() => {
-							isOpen = false;
-							onmanage();
-						}}
-						class="w-full text-left px-3 py-3 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-					>
-						<svg
-							class="w-5 h-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-							></path>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-							></path>
-						</svg>
-						<span class="font-semibold"
-							>Gérer les modèles / Manage
-							models</span
-						>
-					</button>
-				</div>
+					{$_("model.manage")}
+				</button>
 			</div>
 		</div>
 	{/if}

@@ -169,7 +169,7 @@
                                     <p class="text-xs mt-1 {server.status === 'connected' ? 'text-green-600 dark:text-green-400' : server.status === 'error' ? 'text-red-500' : 'text-slate-400'}">
                                         {getStatusLabel(server.status)}
                                         {#if server.status === 'connected'}
-                                            — {mcpStore.availableTools.filter(t => t.serverId === server.id).length} tool(s)
+                                            · {mcpStore.availableTools.filter(t => t.serverId === server.id).length} tool(s)
                                         {/if}
                                     </p>
                                 </div>
@@ -241,7 +241,7 @@
                         {#if testResult}
                             <div class="text-sm p-2 rounded-lg {testResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}">
                                 {#if testResult.success}
-                                    {$_('mcp.connected')} — {$_('mcp.toolsFound', { values: { count: testResult.toolCount } })}
+                                    {$_('mcp.connected')} · {$_('mcp.toolsFound', { values: { count: testResult.toolCount } })}
                                 {:else}
                                     {$_('mcp.error')}: {testResult.error}
                                 {/if}

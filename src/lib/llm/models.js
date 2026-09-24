@@ -19,7 +19,7 @@ export const AVAILABLE_MODELS = [
 		// Gemma 4 is NOT supported by WebLLM/MLC (unknown "gemma4" architecture).
 		// We run it via Transformers.js (ONNX Runtime Web) on WebGPU.
 		id: 'onnx-community/gemma-4-e2b-it-ONNX',
-		name: 'Gemma 4 (E2B) — WebGPU',
+		name: 'Gemma 4 (E2B) · WebGPU',
 		size: '~3.2 GB',
 		vram: '~5 GB',
 		description: 'Google Gemma 4 (variante E2B, texte + images) via Transformers.js. Expérimental.',
@@ -34,7 +34,7 @@ export const AVAILABLE_MODELS = [
 		// Variante E4B : plus grosse et meilleure que E2B, même architecture.
 		// E4B variant: bigger and better than E2B, same architecture.
 		id: 'onnx-community/gemma-4-E4B-it-ONNX',
-		name: 'Gemma 4 (E4B) — WebGPU',
+		name: 'Gemma 4 (E4B) · WebGPU',
 		size: '~5.5 GB',
 		vram: '~8 GB',
 		description: 'Google Gemma 4 (variante E4B, texte + images) via Transformers.js. Meilleure qualité que E2B. Expérimental.',
@@ -62,7 +62,7 @@ export const AVAILABLE_MODELS = [
 		// a per-submodel object, as their own config declares, otherwise the
 		// engine would look for a nonexistent vision_encoder_q2f16.
 		id: 'onnx-community/gemma-4-E2B-it-qat-mobile-ONNX',
-		name: 'Gemma 4 (E2B QAT) — WebGPU',
+		name: 'Gemma 4 (E2B QAT) · WebGPU',
 		size: '~2.6 GB',
 		vram: '~4 GB',
 		description: 'Google Gemma 4 E2B quantifié à l\'entraînement (2 bits, texte + images). Plus léger que E2B pour une qualité proche. Expérimental.',
@@ -80,7 +80,7 @@ export const AVAILABLE_MODELS = [
 	},
 	{
 		id: 'onnx-community/gemma-4-E4B-it-qat-mobile-ONNX',
-		name: 'Gemma 4 (E4B QAT) — WebGPU',
+		name: 'Gemma 4 (E4B QAT) · WebGPU',
 		size: '~3.6 GB',
 		vram: '~5 GB',
 		description: 'Google Gemma 4 E4B quantifié à l\'entraînement (2 bits, texte + images). Plus léger que E4B pour une qualité proche. Expérimental.',
@@ -109,7 +109,7 @@ export const AVAILABLE_MODELS = [
 		// Texte seul : l'export ne comprend pas encore l'encodeur vision.
 		// Text only: the export does not include the vision encoder yet.
 		id: 'Dramatik999/gemma-4-12B-it-ONNX',
-		name: 'Gemma 4 (12B) — WebGPU',
+		name: 'Gemma 4 (12B) · WebGPU',
 		size: '~8.2 GB',
 		// Poids, plus le cache clé/valeur à 8 192 jetons (~2,8 Go : les couches
 		// à fenêtre glissante gardent tout leur passé), plus les activations.
