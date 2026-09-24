@@ -50,7 +50,8 @@
 		"hardwareReasonMemory": "This model needs ~{required} GB, but the browser only reports {detected} GB of memory.",
 		"hardwareReasonGpuBuffer": "The GPU can only allocate {buffer} GB per buffer, too little to load a model.",
 		"hardwareReasonNoWebgpu": "WebGPU is not available in this browser.",
-		"hardwareMemoryCaveat": "The browser rounds and caps the memory it reports: the figure may be lower than the actual memory."
+		"hardwareMemoryCaveat": "The browser rounds and caps the memory it reports: the figure may be lower than the actual memory.",
+		"hardwareReasonBrowserLimit": "This model weighs more than {limit} GB: beyond what a browser tab can load, whatever the device's memory."
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
@@ -58,7 +59,8 @@
 	},
 	"error": {
 		"title": "Error",
-		"webgpuNotAvailable": "❌ WebGPU not available. Your browser or device does not support WebGPU. Try Chrome/Edge 113+ on desktop or enable WebGPU in browser flags."
+		"webgpuNotAvailable": "❌ WebGPU not available. Your browser or device does not support WebGPU. Try Chrome/Edge 113+ on desktop or enable WebGPU in browser flags.",
+		"browserMemory": "The browser tab ran out of memory while loading this model. Reload the page to free the memory, then choose a lighter model."
 	},
 	"ram": {
 		"warning": "⚠️ Insufficient RAM detected",

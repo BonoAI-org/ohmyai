@@ -50,7 +50,8 @@
 		"hardwareReasonMemory": "Ce modèle demande ~{required} GB, or le navigateur ne rapporte que {detected} GB de mémoire.",
 		"hardwareReasonGpuBuffer": "Le GPU ne peut allouer que {buffer} GB par tampon, trop peu pour charger un modèle.",
 		"hardwareReasonNoWebgpu": "WebGPU n'est pas disponible dans ce navigateur.",
-		"hardwareMemoryCaveat": "Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle."
+		"hardwareMemoryCaveat": "Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle.",
+		"hardwareReasonBrowserLimit": "Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil."
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
@@ -58,7 +59,8 @@
 	},
 	"error": {
 		"title": "Erreur",
-		"webgpuNotAvailable": "❌ WebGPU non disponible. Votre navigateur ou appareil ne supporte pas WebGPU. Essayez Chrome/Edge 113+ sur desktop ou activez WebGPU dans les flags du navigateur."
+		"webgpuNotAvailable": "❌ WebGPU non disponible. Votre navigateur ou appareil ne supporte pas WebGPU. Essayez Chrome/Edge 113+ sur desktop ou activez WebGPU dans les flags du navigateur.",
+		"browserMemory": "L'onglet a manqué de mémoire pour charger ce modèle. Rechargez la page pour libérer la mémoire, puis choisissez un modèle plus léger."
 	},
 	"ram": {
 		"warning": "⚠️ RAM insuffisante détectée",

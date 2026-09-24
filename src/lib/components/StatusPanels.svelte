@@ -8,6 +8,7 @@
 	 */
 	import { _ } from "svelte-i18n";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
+	import { TRANSFORMERS_MAX_MODEL_GB } from "$lib/llm/hardware.js";
 
 	/** @type {{ hasEnoughRAM: boolean }} */
 	let { hasEnoughRAM } = $props();
@@ -130,7 +131,13 @@
 				>
 					<p class="font-semibold text-amber-700 dark:text-amber-300">
 						⚠️
-						{#if llmStore.hardwareCheck.reason === "memory"}
+						{#if llmStore.hardwareCheck.reason === "browser-limit"}
+							{$_("loading.hardwareReasonBrowserLimit", {
+								values: { limit: TRANSFORMERS_MAX_MODEL_GB },
+								default:
+									"Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil.",
+							})}
+						{:else if llmStore.hardwareCheck.reason === "memory"}
 							{$_("loading.hardwareReasonMemory", {
 								values: {
 									required: llmStore.hardwareCheck.requiredGB,
@@ -183,7 +190,10 @@
 				</div>
 			{/if}
 			<div class="flex gap-4 mt-4">
-				{#if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
+				{#if llmStore.hardwareCheck?.reason === "browser-limit"}
+					<!-- Aucun contournement : le navigateur refuserait quelle que soit la machine. -->
+					<!-- No override: the browser would refuse whatever the machine. -->
+				{:else if llmStore.hardwareCheck && !llmStore.hardwareCheck.supported}
 					<button
 						onclick={() => llmStore.initEngine(true)}
 						class="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold shadow"

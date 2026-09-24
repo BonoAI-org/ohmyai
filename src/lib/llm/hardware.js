@@ -33,6 +33,28 @@ export const MIN_RAM_GB = 4;
 export const MIN_GPU_BUFFER_GB = 1;
 
 /**
+ * Poids maximal d'un modèle Transformers.js, quelle que soit la machine.
+ * Maximum weight of a Transformers.js model, whatever the machine.
+ *
+ * Transformers.js garde chaque fichier du modèle en entier en mémoire dans
+ * l'onglet, sous forme d'ArrayBuffer, avant de le confier à onnxruntime. Or
+ * Chrome plafonne le total de ces tampons par page : 15,75 Gio mesurés sur
+ * Chrome 154, macOS, avec 64 Go de RAM (huit tampons de 2 Go passent, le
+ * neuvième échoue). Au-delà, l'allocation échoue quelle que soit la mémoire
+ * de la machine ; c'est ainsi que Gemma 4 26B A4B et ses 16 Gio de fichiers
+ * restaient bloqués au chargement. 15 Go laissent une marge pour le
+ * tokenizer et les autres tampons de la page.
+ * Transformers.js keeps every model file whole in the tab's memory, as an
+ * ArrayBuffer, before handing it to onnxruntime. Chrome caps the total of
+ * those buffers per page: 15.75 GiB measured on Chrome 154, macOS, 64 GB of
+ * RAM (eight 2 GB buffers succeed, the ninth fails). Beyond that, allocation
+ * fails regardless of the machine's memory; this is how Gemma 4 26B A4B and
+ * its 16 GiB of files got stuck while loading. 15 GB leaves headroom for the
+ * tokenizer and the page's other buffers.
+ */
+export const TRANSFORMERS_MAX_MODEL_GB = 15;
+
+/**
  * Extrait un nombre de gigaoctets d'une chaîne comme « 4.2 GB ».
  * Extracts a gigabyte count from a string such as "4.2 GB".
  *
@@ -80,11 +102,11 @@ export function hasMinimumRam(minGb = MIN_RAM_GB, nav = globalThis.navigator) {
  * Estime si la machine peut faire tourner un modèle donné.
  * Estimates whether this machine can run a given model.
  *
- * @param {{ vram?: string, size?: string } | null | undefined} modelConfig
+ * @param {{ vram?: string, size?: string, engine?: string } | null | undefined} modelConfig
  * @param {{ deviceMemory?: number, gpu?: { requestAdapter: () => Promise<any> } } | undefined} [nav]
  * @returns {Promise<{
  *   supported: boolean,
- *   reason: 'memory' | 'gpu-buffer' | 'no-webgpu' | null,
+ *   reason: 'browser-limit' | 'memory' | 'gpu-buffer' | 'no-webgpu' | null,
  *   requiredGB: number,
  *   deviceMemoryGB: number | null,
  *   gpuMaxBufferGB: number | null
@@ -148,5 +170,32 @@ export async function estimateHardwareSupport(modelConfig, nav = globalThis.navi
 		// message if needed.
 	}
 
+	// Limite du navigateur, évaluée en dernier pour primer sur les autres
+	// critères : aucune machine ne la lève, et aucun contournement ne peut
+	// réussir.
+	// Browser limit, evaluated last so it overrides the other criteria: no
+	// machine lifts it, and no override can succeed.
+	if (exceedsBrowserLimit(modelConfig)) {
+		result.supported = false;
+		result.reason = 'browser-limit';
+	}
+
 	return result;
+}
+
+/**
+ * Indique si un modèle dépasse ce qu'un onglet peut charger, indépendamment
+ * de la machine. Seuls les modèles Transformers.js sont concernés : WebLLM
+ * charge ses poids par petits fragments.
+ * Tells whether a model exceeds what a tab can load, independently of the
+ * machine. Only Transformers.js models are concerned: WebLLM loads its
+ * weights in small shards.
+ *
+ * @param {{ size?: string, engine?: string } | null | undefined} modelConfig
+ * @returns {boolean}
+ */
+export function exceedsBrowserLimit(modelConfig) {
+	if (modelConfig?.engine !== 'transformers') return false;
+	const sizeGB = parseGigabytes(modelConfig.size);
+	return sizeGB !== null && sizeGB > TRANSFORMERS_MAX_MODEL_GB;
 }

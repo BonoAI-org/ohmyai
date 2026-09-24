@@ -96,55 +96,14 @@ export const AVAILABLE_MODELS = [
 		experimental: true,
 		recommended: false
 	},
-	{
-		// Variante 26B A4B : mélange d'experts, 26 milliards de paramètres dont
-		// 4 actifs par jeton. Les experts doivent tous résider en mémoire, donc
-		// le poids à charger reste celui des 26 milliards.
-		// 26B A4B variant: mixture of experts, 26 billion parameters with 4
-		// active per token. All experts must reside in memory, so the weight to
-		// load remains that of the full 26 billion.
-		//
-		// Google ne publie ce modèle qu'en safetensors, et mlc-ai n'en a aucun
-		// build : ce port communautaire est le seul au format attendu par
-		// Transformers.js. Il est texte seul, sans encodeur vision, contrairement
-		// aux variantes E2B et E4B — d'où `multimodal: false`.
-		// Google only publishes this model as safetensors, and mlc-ai has no
-		// build of it: this community port is the only one in the layout
-		// Transformers.js expects. It is text-only, with no vision encoder,
-		// unlike the E2B and E4B variants — hence `multimodal: false`.
-		//
-		// À 17 Go de poids, la vérification matérielle le refuse dès que le
-		// navigateur rapporte moins de 20 Go de mémoire, donc sur une machine
-		// de 16 Go et moins. Mieux vaut un refus avant téléchargement qu'un
-		// échec après.
-		// At 17 GB of weights, the hardware check refuses it as soon as the
-		// browser reports less than 20 GB of memory, so on a 16 GB machine or
-		// below. A refusal before downloading beats a failure after.
-		id: 'kibitz-coach/gemma-4-26B-A4B-it-ONNX',
-		name: 'Gemma 4 (26B A4B) — WebGPU',
-		size: '~17 GB',
-		vram: '~20 GB',
-		description: 'Google Gemma 4 26B A4B (mélange d\'experts, texte seul) via Transformers.js. Port communautaire, très gourmand : réservé aux machines à forte mémoire graphique. Expérimental.',
-		engine: 'transformers',
-		// Le modèle annonce 262144 jetons, hors de portée d'un cache clé/valeur
-		// en navigateur. On déclare la même valeur prudente que E2B et E4B.
-		// The model advertises 262144 tokens, out of reach for a browser
-		// key/value cache. We declare the same conservative value as E2B and E4B.
-		contextWindow: 32768,
-		// Ce port ne publie `embed_tokens` qu'en fp16 : un dtype chaîne ferait
-		// demander un embed_tokens_q4f16.onnx inexistant (404 vérifié). Même
-		// règle que pour les variantes QAT : un dtype par fichier ONNX.
-		// This port only ships `embed_tokens` in fp16: a string dtype would
-		// request a nonexistent embed_tokens_q4f16.onnx (404 verified). Same
-		// rule as for the QAT variants: one dtype per ONNX file.
-		dtype: {
-			embed_tokens: 'fp16',
-			decoder_model_merged: 'q4f16'
-		},
-		multimodal: false,
-		experimental: true,
-		recommended: false
-	},
+	// Gemma 4 26B A4B a été retiré du catalogue : ses 16 Gio de fichiers
+	// dépassent ce qu'un onglet Chrome peut garder en mémoire (voir
+	// TRANSFORMERS_MAX_MODEL_GB dans hardware.js). Le chargement restait bloqué
+	// sans message sur toutes les machines, 64 Go de RAM comprises.
+	// Gemma 4 26B A4B was removed from the catalog: its 16 GiB of files exceed
+	// what a Chrome tab can hold in memory (see TRANSFORMERS_MAX_MODEL_GB in
+	// hardware.js). Loading got stuck without a message on every machine,
+	// 64 GB of RAM included.
 	{
 		// Familles récemment ajoutées au catalogue préconstruit de web-llm.
 		// Tailles et VRAM relevées sur les dépôts mlc-ai et sur

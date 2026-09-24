@@ -4,8 +4,11 @@ import {
 	parseGigabytes,
 	requiredVramGB,
 	hasMinimumRam,
-	estimateHardwareSupport
+	estimateHardwareSupport,
+	exceedsBrowserLimit,
+	TRANSFORMERS_MAX_MODEL_GB
 } from './hardware.js';
+import { AVAILABLE_MODELS } from './models.js';
 
 /** Faux navigateur : RAM déclarée et limite de buffer GPU en Go. */
 const nav = ({ ram, gpuBufferGB, gpuFails = false, noAdapter = false } = {}) => ({
@@ -149,5 +152,41 @@ describe('estimateHardwareSupport', () => {
 		const out = await estimateHardwareSupport({}, nav({ ram: 2, gpuBufferGB: 4 }));
 		expect(out.requiredGB).toBe(0);
 		expect(out.supported).toBe(true);
+	});
+
+	test('refuse un modèle Transformers.js au-delà de la limite du navigateur, même sur une grosse machine', async () => {
+		// Le cas de Gemma 4 26B A4B : 17 Go de fichiers, machine à 64 Go.
+		const gemma26b = { engine: 'transformers', size: '~17 GB', vram: '~20 GB' };
+		const out = await estimateHardwareSupport(gemma26b, nav({ ram: 64, gpuBufferGB: 4 }));
+		expect(out.supported).toBe(false);
+		expect(out.reason).toBe('browser-limit');
+	});
+
+	test('la limite du navigateur prime sur le manque de mémoire', async () => {
+		const big = { engine: 'transformers', size: '~17 GB', vram: '~20 GB' };
+		const out = await estimateHardwareSupport(big, nav({ ram: 8, gpuBufferGB: 4 }));
+		expect(out.reason).toBe('browser-limit');
+	});
+});
+
+describe('exceedsBrowserLimit', () => {
+	test('ne concerne que les modèles Transformers.js', () => {
+		expect(exceedsBrowserLimit({ size: '~40 GB' })).toBe(false);
+		expect(exceedsBrowserLimit({ engine: 'webllm', size: '~40 GB' })).toBe(false);
+	});
+
+	test('accepte jusqu\'à la limite, refuse au-delà', () => {
+		expect(exceedsBrowserLimit({ engine: 'transformers', size: `${TRANSFORMERS_MAX_MODEL_GB} GB` })).toBe(false);
+		expect(exceedsBrowserLimit({ engine: 'transformers', size: '~15.5 GB' })).toBe(true);
+	});
+
+	test('les modèles Transformers.js du catalogue restent sous la limite', () => {
+		const transformers = AVAILABLE_MODELS.filter((m) => m.engine === 'transformers');
+		expect(transformers.length).toBeGreaterThan(0);
+		for (const m of transformers) expect(exceedsBrowserLimit(m)).toBe(false);
+	});
+
+	test('sans taille connue, ne refuse pas', () => {
+		expect(exceedsBrowserLimit({ engine: 'transformers' })).toBe(false);
 	});
 });
