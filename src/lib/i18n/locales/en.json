@@ -108,7 +108,8 @@
 		"hardwareReasonNoWebgpu": "WebGPU is not available in this browser.",
 		"hardwareMemoryCaveat": "The browser rounds and caps the memory it reports: the figure may be lower than the actual memory.",
 		"hardwareReasonBrowserLimit": "This model weighs more than {limit} GB: beyond what a browser tab can load, whatever the device's memory.",
-		"cancel": "Cancel the download"
+		"cancel": "Cancel the download",
+		"downloadingFiles": "Downloading the model"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",

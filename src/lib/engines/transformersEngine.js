@@ -193,24 +193,6 @@ export function prepareMultimodalMessages(messages) {
  * @param {any} p - Événement de progression / progress event.
  * @returns {string}
  */
-function formatProgress(p) {
-	if (!p || !p.status) return 'Chargement du modèle... / Loading model...';
-	switch (p.status) {
-		case 'progress': {
-			const pct = typeof p.progress === 'number' ? Math.round(p.progress) : 0;
-			const file = p.file ? ` ${p.file}` : '';
-			return `Téléchargement${file} — ${pct}%`;
-		}
-		case 'download':
-			return `Téléchargement ${p.file || ''}...`;
-		case 'done':
-			return `Fichier prêt : ${p.file || ''}`;
-		case 'ready':
-			return 'Modèle chargé avec succès ! / Model loaded successfully!';
-		default:
-			return 'Chargement du modèle... / Loading model...';
-	}
-}
 
 /**
  * Adaptateur exposant une interface minimale et stable au store LLM, quelle
@@ -255,7 +237,7 @@ export class TransformersEngine {
 	 * (vision encoder included); otherwise a classic "text-generation" pipeline.
 	 * @param {string} modelId
 	 * @param {Object} [options]
-	 * @param {(progress:{text:string}) => void} [options.progressCallback]
+	 * @param {(progress:{status?:string,file?:string,loaded?:number,total?:number}) => void} [options.progressCallback]
 	 * @param {string | Record<string, string>} [options.dtype='q4'] - Quantification
 	 *   (q4, q4f16, q2f16, q8, fp16, fp32). Un objet permet un dtype par
 	 *   sous-modèle, indispensable quand ils ne sont pas tous publiés dans la
@@ -271,7 +253,11 @@ export class TransformersEngine {
 	static async create(modelId, { progressCallback, dtype = 'q4', device = 'webgpu', multimodal = false } = {}) {
 		const lib = await loadLibrary();
 		const progress_callback = (p) => {
-			if (progressCallback) progressCallback({ text: formatProgress(p), raw: p });
+			// Le libellé est affaire d'interface : le moteur ne transmet que les
+			// faits, que le store met en forme dans la langue courante.
+			// Wording is the interface's business: the engine only passes facts,
+			// which the store renders in the current language.
+			if (progressCallback) progressCallback(p);
 		};
 
 		// Sans ce garde-fou, l'échec d'une tranche de données externes laisse

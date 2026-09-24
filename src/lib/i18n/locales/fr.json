@@ -108,7 +108,8 @@
 		"hardwareReasonNoWebgpu": "WebGPU n'est pas disponible dans ce navigateur.",
 		"hardwareMemoryCaveat": "Le navigateur arrondit et plafonne la mémoire qu'il rapporte : le chiffre peut être inférieur à la mémoire réelle.",
 		"hardwareReasonBrowserLimit": "Ce modèle pèse plus de {limit} GB : c'est au-delà de ce qu'un onglet de navigateur peut charger, quelle que soit la mémoire de l'appareil.",
-		"cancel": "Annuler le téléchargement"
+		"cancel": "Annuler le téléchargement",
+		"downloadingFiles": "Téléchargement du modèle"
 	},
 	"models": {
 		"webgpuTag": "WebGPU · exp.",
