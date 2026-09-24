@@ -83,7 +83,12 @@
 				"rewrite": "Rewrite an email",
 				"describe": "Describe an image"
 			}
-		}
+		},
+		"roleUser": "You",
+		"roleAssistant": "Assistant",
+		"copy": "Copy",
+		"reusePrompt": "Reuse this message",
+		"saveToMemory": "Save to the knowledge base"
 	},
 	"loading": {
 		"loadingModel": "Loading model...",
@@ -294,5 +299,13 @@
 			"download": "Download and start",
 			"compare": "Compare the {count} models"
 		}
+	},
+	"common": {
+		"close": "Close",
+		"delete": "Delete"
+	},
+	"knowledge": {
+		"filesToImport": "Files to import",
+		"noResultAboveThreshold": "No result above the threshold"
 	}
 }

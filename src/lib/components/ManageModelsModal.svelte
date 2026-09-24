@@ -144,7 +144,7 @@
                 <button
                     onclick={closeModal}
                     class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    aria-label="Fermer / Close"
+                    aria-label={$_("common.close")}
                 >
                     <svg
                         class="w-6 h-6"
@@ -260,7 +260,7 @@
                                             }
                                         }}
                                         class="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                                        title="Supprimer / Delete"
+                                        title={$_("common.delete")}
                                     >
                                         <svg
                                             class="w-5 h-5"

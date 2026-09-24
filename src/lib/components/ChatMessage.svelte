@@ -90,18 +90,18 @@
 					</svg>
 					<span
 						class="font-semibold text-sm text-slate-800 dark:text-white"
-						>Vous / You</span
+						>{$_("chat.roleUser")}</span
 					>
 				{:else}
 					<!-- Logo IA / AI logo -->
 					<img
 						src={themeStore.isLight ? logoDark : logo}
-						alt="AI Logo"
+						alt=""
 						class="w-5 h-5"
 					/>
 					<span
 						class="font-semibold text-sm text-purple-600 dark:text-purple-400"
-						>Assistant IA / AI Assistant</span
+						>{$_("chat.roleAssistant")}</span
 					>
 				{/if}
 			</div>
@@ -113,7 +113,7 @@
 					<button
 						onclick={copyText}
 						class="p-1 rounded {message.role === 'user' ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} transition-[colors,transform] active:scale-95"
-						title="Copier / Copy"
+						title={$_("chat.copy")}
 					>
 						{#if copied}
 							<svg
@@ -151,7 +151,7 @@
 						<button
 							onclick={reusePrompt}
 							class="p-1 rounded text-white/70 hover:text-white hover:bg-white/20 transition-[colors,transform] active:scale-95"
-							title="Réutiliser le prompt / Reuse prompt"
+							title={$_("chat.reusePrompt")}
 						>
 							<svg
 								class="w-4 h-4"
@@ -174,7 +174,7 @@
 						<button
 							onclick={saveToMemory}
 							class="p-1 rounded {message.role === 'user' ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} transition-[colors,transform] active:scale-95"
-							title="Sauvegarder en mémoire / Save to memory"
+							title={$_("chat.saveToMemory")}
 						>
 							{#if saved}
 								<svg
@@ -326,7 +326,7 @@
 				{#each message.images as img, idx}
 					<img
 						src={img}
-						alt="Pièce jointe / Attachment"
+						alt={$_("chat.attachment")}
 						class="w-full h-32 object-cover rounded border border-slate-200 dark:border-slate-700"
 					/>
 				{/each}

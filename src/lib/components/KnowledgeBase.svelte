@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
 	import { oramaStore } from '$lib/stores/orama.svelte.js';
 	import { extractTextFromFile, chunkText } from '$lib/rag/ingest.js';
 
@@ -123,7 +124,7 @@
 			type="file"
 			accept=".txt,.md,.markdown,.pdf,text/plain,text/markdown,application/pdf"
 			multiple
-			aria-label="Fichiers à importer / Files to import"
+			aria-label={$_("knowledge.filesToImport")}
 			class="sr-only"
 			onchange={handleFiles}
 		/>
@@ -165,7 +166,7 @@
 								onclick={() => handleDeleteSource(group.source)}
 								disabled={oramaStore.isLoading}
 								class="text-slate-400 hover:text-red-500 shrink-0 disabled:opacity-50"
-								title="Supprimer / Delete"
+								title={$_("common.delete")}
 							>
 								🗑️
 							</button>
@@ -178,7 +179,7 @@
 									onclick={() => handleDeleteNote(note.id)}
 									disabled={oramaStore.isLoading}
 									class="text-slate-400 hover:text-red-500 shrink-0 disabled:opacity-50"
-									title="Supprimer / Delete"
+									title={$_("common.delete")}
 								>
 									🗑️
 								</button>
@@ -225,7 +226,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="text-xs text-slate-400">Aucun résultat au-dessus du seuil / No result above threshold</p>
+				<p class="text-xs text-ink-3">{$_("knowledge.noResultAboveThreshold")}</p>
 			{/if}
 		{/if}
 	</div>

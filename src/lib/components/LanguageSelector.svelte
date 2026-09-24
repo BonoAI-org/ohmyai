@@ -77,7 +77,7 @@
 		onclick={toggleMenu}
 		class="flex items-center gap-2 min-h-touch bg-transparent hover:bg-slate-200/50 active:bg-slate-300/50 dark:hover:bg-slate-700/80 dark:active:bg-slate-600/80 text-slate-900 dark:text-white px-3 rounded-button transition-colors touch-manipulation font-medium border border-transparent dark:border-slate-600/50"
 		aria-label={$_('settings.selectLanguage')}
-		title="Langue / Language"
+		title={$_("settings.language")}
 		aria-expanded={isOpen}
 	>
 		<div class="flex items-center text-slate-600 dark:text-slate-400">

@@ -83,7 +83,12 @@
 				"rewrite": "Reformuler un courriel",
 				"describe": "Décrire une image"
 			}
-		}
+		},
+		"roleUser": "Vous",
+		"roleAssistant": "Assistant",
+		"copy": "Copier",
+		"reusePrompt": "Réutiliser ce message",
+		"saveToMemory": "Enregistrer dans la base de connaissances"
 	},
 	"loading": {
 		"loadingModel": "Chargement du modèle...",
@@ -294,5 +299,13 @@
 			"download": "Télécharger et démarrer",
 			"compare": "Comparer les {count} modèles"
 		}
+	},
+	"common": {
+		"close": "Fermer",
+		"delete": "Supprimer"
+	},
+	"knowledge": {
+		"filesToImport": "Fichiers à importer",
+		"noResultAboveThreshold": "Aucun résultat au-dessus du seuil"
 	}
 }
