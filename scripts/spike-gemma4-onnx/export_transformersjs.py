@@ -158,6 +158,30 @@ def build_config(source_config, num_chunks, model_id):
 	return out
 
 
+def embed_chat_template(repo):
+	"""Inscrit chat_template.jinja dans tokenizer_config.json.
+	Writes chat_template.jinja into tokenizer_config.json.
+
+	AutoTokenizer de Transformers.js, qu'utilise pipeline('text-generation'),
+	ne lit le gabarit que dans tokenizer_config.json ; seuls les processeurs
+	multimodaux lisent chat_template.jinja. Sans cela, l'application échoue
+	sur « tokenizer.chat_template is not set ».
+	Transformers.js's AutoTokenizer, used by pipeline('text-generation'), only
+	reads the template from tokenizer_config.json; only multimodal processors
+	read chat_template.jinja. Without this, the app fails on
+	"tokenizer.chat_template is not set"."""
+	template = repo / "chat_template.jinja"
+	config_path = repo / "tokenizer_config.json"
+	if not template.exists() or not config_path.exists():
+		return
+	config = json.loads(config_path.read_text(encoding="utf-8"))
+	if config.get("chat_template"):
+		return
+	config["chat_template"] = template.read_text(encoding="utf-8")
+	config_path.write_text(json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8")
+	print("[tjs] gabarit de conversation inscrit dans tokenizer_config.json")
+
+
 def main():
 	ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	ap.add_argument("--model", default="google/gemma-4-12B-it")
@@ -228,6 +252,7 @@ def main():
 	for name in TOKENIZER_FILES:
 		if (source / name).exists():
 			shutil.copy(source / name, repo / name)
+	embed_chat_template(repo)
 	meta = {"layers": layer_shapes, "num_layers": num_layers, "vocab_size": vocab_size, "hidden_size": hidden,
 		"external_data_chunks": chunks, "torch": torch.__version__}
 	(repo / "export_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
