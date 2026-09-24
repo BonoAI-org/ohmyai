@@ -96,6 +96,41 @@ export const AVAILABLE_MODELS = [
 		experimental: true,
 		recommended: false
 	},
+	{
+		// Variante 12B : dense, 12 milliards de paramètres. Aucun port
+		// navigateur n'existant, ce dépôt a été produit à partir des poids de
+		// Google par scripts/spike-gemma4-onnx/export_transformersjs.py, et
+		// validé contre PyTorch (voir docs/MODELES.md, section 7 bis).
+		// 12B variant: dense, 12 billion parameters. No browser port existing,
+		// this repository was produced from Google's weights by
+		// scripts/spike-gemma4-onnx/export_transformersjs.py, and validated
+		// against PyTorch (see docs/MODELES.md, section 7 bis).
+		//
+		// Texte seul : l'export ne comprend pas encore l'encodeur vision.
+		// Text only: the export does not include the vision encoder yet.
+		id: 'Dramatik999/gemma-4-12B-it-ONNX',
+		name: 'Gemma 4 (12B) — WebGPU',
+		size: '~8.2 GB',
+		// Poids, plus le cache clé/valeur à 8 192 jetons (~2,8 Go : les couches
+		// à fenêtre glissante gardent tout leur passé), plus les activations.
+		// Weights, plus the key/value cache at 8,192 tokens (~2.8 GB: sliding
+		// layers keep their whole past), plus activations.
+		vram: '~12 GB',
+		description: 'Google Gemma 4 12B (dense, texte seul) via Transformers.js. Port produit pour Oh my AI et validé contre la référence PyTorch. Expérimental.',
+		engine: 'transformers',
+		// Borné pour contenir le cache clé/valeur, qui croît d'environ 340 Ko
+		// par jeton ; le modèle en annonce 262 144.
+		// Bounded to contain the key/value cache, which grows by about 340 KB
+		// per token; the model advertises 262,144.
+		contextWindow: 8192,
+		dtype: {
+			embed_tokens: 'fp16',
+			decoder_model_merged: 'q4f16'
+		},
+		multimodal: false,
+		experimental: true,
+		recommended: false
+	},
 	// Gemma 4 26B A4B a été retiré du catalogue : ses 16 Gio de fichiers
 	// dépassent ce qu'un onglet Chrome peut garder en mémoire (voir
 	// TRANSFORMERS_MAX_MODEL_GB dans hardware.js). Le chargement restait bloqué

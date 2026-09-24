@@ -133,6 +133,50 @@ Lecture / Reading:
   fp16 does not. Transformers.js works around this by handing shards to the engine
   one at a time; to be reproduced in the shippable version.
 
+## Dépôt au format Transformers.js / Transformers.js repository
+
+Suite du spike : `export_transformersjs.py` produit un dépôt que l'application
+charge sans modification de son moteur, dans la disposition du port 26B et d'E2B/E4B
+en texte seul. Following the spike, `export_transformersjs.py` produces a repository
+the app loads without changing its engine, in the layout of the 26B port and of
+E2B/E4B in text-only mode.
+
+- `onnx/embed_tokens_fp16.onnx` : `input_ids` → `inputs_embeds`, échelle √hidden
+  incluse. Vérifié en PyTorch : les logits calculés depuis ces embeddings sont
+  identiques, écart nul, à ceux calculés depuis `input_ids` / scale included. Checked
+  in PyTorch: logits computed from these embeddings are identical, zero gap, to those
+  computed from `input_ids`.
+- `onnx/decoder_model_merged_q4f16.onnx` : `inputs_embeds`, `attention_mask`,
+  `position_ids` et le cache → logits de la **dernière position seulement** et
+  `present.*`. Transformers.js ne lit que ceux-là, et le préremplissage évite ainsi
+  un tenseur de 512 Ko par jeton de prompt / → **last-position-only** logits and
+  `present.*`. Transformers.js only reads those, and prefill thereby avoids a 512 KB
+  tensor per prompt token.
+- `config.json` présente le modèle comme `gemma4` / `Gemma4ForConditionalGeneration`,
+  ce qui déclenche le chargement texte seul de Transformers.js ; le type d'origine,
+  `gemma4_unified`, est conservé sous `_source` / presents the model as `gemma4`,
+  which triggers Transformers.js's text-only loading; the original type is kept under
+  `_source`.
+
+```bash
+.venv/bin/python export_transformersjs.py --model google/gemma-4-12B-it --name gemma-4-12B-it-ONNX --keep-fp16-decoder
+
+# Validation avec la vraie bibliothèque Transformers.js sous Node
+# Validation with the real Transformers.js library under Node
+(cd node && node --no-js-float16array validate_transformersjs.mjs ../out/gemma-4-12B-it-ONNX ../out/gemma-4-12b-fp16/reference.json fp16)
+
+# Validation dans l'application : servir le dépôt comme Hugging Face, puis, sur le
+# serveur de développement, localStorage['dev:transformersRemoteHost'] = 'http://localhost:8765/'
+# In-app validation: serve the repository like Hugging Face, then set the above key
+node serve.mjs 8765
+```
+
+Validé sur SmolLM2 135M : la bibliothèque instancie `Gemma4ForCausalLM` avec les
+sessions `embed_tokens` et `decoder_model_merged`, et le décodeur fp16 reproduit les
+6 jetons de la référence PyTorch / Validated on SmolLM2 135M: the library
+instantiates `Gemma4ForCausalLM` with both sessions, and the fp16 decoder reproduces
+the 6 reference tokens.
+
 ## Limites connues / Known limits
 
 - Le cache exporté est un `DynamicCache` sans configuration : les couches à

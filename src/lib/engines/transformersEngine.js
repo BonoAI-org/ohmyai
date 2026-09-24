@@ -40,6 +40,24 @@ let _lib = null;
 async function loadLibrary() {
 	if (!_lib) {
 		_lib = await import('@huggingface/transformers');
+		// En développement seulement : charge les modèles depuis un autre hôte
+		// au format Hugging Face, pour tester un export avant de le publier
+		// (voir scripts/spike-gemma4-onnx/README.md). Absent du build de
+		// production.
+		// Development only: loads models from another host in the Hugging Face
+		// layout, to test an export before publishing it (see
+		// scripts/spike-gemma4-onnx/README.md). Absent from the production build.
+		if (import.meta.env?.DEV) {
+			try {
+				const host = localStorage.getItem('dev:transformersRemoteHost');
+				if (host) {
+					_lib.env.remoteHost = host;
+					console.warn(`[dev] Modèles Transformers.js chargés depuis ${host}`);
+				}
+			} catch (_) {
+				// localStorage inaccessible : on garde Hugging Face.
+			}
+		}
 	}
 	return _lib;
 }
