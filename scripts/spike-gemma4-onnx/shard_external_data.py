@@ -25,17 +25,17 @@ import onnx
 from onnx.external_data_helper import ExternalDataInfo
 
 
-def main():
-	ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-	ap.add_argument("name", help="Dossier sous out/ / Folder under out/")
-	ap.add_argument("--max-gb", type=float, default=1.9)
-	ap.add_argument("--out", default="out")
-	args = ap.parse_args()
-
-	folder = Path(args.out) / args.name
-	model_path = folder / "model.onnx"
-	limit = int(args.max_gb * 1024 ** 3)
+def shard(folder, onnx_name="model.onnx", max_gb=1.9):
+	"""Découpe les données externes de folder/onnx_name en tranches
+	<onnx_name>_data, <onnx_name>_data_1, ... (nommage de Transformers.js).
+	Splits the external data of folder/onnx_name into shards
+	<onnx_name>_data, <onnx_name>_data_1, ... (Transformers.js naming).
+	Renvoie la liste des tranches / Returns the list of shards."""
+	folder = Path(folder)
+	model_path = folder / onnx_name
+	limit = int(max_gb * 1024 ** 3)
 	model = onnx.load(str(model_path), load_external_data=False)
+	prefix = f"{onnx_name}_data"
 
 	# Tenseurs externes, triés par fichier puis décalage pour lire séquentiellement.
 	# External tensors, sorted by file then offset for sequential reads.
@@ -47,20 +47,20 @@ def main():
 		entries.append((info.location, int(info.offset or 0), int(info.length or 0), tensor))
 	entries.sort(key=lambda e: (e[0], e[1]))
 	sources = sorted({e[0] for e in entries})
-	if any(s.startswith("model.onnx_data") for s in sources):
+	if any(s.startswith(prefix) for s in sources):
 		raise SystemExit("Déjà découpé / Already sharded")
 
 	handles = {s: open(folder / s, "rb") for s in sources}
-	shard_idx, shard_size, shard = 0, 0, None
+	shard_idx, shard_size, out = 0, 0, None
 	shard_names = []
 
 	def open_shard():
-		nonlocal shard, shard_idx, shard_size
-		if shard:
-			shard.close()
+		nonlocal out, shard_idx, shard_size
+		if out:
+			out.close()
 			shard_idx += 1
-		name = "model.onnx_data" if shard_idx == 0 else f"model.onnx_data_{shard_idx}"
-		shard = open(folder / name, "wb")
+		name = prefix if shard_idx == 0 else f"{prefix}_{shard_idx}"
+		out = open(folder / name, "wb")
 		shard_names.append(name)
 		shard_size = 0
 		return name
@@ -74,27 +74,41 @@ def main():
 		remaining = length
 		while remaining:
 			chunk = src.read(min(remaining, 256 * 1024 ** 2))
-			shard.write(chunk)
+			out.write(chunk)
 			remaining -= len(chunk)
 		del tensor.external_data[:]
 		for key, value in (("location", current), ("offset", str(shard_size)), ("length", str(length))):
 			entry = tensor.external_data.add()
 			entry.key, entry.value = key, value
 		shard_size += length
-	shard.close()
+	out.close()
 	for h in handles.values():
 		h.close()
 
 	onnx.save_model(model, str(model_path))
 	for s in sources:
 		(folder / s).unlink()
+	sizes = [(folder / n).stat().st_size / 1e9 for n in shard_names]
+	print(f"[shard] {onnx_name} : {len(shard_names)} tranches / shards : " + ", ".join(f"{s:.2f} Go" for s in sizes))
+	return shard_names
+
+
+def main():
+	ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+	ap.add_argument("name", help="Dossier sous out/ / Folder under out/")
+	ap.add_argument("--file", default="model.onnx", help="Fichier ONNX du dossier / ONNX file in the folder")
+	ap.add_argument("--max-gb", type=float, default=1.9)
+	ap.add_argument("--out", default="out")
+	args = ap.parse_args()
+
+	folder = Path(args.out) / args.name
+	shard_names = shard(folder, args.file, args.max_gb)
 
 	meta_path = folder / "meta.json"
-	meta = json.loads(meta_path.read_text(encoding="utf-8"))
-	meta["files"]["external_data"] = shard_names
-	meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
-	sizes = [(folder / n).stat().st_size / 1e9 for n in shard_names]
-	print(f"[shard] {len(shard_names)} tranches / shards : " + ", ".join(f"{s:.2f} Go" for s in sizes))
+	if args.file == "model.onnx" and meta_path.exists():
+		meta = json.loads(meta_path.read_text(encoding="utf-8"))
+		meta["files"]["external_data"] = shard_names
+		meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":
