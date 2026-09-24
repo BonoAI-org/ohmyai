@@ -217,7 +217,10 @@
 	});
 </script>
 
-<SettingsModal bind:isOpen={isSettingsModalOpen} />
+<SettingsModal
+	bind:isOpen={isSettingsModalOpen}
+	onmanagemodels={() => (isAddModelModalOpen = true)}
+/>
 <KnowledgeBaseModal bind:isOpen={isRagTestOpen} />
 
 <div class="h-screen bg-bg-raised flex flex-col overflow-hidden">

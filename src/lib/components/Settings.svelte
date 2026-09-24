@@ -6,13 +6,19 @@
 	import { mcpStore } from "$lib/stores/mcp.svelte.js";
 	import { _ } from "svelte-i18n";
 	import MCPConfigModal from "./MCPConfigModal.svelte";
+	import { AVAILABLE_MODELS } from "$lib/llm/models.js";
 
-	let { close = () => {} } = $props();
+	let { close = () => {}, onmanagemodels = () => {} } = $props();
 	let isMCPModalOpen = $state(false);
 	let huggingFaceToken = $state("");
 
 	// Drawer states
 	let openDrawer = $state('theme');
+
+	// Modèles présents sur l'appareil / Models present on the device
+	const installedModelCount = $derived(
+		AVAILABLE_MODELS.filter((m) => llmStore.downloadedModels[m.id]).length
+	);
 
 	function toggleDrawer(id) {
 		openDrawer = openDrawer === id ? null : id;
@@ -110,7 +116,11 @@
 
 	<div class="space-y-2">
 
-		<!-- Drawer: Theme & Token -->
+		<h3 class="pt-3 pb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+			{$_('settings.sections.appearance')}
+		</h3>
+
+		<!-- Apparence : thème et langue / Appearance: theme and language -->
 		<div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
 			<button
 				onclick={() => toggleDrawer('theme')}
@@ -152,31 +162,89 @@
 						<LanguageSelector />
 					</div>
 
-					<!-- Hugging Face Token -->
-					<div class="flex justify-between items-center mb-2">
-						<label for="hf-token" class="block text-xs font-medium text-slate-600 dark:text-slate-400">{$_('settings.hfToken')}</label>
-						<a
-							href="https://huggingface.co/settings/tokens"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="text-xs text-purple-500 dark:text-purple-400 hover:underline"
-						>
-							{$_('settings.hfGetToken')}
-						</a>
-					</div>
-					<p class="text-[10px] text-slate-400 dark:text-slate-500 mb-2">
-						{$_('settings.hfDescription')}
-					</p>
-					<input
-						type="password"
-						id="hf-token"
-						bind:value={huggingFaceToken}
-						class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm"
-						placeholder="hf_..."
-					/>
 				</div>
 			{/if}
 		</div>
+
+
+		<h3 class="pt-3 pb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+			{$_('settings.sections.models')}
+		</h3>
+
+		<!-- Modèles et accès / Models and access -->
+		<div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+			<button
+				onclick={() => toggleDrawer('models')}
+				class="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+			>
+				<div class="flex items-center gap-2.5">
+					<svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7M4 7a2 2 0 012-2h12a2 2 0 012 2M4 7h16M8 12h8" />
+					</svg>
+					<span class="font-medium text-sm">{$_('settings.modelsAndAccess')}</span>
+				</div>
+				<svg class="w-4 h-4 text-slate-400 transition-transform {openDrawer === 'models' ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			{#if openDrawer === 'models'}
+				<div class="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-3 space-y-4">
+					<!-- Jeton Hugging Face / Hugging Face token -->
+					<div>
+						<div class="flex justify-between items-center mb-2">
+							<label for="hf-token" class="block text-xs font-medium text-slate-600 dark:text-slate-400">{$_('settings.hfToken')}</label>
+							<a
+								href="https://huggingface.co/settings/tokens"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="text-xs text-accent hover:underline"
+							>
+								{$_('settings.hfGetToken')}
+							</a>
+						</div>
+						<p class="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+							{$_('settings.hfDescription')}
+						</p>
+						<input
+							type="password"
+							id="hf-token"
+							bind:value={huggingFaceToken}
+							class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent focus:outline-none text-sm"
+							placeholder="hf_..."
+						/>
+						<button
+							onclick={saveToken}
+							class="mt-2 h-touch px-4 rounded-button bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
+						>
+							{$_('settings.save')}
+						</button>
+					</div>
+
+					<!-- Modèles installés et cache / Installed models and cache -->
+					<div>
+						<div class="flex items-center justify-between gap-3 mb-2">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">
+								{$_('settings.installedModels')}
+							</span>
+							<span class="font-mono text-xs text-ink-3">{installedModelCount}</span>
+						</div>
+						<button
+							onclick={() => { close(); onmanagemodels(); }}
+							class="w-full h-touch px-4 rounded-button border border-slate-300 dark:border-slate-600 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+						>
+							{$_('model.manage')}
+						</button>
+						<p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
+							{$_('settings.cacheHint')}
+						</p>
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<h3 class="pt-3 pb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+			{$_('settings.sections.advanced')}
+		</h3>
 
 		<!-- Drawer: User Profile -->
 		<div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">

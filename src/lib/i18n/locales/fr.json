@@ -195,7 +195,7 @@
 		"rulesPlaceholder": "Ex : Réponds toujours en français. Utilise un ton professionnel...",
 		"saveRules": "Sauvegarder les règles",
 		"rulesSaved": "Règles sauvegardées !",
-		"save": "Sauvegarder",
+		"save": "Enregistrer",
 		"clearCache": "Vider le cache",
 		"builtBy": "Créé par",
 		"generationTitle": "Paramètres de génération",
@@ -210,7 +210,15 @@
 		"presencePenaltyHelp": "Encourage les nouveaux sujets",
 		"saveGeneration": "Sauvegarder les paramètres",
 		"generationSaved": "Paramètres sauvegardés !",
-		"language": "Langue"
+		"language": "Langue",
+		"sections": {
+			"appearance": "Apparence",
+			"models": "Modèles et accès",
+			"advanced": "Avancé"
+		},
+		"modelsAndAccess": "Jeton, cache et modèles installés",
+		"installedModels": "Modèles installés",
+		"cacheHint": "Les modèles téléchargés restent dans ce navigateur. La gestion des modèles permet de les supprimer pour récupérer de l'espace."
 	},
 	"mcp": {
 		"title": "Serveurs MCP",

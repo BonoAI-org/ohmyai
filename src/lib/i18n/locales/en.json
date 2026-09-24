@@ -210,7 +210,15 @@
 		"presencePenaltyHelp": "Encourages new topics",
 		"saveGeneration": "Save parameters",
 		"generationSaved": "Parameters saved!",
-		"language": "Language"
+		"language": "Language",
+		"sections": {
+			"appearance": "Appearance",
+			"models": "Models and access",
+			"advanced": "Advanced"
+		},
+		"modelsAndAccess": "Token, cache and installed models",
+		"installedModels": "Installed models",
+		"cacheHint": "Downloaded models stay in this browser. Model management lets you delete them to reclaim space."
 	},
 	"mcp": {
 		"title": "MCP Servers",
