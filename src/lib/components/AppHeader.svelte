@@ -100,10 +100,7 @@
 				<div class="flex items-center gap-3">
 					<a href="/" class="flex items-center gap-2 group">
 						<img
-							src={!themeStore.isDark ||
-							themeStore.colorTheme === "paper"
-								? logoDark
-								: logo}
+							src={themeStore.isLight ? logoDark : logo}
 							alt="Logo"
 							class="w-6 h-6 group-hover:scale-110 transition-transform"
 						/>

@@ -102,7 +102,17 @@
 	},
 	"settings": {
 		"title": "Settings",
-		"colorTheme": "Color Theme",
+		"colorTheme": "Color theme",
+		"themeOption": "{name} theme",
+		"themes": {
+			"atelier": "Atelier",
+			"purple": "Amethyst",
+			"blue": "Ocean",
+			"emerald": "Emerald",
+			"rose": "Rose",
+			"amber": "Amber",
+			"paper": "Paper"
+		},
 		"hfToken": "Hugging Face Token",
 		"hfGetToken": "Get a token",
 		"hfDescription": "A token is required to download some models.",

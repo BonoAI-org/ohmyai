@@ -103,6 +103,16 @@
 	"settings": {
 		"title": "Paramètres",
 		"colorTheme": "Thème de couleur",
+		"themeOption": "Thème {name}",
+		"themes": {
+			"atelier": "Atelier",
+			"purple": "Améthyste",
+			"blue": "Océan",
+			"emerald": "Émeraude",
+			"rose": "Rose",
+			"amber": "Ambre",
+			"paper": "Papier"
+		},
 		"hfToken": "Token Hugging Face",
 		"hfGetToken": "Obtenir un token",
 		"hfDescription": "Un token est requis pour télécharger certains modèles.",

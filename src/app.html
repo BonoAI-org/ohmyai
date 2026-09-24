@@ -3,19 +3,29 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<!-- Polices : Bricolage Grotesque (titres), IBM Plex Sans (texte),
+		     IBM Plex Mono (données). Un seul lien pour les trois. -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+		/>
+
 		%sveltekit.head%
 		<script>
-			// Pre-configure initial theme to avoid flash
-			const theme = localStorage.getItem("colorTheme") || "paper";
-			if (theme === "paper") {
-				document.documentElement.setAttribute('data-theme', 'paper');
-			} else {
-				if (localStorage.getItem("colorTheme") && localStorage.getItem("colorTheme") !== "purple") {
-					document.documentElement.setAttribute('data-theme', theme);
-				}
-				if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-					document.documentElement.classList.add("dark");
-				}
+			// Applique le thème avant le premier rendu pour éviter le clignotement
+			const theme = localStorage.getItem("colorTheme") || "atelier";
+			document.documentElement.setAttribute("data-theme", theme);
+			// `atelier` et `paper` sont des thèmes clairs : ils ignorent la
+			// préférence système de mode sombre.
+			if (
+				theme !== "atelier" &&
+				theme !== "paper" &&
+				window.matchMedia("(prefers-color-scheme: dark)").matches
+			) {
+				document.documentElement.classList.add("dark");
 			}
 		</script>
 	</head>

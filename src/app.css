@@ -2,15 +2,276 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
-/* Configuration de la police par défaut / Default font configuration */
-/* Nunito est une police rounded pour un design moderne et amical / Nunito is a rounded font for a modern and friendly design */
-@theme {
-	--font-family-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+/* ==========================================================================
+   Jetons de conception / Design tokens
+   --------------------------------------------------------------------------
+   `static` est nécessaire : sans lui Tailwind v4 élague les variables qu'aucun
+   utilitaire n'emploie encore. Les phases suivantes de la refonte les
+   consomment progressivement, elles doivent donc toutes être émises.
+
+   Les valeurs par défaut sont celles du thème `atelier`, thème par défaut de
+   l'application. Chaque autre thème les redéfinit plus bas sous
+   `:root[data-theme="..."]`, dont la spécificité l'emporte sur `:root`.
+   ========================================================================== */
+@theme static {
+	/* Fonds */
+	--color-bg: #f6f2ea;
+	--color-bg-raised: #fbf8f2;
+	--color-surface: #ffffff;
+
+	/* Bordures */
+	--color-border: #e0d8c8;
+	--color-border-soft: #ede6d8;
+
+	/* Encres. --color-ink-3 est le gris de légende : jamais plus clair. */
+	--color-ink: #14120d;
+	--color-ink-2: #454034;
+	--color-ink-3: #6b6355;
+
+	/* Action principale, état « local / chargé » */
+	--color-accent: #0f5c4a;
+	--color-accent-hover: #0a3f33;
+	--color-accent-soft: #e5efe9;
+
+	/* Coût, avertissement */
+	--color-warn: #a34b0c;
+	--color-warn-ink: #7a3a08;
+	--color-warn-soft: #fbefe0;
+	--color-warn-border: #f0dcbe;
+
+	/* Erreur, suppression */
+	--color-danger: #9b2c20;
+	--color-danger-soft: #f8e9e6;
+	--color-danger-border: #e2bdb8;
+
+	/* Typographie */
+	--font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+	--font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	--font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+	/* Rayons : 9 px contrôles, 12 px boutons, 14 à 16 px cartes */
+	--radius-control: 9px;
+	--radius-button: 12px;
+	--radius-card: 14px;
+	--radius-card-lg: 16px;
+
+	/* Cible tactile minimale, 48 px pour l'envoi sur mobile */
+	--spacing-touch: 44px;
+	--spacing-touch-lg: 48px;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Color Themes mapped onto the base purple classes */
+/* ==========================================================================
+   Base
+   ========================================================================== */
+/* Dans `base` : hors couche, ces règles l'emporteraient sur les utilitaires
+   et un `bg-*` posé sur `body` serait ignoré. */
+@layer base {
+	body {
+		background-color: var(--color-bg);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+	}
+
+	h1,
+	h2,
+	h3 {
+		font-family: var(--font-display);
+		font-weight: 800;
+		letter-spacing: -0.025em;
+	}
+
+	h1 {
+		letter-spacing: -0.03em;
+	}
+}
+
+/* ==========================================================================
+   Thème `atelier` (défaut)
+   --------------------------------------------------------------------------
+   Pont vers l'existant : les composants emploient encore massivement les
+   échelles Tailwind `slate` et `purple`. On les remappe sur la palette atelier
+   pour que l'application rende dans le nouveau thème sans toucher aux
+   composants. Les phases 2 à 6 remplacent ces classes par les utilitaires
+   sémantiques ci-dessus, composant par composant ; ce bloc rétrécit d'autant
+   et disparaît quand la conversion est terminée.
+   ========================================================================== */
+:root[data-theme="atelier"] {
+	/* Neutres chauds : papier, encre */
+	--color-slate-50: #fbf8f2;
+	--color-slate-100: #f6f2ea;
+	--color-slate-200: #ede6d8;
+	--color-slate-300: #e0d8c8;
+	--color-slate-400: #b6ac98;
+	--color-slate-500: #8b826f;
+	--color-slate-600: #6b6355;
+	--color-slate-700: #57503f;
+	--color-slate-800: #454034;
+	--color-slate-900: #262218;
+	--color-slate-950: #14120d;
+
+	/* `gray`, `neutral` et `zinc` suivent les mêmes neutres */
+	--color-gray-50: var(--color-slate-50);
+	--color-gray-100: var(--color-slate-100);
+	--color-gray-200: var(--color-slate-200);
+	--color-gray-300: var(--color-slate-300);
+	--color-gray-400: var(--color-slate-400);
+	--color-gray-500: var(--color-slate-500);
+	--color-gray-600: var(--color-slate-600);
+	--color-gray-700: var(--color-slate-700);
+	--color-gray-800: var(--color-slate-800);
+	--color-gray-900: var(--color-slate-900);
+	--color-gray-950: var(--color-slate-950);
+	--color-neutral-50: var(--color-slate-50);
+	--color-neutral-100: var(--color-slate-100);
+	--color-neutral-200: var(--color-slate-200);
+	--color-neutral-300: var(--color-slate-300);
+	--color-neutral-400: var(--color-slate-400);
+	--color-neutral-500: var(--color-slate-500);
+	--color-neutral-600: var(--color-slate-600);
+	--color-neutral-700: var(--color-slate-700);
+	--color-neutral-800: var(--color-slate-800);
+	--color-neutral-900: var(--color-slate-900);
+	--color-neutral-950: var(--color-slate-950);
+	--color-zinc-50: var(--color-slate-50);
+	--color-zinc-100: var(--color-slate-100);
+	--color-zinc-200: var(--color-slate-200);
+	--color-zinc-300: var(--color-slate-300);
+	--color-zinc-400: var(--color-slate-400);
+	--color-zinc-500: var(--color-slate-500);
+	--color-zinc-600: var(--color-slate-600);
+	--color-zinc-700: var(--color-slate-700);
+	--color-zinc-800: var(--color-slate-800);
+	--color-zinc-900: var(--color-slate-900);
+	--color-zinc-950: var(--color-slate-950);
+
+	/* Action principale : le vert atelier remplace le violet */
+	--color-purple-50: #f2f7f4;
+	--color-purple-100: #e5efe9;
+	--color-purple-200: #c6dcd3;
+	--color-purple-300: #9bc2b5;
+	--color-purple-400: #5e9484;
+	--color-purple-500: #2a7561;
+	--color-purple-600: #0f5c4a;
+	--color-purple-700: #0d5141;
+	--color-purple-800: #0a3f33;
+	--color-purple-900: #083328;
+	--color-purple-950: #052019;
+
+	/* `green` et `emerald` rejoignent l'accent : une seule couleur d'action,
+	   le bouton vert isolé cesse de concurrencer l'action principale. */
+	--color-green-50: var(--color-purple-50);
+	--color-green-100: var(--color-purple-100);
+	--color-green-200: var(--color-purple-200);
+	--color-green-300: var(--color-purple-300);
+	--color-green-400: var(--color-purple-400);
+	--color-green-500: var(--color-purple-500);
+	--color-green-600: var(--color-purple-600);
+	--color-green-700: var(--color-purple-700);
+	--color-green-800: var(--color-purple-800);
+	--color-green-900: var(--color-purple-900);
+	--color-green-950: var(--color-purple-950);
+	--color-emerald-50: var(--color-purple-50);
+	--color-emerald-100: var(--color-purple-100);
+	--color-emerald-200: var(--color-purple-200);
+	--color-emerald-300: var(--color-purple-300);
+	--color-emerald-400: var(--color-purple-400);
+	--color-emerald-500: var(--color-purple-500);
+	--color-emerald-600: var(--color-purple-600);
+	--color-emerald-700: var(--color-purple-700);
+	--color-emerald-800: var(--color-purple-800);
+	--color-emerald-900: var(--color-purple-900);
+	--color-emerald-950: var(--color-purple-950);
+
+	/* Coût et avertissement */
+	--color-amber-50: #fbefe0;
+	--color-amber-100: #f7e3ca;
+	--color-amber-200: #f0dcbe;
+	--color-amber-300: #e0b683;
+	--color-amber-400: #c97f33;
+	--color-amber-500: #b35a12;
+	--color-amber-600: #a34b0c;
+	--color-amber-700: #7a3a08;
+	--color-amber-800: #632f06;
+	--color-amber-900: #4e2505;
+	--color-amber-950: #331803;
+	--color-orange-50: var(--color-amber-50);
+	--color-orange-100: var(--color-amber-100);
+	--color-orange-200: var(--color-amber-200);
+	--color-orange-300: var(--color-amber-300);
+	--color-orange-400: var(--color-amber-400);
+	--color-orange-500: var(--color-amber-500);
+	--color-orange-600: var(--color-amber-600);
+	--color-orange-700: var(--color-amber-700);
+	--color-orange-800: var(--color-amber-800);
+	--color-orange-900: var(--color-amber-900);
+	--color-orange-950: var(--color-amber-950);
+	--color-yellow-50: var(--color-amber-50);
+	--color-yellow-100: var(--color-amber-100);
+	--color-yellow-200: var(--color-amber-200);
+	--color-yellow-300: var(--color-amber-300);
+	--color-yellow-400: var(--color-amber-400);
+	--color-yellow-500: var(--color-amber-500);
+	--color-yellow-600: var(--color-amber-600);
+	--color-yellow-700: var(--color-amber-700);
+	--color-yellow-800: var(--color-amber-800);
+	--color-yellow-900: var(--color-amber-900);
+	--color-yellow-950: var(--color-amber-950);
+
+	/* Erreur et suppression */
+	--color-red-50: #f8e9e6;
+	--color-red-100: #f2d9d5;
+	--color-red-200: #e2bdb8;
+	--color-red-300: #ce9189;
+	--color-red-400: #b85a4d;
+	--color-red-500: #a63a2c;
+	--color-red-600: #9b2c20;
+	--color-red-700: #85251b;
+	--color-red-800: #6d1e16;
+	--color-red-900: #571811;
+	--color-red-950: #380f0b;
+	--color-rose-50: var(--color-red-50);
+	--color-rose-100: var(--color-red-100);
+	--color-rose-200: var(--color-red-200);
+	--color-rose-300: var(--color-red-300);
+	--color-rose-400: var(--color-red-400);
+	--color-rose-500: var(--color-red-500);
+	--color-rose-600: var(--color-red-600);
+	--color-rose-700: var(--color-red-700);
+	--color-rose-800: var(--color-red-800);
+	--color-rose-900: var(--color-red-900);
+	--color-rose-950: var(--color-red-950);
+
+	/* `blue` ne porte aucun sens dans le système : les badges informatifs
+	   passent en neutre encadré, comme dans la maquette. */
+	--color-blue-50: var(--color-slate-50);
+	--color-blue-100: var(--color-slate-100);
+	--color-blue-200: var(--color-slate-200);
+	--color-blue-300: var(--color-slate-300);
+	--color-blue-400: var(--color-slate-500);
+	--color-blue-500: var(--color-slate-500);
+	--color-blue-600: var(--color-slate-800);
+	--color-blue-700: var(--color-slate-800);
+	--color-blue-800: var(--color-slate-900);
+	--color-blue-900: var(--color-slate-900);
+	--color-blue-950: var(--color-slate-950);
+	--color-indigo-50: var(--color-blue-50);
+	--color-indigo-100: var(--color-blue-100);
+	--color-indigo-200: var(--color-blue-200);
+	--color-indigo-300: var(--color-blue-300);
+	--color-indigo-400: var(--color-blue-400);
+	--color-indigo-500: var(--color-blue-500);
+	--color-indigo-600: var(--color-blue-600);
+	--color-indigo-700: var(--color-blue-700);
+	--color-indigo-800: var(--color-blue-800);
+	--color-indigo-900: var(--color-blue-900);
+	--color-indigo-950: var(--color-blue-950);
+}
+
+/* ==========================================================================
+   Thèmes de couleur historiques, remappés sur les classes violettes de base
+   ========================================================================== */
 :root[data-theme="blue"] {
 	--color-purple-50: var(--color-blue-50);
 	--color-purple-100: var(--color-blue-100);
@@ -99,4 +360,31 @@
 	--color-slate-900: var(--color-neutral-900);
 	/* Text */
 	--color-slate-950: var(--color-black);
+
+	/* Correctif : `paper` ramenait `purple` et `slate` sur des gris mais
+	   laissait `green` saturé, si bien que le bouton de téléchargement était
+	   plus saillant que l'action principale, qui est noire. Les verts
+	   rejoignent donc eux aussi la rampe neutre. */
+	--color-green-50: var(--color-white);
+	--color-green-100: var(--color-neutral-100);
+	--color-green-200: var(--color-neutral-200);
+	--color-green-300: var(--color-neutral-300);
+	--color-green-400: var(--color-neutral-500);
+	--color-green-500: var(--color-neutral-700);
+	--color-green-600: var(--color-neutral-800);
+	--color-green-700: var(--color-neutral-900);
+	--color-green-800: var(--color-neutral-900);
+	--color-green-900: var(--color-black);
+	--color-green-950: var(--color-black);
+	--color-emerald-50: var(--color-green-50);
+	--color-emerald-100: var(--color-green-100);
+	--color-emerald-200: var(--color-green-200);
+	--color-emerald-300: var(--color-green-300);
+	--color-emerald-400: var(--color-green-400);
+	--color-emerald-500: var(--color-green-500);
+	--color-emerald-600: var(--color-green-600);
+	--color-emerald-700: var(--color-green-700);
+	--color-emerald-800: var(--color-green-800);
+	--color-emerald-900: var(--color-green-900);
+	--color-emerald-950: var(--color-green-950);
 }

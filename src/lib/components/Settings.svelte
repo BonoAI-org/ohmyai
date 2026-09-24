@@ -36,17 +36,15 @@
 	let presencePenalty = $state(0.5);
 	let generationSaved = $state(false);
 
+	// Le libellé de chaque thème passe par l'i18n (settings.themes.*)
 	const colorThemes = [
-		{ id: "purple", name: "Amethyst", color: "bg-[#a855f7]" },
-		{ id: "blue", name: "Ocean", color: "bg-[#3b82f6]" },
-		{ id: "emerald", name: "Emerald", color: "bg-[#10b981]" },
-		{ id: "rose", name: "Rose", color: "bg-[#f43f5e]" },
-		{ id: "amber", name: "Amber", color: "bg-[#f59e0b]" },
-		{
-			id: "paper",
-			name: "Paper",
-			color: "bg-white border-2 border-slate-900",
-		},
+		{ id: "atelier", color: "bg-[#0f5c4a] border-2 border-[#e0d8c8]" },
+		{ id: "purple", color: "bg-[#a855f7]" },
+		{ id: "blue", color: "bg-[#3b82f6]" },
+		{ id: "emerald", color: "bg-[#10b981]" },
+		{ id: "rose", color: "bg-[#f43f5e]" },
+		{ id: "amber", color: "bg-[#f59e0b]" },
+		{ id: "paper", color: "bg-white border-2 border-slate-900" },
 	];
 
 	function saveToken() {
@@ -133,12 +131,14 @@
 						{#each colorThemes as theme}
 							<button
 								onclick={() => themeStore.setColorTheme(theme.id)}
-								class="w-10 h-10 rounded-full {theme.color} {themeStore.colorTheme ===
+								class="w-touch h-touch rounded-full {theme.color} {themeStore.colorTheme ===
 								theme.id
 									? 'ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ring-purple-500'
 									: 'opacity-70 hover:opacity-100 transition-opacity'}"
-								aria-label="Theme {theme.name}"
-								title={theme.name}
+								aria-label={$_('settings.themeOption', {
+									values: { name: $_(`settings.themes.${theme.id}`) },
+								})}
+								title={$_(`settings.themes.${theme.id}`)}
 							></button>
 						{/each}
 					</div>

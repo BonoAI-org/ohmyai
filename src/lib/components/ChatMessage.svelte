@@ -94,10 +94,7 @@
 				{:else}
 					<!-- Logo IA / AI logo -->
 					<img
-						src={!themeStore.isDark ||
-						themeStore.colorTheme === "paper"
-							? logoDark
-							: logo}
+						src={themeStore.isLight ? logoDark : logo}
 						alt="AI Logo"
 						class="w-5 h-5"
 					/>

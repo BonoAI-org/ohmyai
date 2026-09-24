@@ -23,8 +23,8 @@ export default defineConfig({
 				description: 'Chatbot IA 100% local fonctionnant dans votre navigateur via WebAssembly. Aucune donnée envoyée à un serveur.',
 				start_url: '/',
 				display: 'standalone',
-				background_color: '#0f172a',
-				theme_color: '#7c3aed',
+				background_color: '#f6f2ea',
+				theme_color: '#0f5c4a',
 				orientation: 'portrait-primary',
 				categories: ['productivity', 'utilities', 'ai'],
 				icons: [
