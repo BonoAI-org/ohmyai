@@ -18,10 +18,15 @@
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { AVAILABLE_MODELS, findModel } from "$lib/llm/models.js";
 	import {
-		hasUsableWebGPU,
 		parseGigabytes,
 		TRANSFORMERS_MAX_MODEL_GB,
 	} from "$lib/llm/hardware.js";
+	import { probeGpuCapabilities } from "$lib/llm/gpuCapabilities.js";
+	import {
+		classifyModel,
+		estimateLargestBufferBytes,
+		requiresShaderF16,
+	} from "$lib/llm/modelFit.js";
 	import { onMount } from "svelte";
 	import { estimateMinutes } from "$lib/llm/downloadEstimate.js";
 
@@ -37,10 +42,27 @@
 	// afficher un verdict avant de l'avoir.
 	// Real diagnosis: the API being present does not mean an adapter exists.
 	// `null` until the answer is known, so no verdict shows before we have it.
-	let hasWebGPU = $state(null);
+	let gpu = $state(null);
 	onMount(async () => {
-		hasWebGPU = await hasUsableWebGPU();
+		gpu = await probeGpuCapabilities();
 	});
+	const hasWebGPU = $derived(gpu === null ? null : gpu.hasWebGPU);
+
+	// Le modèle recommandé tient-il sur cette machine ? La sonde répond, les
+	// limites annoncées mentaient.
+	// Does the recommended model fit this machine? The probe answers; the
+	// advertised limits were lying.
+	const modelFit = $derived(
+		gpu === null || !model
+			? null
+			: classifyModel(model, {
+					isInstalled: Boolean(llmStore.downloadedModels[model.id]),
+					hasWebGPU: gpu.hasWebGPU,
+					shaderF16: gpu.shaderF16,
+					largestAllocatableBytes: gpu.largestAllocatableBytes,
+					deviceMemoryGB: reportedMemoryGB,
+				})
+	);
 
 	// Mémoire rapportée par le navigateur. Absente de Firefox et de Safari.
 	// Memory reported by the browser. Absent from Firefox and Safari.
@@ -64,6 +86,24 @@
 	const isBeyondBrowserLimit = $derived(
 		llmStore.hardwareCheck?.reason === "browser-limit"
 	);
+
+	// Pourquoi le modèle ne passera pas, quand c'est le cas. On nomme le
+	// critère fautif plutôt que de dire « incompatible » sans plus.
+	// Why the model will not run, when that is the case. We name the failing
+	// criterion rather than just saying "incompatible".
+	const incompatibleReason = $derived.by(() => {
+		if (modelFit !== "incompatible" || !gpu || !model) return null;
+		if (gpu.shaderF16 === false && requiresShaderF16(model)) return "f16";
+		const besoin = estimateLargestBufferBytes(model);
+		if (
+			gpu.largestAllocatableBytes !== null &&
+			besoin !== null &&
+			besoin > gpu.largestAllocatableBytes
+		) {
+			return "allocation";
+		}
+		return "other";
+	});
 
 	// Trois preuves, dans l'ordre de la maquette / Three proofs, mockup order
 	const proofs = [
@@ -271,6 +311,31 @@
 					values: { limit: TRANSFORMERS_MAX_MODEL_GB },
 				})}
 			</p>
+		{:else if incompatibleReason}
+			<!-- Mesuré, pas déduit : inutile de télécharger des gigaoctets
+			     pour découvrir l'échec à la première réponse. -->
+			<!-- Measured, not inferred: no point downloading gigabytes to
+			     discover the failure on the first answer. -->
+			<div
+				class="px-4 py-3.5 rounded-button bg-danger-soft border border-danger-border"
+			>
+				<p class="text-[15px] font-semibold text-ink">
+					{$_("welcome.device.modelWontRun")}
+				</p>
+				<p class="mt-1 text-[13px] leading-[1.45] text-danger">
+					{#if incompatibleReason === "f16"}
+						{$_("welcome.device.reasonNoF16")}
+					{:else if incompatibleReason === "allocation"}
+						{$_("welcome.device.reasonAllocation", {
+							values: {
+								granted: `${((gpu.largestAllocatableBytes ?? 0) / 1024 ** 3).toFixed(1)} Go`,
+							},
+						})}
+					{:else}
+						{$_("welcome.device.reasonOther")}
+					{/if}
+				</p>
+			</div>
 		{:else}
 			<button
 				onclick={() => llmStore.initEngine(true)}

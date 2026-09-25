@@ -288,7 +288,11 @@
 			"webgpuConsequence": "Sans accélération GPU, un gros modèle met plusieurs minutes par réponse. Un modèle léger reste confortable.",
 			"webgpuHelp": "Activer WebGPU dans Chrome",
 			"retention": "Le modèle reste dans ce navigateur pour vos prochaines visites. Vous pouvez le supprimer à tout moment depuis les réglages.",
-			"webgpuChecking": "Diagnostic de l'appareil en cours..."
+			"webgpuChecking": "Diagnostic de l'appareil en cours...",
+			"modelWontRun": "Ce modèle ne tournera pas ici",
+			"reasonNoF16": "Il est compilé en demi-précision, que votre carte graphique n'expose pas à ce navigateur. Son code refuserait de se compiler. Choisissez un modèle sans demi-précision.",
+			"reasonAllocation": "Il demande un bloc de mémoire graphique d'un seul tenant plus grand que ce que votre pilote accorde, soit {granted} au mieux. Choisissez un modèle plus léger.",
+			"reasonOther": "Le diagnostic de votre appareil l'écarte. Comparez les modèles pour en trouver un adapté."
 		},
 		"model": {
 			"recommendedHere": "Recommandé ici",

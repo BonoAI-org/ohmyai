@@ -288,7 +288,11 @@
 			"webgpuConsequence": "Without GPU acceleration, a large model takes several minutes per answer. A light model stays comfortable.",
 			"webgpuHelp": "Enable WebGPU in Chrome",
 			"retention": "The model stays in this browser for your next visits. You can delete it at any time from the settings.",
-			"webgpuChecking": "Checking your device..."
+			"webgpuChecking": "Checking your device...",
+			"modelWontRun": "This model will not run here",
+			"reasonNoF16": "It is compiled in half precision, which your graphics card does not expose to this browser. Its code would refuse to compile. Pick a model without half precision.",
+			"reasonAllocation": "It asks for a single block of graphics memory larger than your driver grants, which is {granted} at best. Pick a lighter model.",
+			"reasonOther": "Your device diagnosis rules it out. Compare the models to find a suitable one."
 		},
 		"model": {
 			"recommendedHere": "Recommended here",
