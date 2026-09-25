@@ -19,7 +19,7 @@
 	import { onMount } from "svelte";
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { AVAILABLE_MODELS, getModelDisplayName } from "$lib/llm/models.js";
-	import { hasUsableWebGPU } from "$lib/llm/hardware.js";
+	import { probeGpuCapabilities } from "$lib/llm/gpuCapabilities.js";
 	import { classifyModel, sortByFit } from "$lib/llm/modelFit.js";
 
 	/**
@@ -39,9 +39,11 @@
 	// Past this many entries, the search field appears.
 	const SEARCH_THRESHOLD = 10;
 
-	// Diagnostic matériel, pour classer les modèles. `null` tant qu'inconnu.
-	// Hardware diagnosis, to rank the models. `null` while unknown.
-	let hasWebGPU = $state(null);
+	// Capacités mesurées du GPU, pour classer les modèles. `null` tant que la
+	// sonde n'a pas répondu : on ne tranche pas avant de savoir.
+	// Measured GPU capabilities, to rank the models. `null` until the probe
+	// answers: nothing is decided before we know.
+	let gpu = $state(null);
 	const deviceMemoryGB =
 		typeof navigator !== "undefined" &&
 		typeof navigator.deviceMemory === "number"
@@ -49,7 +51,7 @@
 			: null;
 
 	onMount(async () => {
-		hasWebGPU = await hasUsableWebGPU();
+		gpu = await probeGpuCapabilities();
 	});
 
 	/** Tous les modèles, catalogue puis personnalisés, marqués de leur origine. */
@@ -62,7 +64,9 @@
 	function fitOf(model) {
 		return classifyModel(model, {
 			isInstalled: Boolean(llmStore.downloadedModels[model.id]),
-			hasWebGPU,
+			hasWebGPU: gpu ? gpu.hasWebGPU : null,
+			shaderF16: gpu ? gpu.shaderF16 : null,
+			largestAllocatableBytes: gpu ? gpu.largestAllocatableBytes : null,
 			deviceMemoryGB,
 		});
 	}
