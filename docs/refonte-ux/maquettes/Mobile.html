@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mobile — avant et après</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; background: #F6F2EA; color: #14120D; }
+a { color: #0F5C4A; } a:hover { color: #0A3F33; }
+</style>
+</helmet>
+<div style="width: 900px; height: 960px; box-sizing: border-box; padding: 36px 40px; background: #F6F2EA; display: flex; flex-direction: column; gap: 22px">
+
+  <div>
+    <h2 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-size: 30px; letter-spacing: -0.02em">Mobile · 375 px</h2>
+    <div style="margin-top: 6px; font-size: 14px; color: #454034">À gauche, l'écran actuel : 181 px d'en-tête et des cibles de 32 à 40 px. À droite, la même page une fois l'en-tête réduit et les actions descendues à portée de pouce.</div>
+  </div>
+
+  <div style="display: flex; gap: 70px">
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="width: 375px; height: 760px; box-sizing: border-box; overflow: hidden; background: #FFFFFF; border: 1px solid #E4DCCC; border-radius: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; position: relative">
+
+        <div style="box-sizing: border-box; height: 181px; padding: 12px 14px; border-bottom: 1px solid #ececec; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <div style="width: 40px; height: 40px; border-radius: 9px; background: #f3f4f6"></div>
+            <div style="width: 40px; height: 40px; border-radius: 9px; background: #f3f4f6"></div>
+            <div style="flex-grow: 1"></div>
+            <div style="width: 40px; height: 40px; border-radius: 999px; background: #f3f4f6"></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <div style="width: 24px; height: 24px; border-radius: 6px; background: #eeeeee"></div>
+            <div style="font-size: 17px; font-weight: 700">Oh my AI!</div>
+            <div style="font-size: 11px; color: #9ca3af">IA locale dans votre navigateur</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+            <div style="height: 36px; padding: 0 12px; border-radius: 999px; background: #000000; color: #ffffff; font-size: 13px; font-weight: 600; display: flex; align-items: center">+ Nouveau</div>
+            <div style="height: 30px; padding: 0 10px; border-radius: 999px; background: #f3f4f6; color: #374151; font-size: 13px; display: flex; align-items: center">Français</div>
+            <div style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb"></div>
+            <div style="height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid #e5e7eb; font-size: 12px; display: flex; align-items: center">Gemma 4 (E2B) — WebGPU</div>
+          </div>
+        </div>
+
+        <div style="box-sizing: border-box; margin: 14px; padding: 18px 16px; border: 1px solid #e5e7eb; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 7px">
+          <div style="font-size: 17px; font-weight: 700">Téléchargement requis</div>
+          <div style="font-size: 13px; color: #6b7280; text-align: center">Le modèle sélectionné n'est pas encore sur cet appareil.</div>
+          <div style="font-size: 11px; color: #9ca3af; text-align: center">Le téléchargement peut prendre plusieurs minutes et consommer des données. Wi-Fi recommandé.</div>
+          <div style="box-sizing: border-box; width: 100%; margin-top: 4px; padding: 8px; border-radius: 8px; background: #fdf0e3; text-align: center; font-size: 12px; color: #e0a06a">WebGPU n'est pas disponible dans ce navigateur.</div>
+          <div style="margin-top: 6px; height: 38px; padding: 0 18px; border-radius: 8px; background: #111111; color: #ffffff; font-size: 14px; font-weight: 600; display: flex; align-items: center">Télécharger quand même</div>
+        </div>
+
+        <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 30px">
+          <div style="font-size: 15px; color: #9ca3af">Commencez une conversation</div>
+          <div style="font-size: 12px; color: #b6bcc5; text-align: center">Le modèle s'exécute entièrement dans votre navigateur via WebAssembly</div>
+        </div>
+
+        <div style="position: absolute; left: 14px; right: 14px; bottom: 44px; padding: 10px; border: 1px solid #e5e7eb; border-radius: 12px; display: flex; gap: 8px; align-items: flex-end">
+          <div style="flex-grow: 1; height: 44px; padding: 8px 10px; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 8px; color: #9ca3af; font-size: 13px">Tapez votre message...</div>
+          <div style="width: 34px; height: 30px; border-radius: 8px; background: #f3f4f6"></div>
+          <div style="width: 38px; height: 30px; border-radius: 8px; background: #d1d5db"></div>
+        </div>
+        <div style="position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: 11px; color: #9ca3af">Built by BonoAI · View on GitHub</div>
+        <div style="position: absolute; left: 60px; right: 60px; bottom: 6px; padding: 8px 12px; border-radius: 10px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 8px 20px rgba(0,0,0,0.12); font-size: 13px; font-weight: 700; text-align: center">Installer l'app</div>
+      </div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">Avant · en-tête 181 px, cibles 32–40 px, bandeau flottant sur le pied de page</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="width: 375px; height: 760px; box-sizing: border-box; overflow: hidden; background: #FBF8F2; border: 1px solid #E4DCCC; border-radius: 20px; display: flex; flex-direction: column">
+
+        <div style="box-sizing: border-box; height: 56px; flex-shrink: 0; padding: 0 10px; border-bottom: 1px solid #EDE6D8; display: flex; align-items: center; gap: 8px">
+          <button type="button" aria-label="Historique" style="width: 44px; height: 44px; border: 0; border-radius: 11px; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#454034" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
+          </button>
+          <div style="flex-grow: 1; min-width: 0">
+            <div style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Oh my AI!</div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B6355">Gemma 4 E2B · hors ligne</div>
+          </div>
+          <button type="button" aria-label="Nouvelle conversation" style="width: 44px; height: 44px; border: 0; border-radius: 11px; background: #14120D; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FBF8F2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+          </button>
+        </div>
+
+        <div style="flex-grow: 1; padding: 26px 18px 0; display: flex; flex-direction: column; gap: 18px">
+          <div>
+            <h3 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-size: 28px; line-height: 1.08; letter-spacing: -0.02em">Posez votre première question.</h3>
+            <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #454034">Le modèle est installé sur cet appareil. Rien de ce que vous écrivez ne quitte ce navigateur.</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <button type="button" style="min-height: 46px; padding: 11px 14px; border: 1px solid #E0D8C8; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 14px; color: #14120D; text-align: left; cursor: pointer">Résumer un document que je dépose</button>
+            <button type="button" style="min-height: 46px; padding: 11px 14px; border: 1px solid #E0D8C8; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 14px; color: #14120D; text-align: left; cursor: pointer">Reformuler un courriel</button>
+            <button type="button" style="min-height: 46px; padding: 11px 14px; border: 1px solid #E0D8C8; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 14px; color: #14120D; text-align: left; cursor: pointer">Décrire une image</button>
+          </div>
+        </div>
+
+        <div style="flex-shrink: 0; padding: 12px 14px 14px; border-top: 1px solid #EDE6D8; background: #FBF8F2; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <label for="m-msg" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Votre message</label>
+            <input id="m-msg" type="text" placeholder="Écrivez un message" style="flex-grow: 1; min-width: 0; height: 48px; padding: 0 14px; box-sizing: border-box; border: 1px solid #E0D8C8; border-radius: 14px; background: #FFFFFF; font: inherit; font-size: 15px; color: #14120D">
+            <button type="button" aria-label="Envoyer le message" style="width: 48px; height: 48px; flex-shrink: 0; border: 0; border-radius: 14px; background: #0F5C4A; display: flex; align-items: center; justify-content: center; cursor: pointer">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V5"></path><path d="m6 11 6-6 6 6"></path></svg>
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button type="button" style="flex-grow: 1; height: 44px; border: 1px solid #E0D8C8; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 13px; color: #14120D; cursor: pointer">Image</button>
+            <button type="button" style="flex-grow: 1; height: 44px; border: 1px solid #B9D3C8; border-radius: 12px; background: #E5EFE9; font: inherit; font-size: 13px; font-weight: 600; color: #0F5C4A; cursor: pointer">Documents · 3</button>
+            <button type="button" style="flex-grow: 1; height: 44px; border: 1px solid #E0D8C8; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 13px; color: #14120D; cursor: pointer">Modèle</button>
+          </div>
+        </div>
+      </div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">Après · en-tête 56 px, cibles 44–48 px, actions en bas d'écran</div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

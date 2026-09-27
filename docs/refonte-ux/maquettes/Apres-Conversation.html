@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Après — conversation en cours</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; background: #F6F2EA; color: #14120D; }
+a { color: #0F5C4A; } a:hover { color: #0A3F33; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background: #F6F2EA; display: flex; flex-direction: column">
+
+  <div style="display: flex; align-items: baseline; gap: 12px; padding: 16px 24px">
+    <div style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.01em">Après · conversation</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">en-tête sur une rangée de 56 px, historique en panneau, composer qui annonce ce qu'il sait faire</div>
+  </div>
+
+  <div style="width: 1280px; height: 716px; overflow: hidden; background: #FBF8F2; border-top: 1px solid #E4DCCC; border-bottom: 1px solid #E4DCCC; display: flex; flex-direction: column">
+
+    <header style="box-sizing: border-box; height: 56px; flex-shrink: 0; padding: 0 20px; border-bottom: 1px solid #EDE6D8; display: flex; align-items: center; gap: 16px">
+      <div style="display: flex; align-items: center; gap: 10px; width: 228px">
+        <button type="button" aria-label="Masquer l'historique" style="width: 36px; height: 36px; border: 0; border-radius: 9px; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#454034" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path></svg>
+        </button>
+        <div style="width: 24px; height: 24px; border-radius: 7px; background: #14120D; display: flex; align-items: center; justify-content: center">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F6F2EA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M4 12h10"></path><path d="M4 17h13"></path></svg>
+        </div>
+        <div style="font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-size: 16px">Oh my AI!</div>
+      </div>
+
+      <div style="flex-grow: 1; display: flex; align-items: center; gap: 12px; min-width: 0">
+        <div style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Résumer le compte rendu du comité</div>
+        <button type="button" style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border: 1px solid #E0D8C8; border-radius: 999px; background: #FFFFFF; font: inherit; font-size: 13px; color: #14120D; cursor: pointer; white-space: nowrap">
+          <span style="width: 7px; height: 7px; border-radius: 999px; background: #0F5C4A"></span>Gemma 4 E2B<span style="color: #6B6355; font-family: 'IBM Plex Mono', monospace; font-size: 12px">2,6 Go · local</span>
+        </button>
+        <div style="display: flex; align-items: center; gap: 7px; white-space: nowrap">
+          <div style="width: 84px; height: 6px; border-radius: 999px; background: #EDE6D8; overflow: hidden"><div style="width: 31px; height: 6px; background: #0F5C4A"></div></div>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">contexte 37 %</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px">
+        <button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 9px; background: #14120D; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Nouvelle conversation</button>
+        <button type="button" aria-label="Réglages" style="width: 36px; height: 36px; border: 1px solid #E0D8C8; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#454034" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M4 12h2"></path><path d="M18 12h2"></path><path d="M12 4v2"></path><path d="M12 18v2"></path><path d="m6.3 6.3 1.4 1.4"></path><path d="m16.3 16.3 1.4 1.4"></path><path d="m17.7 6.3-1.4 1.4"></path><path d="m7.7 16.3-1.4 1.4"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <div style="flex-grow: 1; display: flex; min-height: 0">
+
+      <nav style="width: 248px; flex-shrink: 0; box-sizing: border-box; padding: 16px 14px; border-right: 1px solid #EDE6D8; display: flex; flex-direction: column; gap: 14px">
+        <label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid #E0D8C8; border-radius: 9px; background: #FFFFFF">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B6355" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Rechercher dans l'historique</span>
+          <input type="search" placeholder="Rechercher" style="flex-grow: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 14px; color: #14120D">
+        </label>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B6355; padding: 0 8px">Aujourd'hui</div>
+          <a href="#c1" style="display: block; padding: 9px 10px; border-radius: 9px; background: #EFE9DC; font-size: 14px; font-weight: 500; color: #14120D; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Résumer le compte rendu du comité</a>
+          <a href="#c2" style="display: block; padding: 9px 10px; border-radius: 9px; font-size: 14px; color: #454034; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Reformuler un courriel au syndic</a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B6355; padding: 0 8px">7 derniers jours</div>
+          <a href="#c3" style="display: block; padding: 9px 10px; border-radius: 9px; font-size: 14px; color: #454034; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Traduire une fiche produit</a>
+          <a href="#c4" style="display: block; padding: 9px 10px; border-radius: 9px; font-size: 14px; color: #454034; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Questions sur le règlement interne</a>
+        </div>
+
+        <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid #EDE6D8; display: flex; flex-direction: column; gap: 4px">
+          <button type="button" style="display: flex; align-items: center; gap: 9px; height: 38px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 14px; color: #14120D; cursor: pointer; text-align: left">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#454034" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path></svg>
+            Base de connaissances<span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">3</span>
+          </button>
+          <button type="button" style="display: flex; align-items: center; gap: 9px; height: 38px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 14px; color: #14120D; cursor: pointer; text-align: left">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#454034" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"></rect><rect x="3" y="14" width="18" height="6" rx="2"></rect></svg>
+            Modèles installés<span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">2</span>
+          </button>
+        </div>
+      </nav>
+
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+
+        <div style="flex-grow: 1; padding: 26px 0; overflow: hidden">
+          <div style="width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px">
+
+            <div style="align-self: flex-end; max-width: 520px; padding: 13px 16px; border-radius: 14px 14px 4px 14px; background: #14120D; color: #FBF8F2; font-size: 15px; line-height: 1.5">Résume-moi le compte rendu du comité d'entretien en cinq points, et dis-moi ce qui demande une décision.</div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; align-items: center; gap: 8px">
+                <div style="width: 22px; height: 22px; border-radius: 6px; background: #E5EFE9; display: flex; align-items: center; justify-content: center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0F5C4A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M4 12h10"></path><path d="M4 17h13"></path></svg>
+                </div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">Gemma 4 E2B · sur cet appareil</div>
+              </div>
+              <div style="font-size: 15px; line-height: 1.62; color: #14120D">Cinq points ressortent du compte rendu, et deux d'entre eux appellent une décision de votre part.</div>
+              <div style="display: flex; flex-direction: column; gap: 7px; font-size: 15px; line-height: 1.55; color: #14120D">
+                <div style="display: flex; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; color: #6B6355">1.</span><span>La toiture arrière a été inspectée en août ; le rapport conclut à une reprise partielle, pas à un remplacement.</span></div>
+                <div style="display: flex; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; color: #6B6355">2.</span><span>Deux soumissions sont arrivées, la troisième est attendue et retarde le vote.</span></div>
+                <div style="display: flex; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; color: #6B6355">3.</span><span>Le calendrier d'entretien du printemps est approuvé sans réserve.</span></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; margin-top: 2px">
+                <span style="display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E0D8C8; font-size: 12px; color: #454034">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0F5C4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path></svg>
+                  2 extraits de compte-rendu-aout.pdf
+                </span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">18 tok/s · hors ligne</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style="flex-shrink: 0; padding: 0 0 18px">
+          <div style="width: 720px; margin: 0 auto; box-sizing: border-box; padding: 12px 14px; background: #FFFFFF; border: 1px solid #E0D8C8; border-radius: 16px; box-shadow: 0 1px 2px rgba(20,18,13,0.04); display: flex; flex-direction: column; gap: 10px">
+            <label for="msg" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Votre message</label>
+            <input id="msg" type="text" placeholder="Écrivez, ou déposez un document" style="border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; color: #14120D; padding: 4px 2px">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <button type="button" style="display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px; border: 1px solid #E0D8C8; border-radius: 999px; background: #FFFFFF; font: inherit; font-size: 13px; color: #14120D; cursor: pointer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#454034" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="m5 18 5-5 4 4 2-2 3 3"></path></svg>
+                Image
+              </button>
+              <button type="button" style="display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px; border: 1px solid #B9D3C8; border-radius: 999px; background: #E5EFE9; font: inherit; font-size: 13px; color: #0F5C4A; font-weight: 600; cursor: pointer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F5C4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path></svg>
+                Base de connaissances · 3 documents
+              </button>
+              <button type="button" aria-label="Envoyer le message" style="margin-left: auto; width: 44px; height: 44px; border: 0; border-radius: 12px; background: #0F5C4A; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V5"></path><path d="m6 11 6-6 6 6"></path></svg>
+              </button>
+            </div>
+          </div>
+          <div style="width: 720px; margin: 8px auto 0; display: flex; justify-content: space-between; font-size: 12px; color: #6B6355">
+            <span>Entrée pour envoyer · Maj + Entrée pour un retour à la ligne</span>
+            <span>Tout se passe sur cet appareil</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 16px 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; font-size: 13px; line-height: 1.45; color: #454034">
+    <div><span style="font-family: 'IBM Plex Mono', monospace; color: #0F5C4A">04</span> &nbsp;L'en-tête ne garde que ce qui change pendant la conversation : titre, modèle chargé, contexte consommé.</div>
+    <div><span style="font-family: 'IBM Plex Mono', monospace; color: #0F5C4A">05</span> &nbsp;Base de connaissances et modèles installés deviennent des entrées nommées, plus des icônes muettes.</div>
+    <div><span style="font-family: 'IBM Plex Mono', monospace; color: #0F5C4A">06</span> &nbsp;Le composer dit ce qu'il accepte, et la réponse cite ses sources locales et sa vitesse réelle.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

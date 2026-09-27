@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Direction visuelle et composants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; background: #F6F2EA; color: #14120D; }
+a { color: #0F5C4A; } a:hover { color: #0A3F33; }
+</style>
+</helmet>
+<div style="width: 1240px; height: 1000px; box-sizing: border-box; padding: 52px 60px; background: #F6F2EA; display: flex; flex-direction: column; gap: 26px">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+    <div>
+      <h2 style="margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-size: 38px; letter-spacing: -0.025em">Direction visuelle · atelier local</h2>
+      <div style="margin-top: 8px; font-size: 15px; line-height: 1.5; color: #454034; max-width: 700px">Un fond papier chaud plutôt qu'un blanc d'application, une encre presque noire, et une seule couleur d'action. La couleur ne décore rien : le vert signale ce qui tourne en local, l'ambre signale ce qui va coûter cher.</div>
+    </div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355; text-align: right">Bricolage Grotesque · IBM Plex Sans · IBM Plex Mono</div>
+  </div>
+
+  <div style="display: flex; gap: 12px">
+    <div style="flex-grow: 1; height: 120px; border-radius: 12px; background: #F6F2EA; border: 1px solid #E0D8C8; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+      <div style="font-size: 13px; font-weight: 600">Papier</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">#F6F2EA · fond</div>
+    </div>
+    <div style="flex-grow: 1; height: 120px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E0D8C8; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+      <div style="font-size: 13px; font-weight: 600">Surface</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6355">#FFFFFF · cartes</div>
+    </div>
+    <div style="flex-grow: 1; height: 120px; border-radius: 12px; background: #14120D; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+      <div style="font-size: 13px; font-weight: 600; color: #F6F2EA">Encre</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #BDB5A5">#14120D · texte</div>
+    </div>
+    <div style="flex-grow: 1; height: 120px; border-radius: 12px; background: #0F5C4A; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+      <div style="font-size: 13px; font-weight: 600; color: #FFFFFF">Local</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #C6DCD3">#0F5C4A · action</div>
+    </div>
+    <div style="flex-grow: 1; height: 120px; border-radius: 12px; background: #A34B0C; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+      <div style="font-size: 13px; font-weight: 600; color: #FFFFFF">Coût</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #F2D9C0">#A34B0C · alerte</div>
+    </div>
+    <div style="flex-grow: 1; height: 120px; border-radius: 12px; background: #9B2C20; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end">
+      <div style="font-size: 13px; font-weight: 600; color: #FFFFFF">Rupture</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #F0CCC7">#9B2C20 · erreur</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 20px">
+    <div style="flex-grow: 1; padding: 22px 24px; background: #FFFFFF; border: 1px solid #E0D8C8; border-radius: 14px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6B6355">Display · Bricolage Grotesque 800</div>
+      <div style="margin-top: 8px; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-size: 40px; line-height: 1.05; letter-spacing: -0.025em">Tourne chez vous</div>
+      <div style="margin-top: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6B6355">Texte · IBM Plex Sans 400 / 600</div>
+      <div style="margin-top: 6px; font-size: 15px; line-height: 1.55; color: #14120D">Le modèle se télécharge une fois, puis répond hors ligne. <strong style="font-weight: 600">Rien ne part vers un serveur.</strong></div>
+      <div style="margin-top: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6B6355">Données · IBM Plex Mono 400</div>
+      <div style="margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #14120D">2,6 Go · 18 tok/s · contexte 37 %</div>
+    </div>
+
+    <div style="width: 520px; flex-shrink: 0; padding: 22px 24px; background: #FFFFFF; border: 1px solid #E0D8C8; border-radius: 14px; display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6B6355">Actions · une seule pleine par écran</div>
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+        <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #0F5C4A; color: #FFFFFF; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Télécharger</button>
+        <button type="button" style="height: 44px; padding: 0 18px; border: 1px solid #E0D8C8; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 15px; color: #14120D; cursor: pointer">Comparer</button>
+        <button type="button" style="height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: transparent; font: inherit; font-size: 15px; color: #454034; cursor: pointer">Plus tard</button>
+        <button type="button" style="height: 44px; padding: 0 18px; border: 1px solid #E2BDB8; border-radius: 12px; background: #F8E9E6; font: inherit; font-size: 15px; font-weight: 600; color: #9B2C20; cursor: pointer">Supprimer le modèle</button>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: #E5EFE9; color: #0F5C4A; font-size: 12px; font-weight: 600"><span style="width: 7px; height: 7px; border-radius: 999px; background: #0F5C4A"></span>Chargé</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: #FBEFE0; color: #7A3A08; font-size: 12px; font-weight: 600">À télécharger · 5,5 Go</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: #F8E9E6; color: #9B2C20; font-size: 12px; font-weight: 600">Incompatible</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; border: 1px solid #E0D8C8; background: #FFFFFF; color: #454034; font-family: 'IBM Plex Mono', monospace; font-size: 12px">WebGPU</span>
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border: 1px solid #E0D8C8; border-radius: 12px; background: #FBF8F2">
+        <span style="font-size: 13px; color: #6B6355">Jeton</span>
+        <input type="text" placeholder="hf_..." style="flex-grow: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #14120D">
+      </label>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 20px">
+    <div style="width: 380px; flex-shrink: 0; padding: 16px 18px; border-radius: 14px; background: #FBEFE0; border: 1px solid #F0DCBE">
+      <div style="font-size: 15px; font-weight: 600; color: #14120D">Sans WebGPU, comptez plusieurs minutes</div>
+      <div style="margin-top: 5px; font-size: 13px; line-height: 1.45; color: #6B4114">L'alerte porte la conséquence, pas seulement le symptôme, et propose toujours une issue.</div>
+      <a href="#activer" style="display: inline-block; margin-top: 7px; font-size: 13px; font-weight: 600; color: #7A3A08">Activer WebGPU</a>
+    </div>
+
+    <div style="flex-grow: 1; padding: 16px 18px; border: 1px solid #E0D8C8; border-radius: 14px; background: #FFFFFF">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+        <div>
+          <div style="font-size: 16px; font-weight: 600">Llama 3.2 · 3B</div>
+          <div style="margin-top: 3px; font-size: 13px; color: #454034">Texte seul, réponses rapides sur processeur.</div>
+        </div>
+        <span style="flex-shrink: 0; padding: 4px 10px; border-radius: 999px; background: #E5EFE9; color: #0F5C4A; font-size: 12px; font-weight: 600">Déjà installé</span>
+      </div>
+      <div style="margin-top: 10px; display: flex; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #454034"><span>1,9 Go</span><span>sans WebGPU</span><span>≈ 3 min</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding-top: 20px; border-top: 1px solid #E4DCCC; font-size: 13px; line-height: 1.45; color: #454034">
+    <div><strong style="font-weight: 600; color: #14120D">Rayons</strong><br>9 px pour les contrôles, 12 px pour les boutons, 14–16 px pour les cartes.</div>
+    <div><strong style="font-weight: 600; color: #14120D">Cibles</strong><br>44 px minimum, 48 px pour l'envoi sur mobile.</div>
+    <div><strong style="font-weight: 600; color: #14120D">Contraste</strong><br>4,5:1 minimum ; les gris de légende descendent à #6B6355, jamais plus clair.</div>
+    <div><strong style="font-weight: 600; color: #14120D">Couleur</strong><br>Vert et ambre ne coexistent pas dans un même bloc : l'un propose, l'autre prévient.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
