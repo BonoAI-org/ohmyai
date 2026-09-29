@@ -390,6 +390,53 @@
 }
 
 /* ==========================================================================
+   Jetons sémantiques des thèmes historiques
+   --------------------------------------------------------------------------
+   La refonte convertit les composants des échelles `slate` et `purple` vers
+   les jetons sémantiques (`bg-surface`, `text-ink-2`, `bg-accent`). Ces
+   jetons n'étaient définis qu'une fois, dans `@theme static`, aux valeurs
+   d'`atelier` : changer de thème ne repeignait plus que la part de
+   l'interface restée sur les anciennes classes, et l'application prenait un
+   air à moitié repeint. Chaque thème les redéfinit donc ici.
+
+   Les valeurs passent par les échelles remappées plus haut plutôt que par
+   des couleurs écrites en dur : un thème ne se décrit qu'à un seul endroit,
+   et les deux moitiés de l'interface, la convertie et l'ancienne, ne peuvent
+   plus diverger.
+
+   The redesign is converting components from the `slate` and `purple` scales
+   to semantic tokens. Those were defined once, in `@theme static`, with
+   `atelier`'s values, so switching themes only repainted the part of the UI
+   still on the old classes. Each theme now redefines them, through the
+   scales remapped above rather than hard-coded colors.
+   ========================================================================== */
+:root[data-theme="purple"],
+:root[data-theme="blue"],
+:root[data-theme="emerald"],
+:root[data-theme="rose"],
+:root[data-theme="amber"],
+:root[data-theme="paper"] {
+	/* Neutres froids de l'ancienne palette. `paper` a déjà ramené ces mêmes
+	   échelles au blanc et aux gris neutres dans son propre bloc, il hérite
+	   donc de son noir et blanc sans rien redire ici. */
+	--color-bg: var(--color-slate-100);
+	--color-bg-raised: var(--color-slate-50);
+	--color-surface: var(--color-white);
+	--color-border: var(--color-slate-300);
+	--color-border-soft: var(--color-slate-200);
+	--color-ink: var(--color-slate-950);
+	--color-ink-2: var(--color-slate-800);
+	--color-ink-3: var(--color-slate-600);
+
+	/* L'accent suit l'échelle `purple`, que chaque thème a remappée sur la
+	   sienne. Le 700 et non le 500 de la pastille : l'accent sert aussi de
+	   texte sur `accent-soft` et d'anneau de focus, où il lui faut 4,5:1. */
+	--color-accent: var(--color-purple-700);
+	--color-accent-hover: var(--color-purple-800);
+	--color-accent-soft: var(--color-purple-100);
+}
+
+/* ==========================================================================
    Cible tactile
    --------------------------------------------------------------------------
    Les maquettes dessinent des contrôles de 30 à 38 px sur grand écran, alors
