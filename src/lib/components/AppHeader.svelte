@@ -7,10 +7,12 @@
 	 * Application header: a single 56 px row, three zones: identity, context,
 	 * actions.
 	 *
-	 * La langue et la base de connaissances ont quitté l'en-tête : la première
-	 * vit dans les réglages, la seconde dans le panneau latéral.
-	 * Language and knowledge base left the header: the former lives in the
-	 * settings, the latter in the side panel.
+	 * Le sélecteur fr/en est de retour dans la zone d'actions, en variante
+	 * compacte ; les réglages gardent le leur, en variante longue. La base de
+	 * connaissances, elle, vit dans le panneau latéral.
+	 * The fr/en selector is back in the actions zone, in compact form; the
+	 * settings keep theirs, in long form. The knowledge base lives in the side
+	 * panel.
 	 *
 	 * Les deux boutons mobiles doivent conserver leur classe `lg:hidden` : les
 	 * tests end-to-end s'en servent pour vérifier le comportement responsive.
@@ -21,6 +23,7 @@
 	import { llmStore } from "$lib/stores/llm.svelte.js";
 	import { themeStore } from "$lib/stores/theme.svelte.js";
 	import ModelSelector from "$lib/components/ModelSelector.svelte";
+	import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 	import { findModel, getModelDisplayName } from "$lib/llm/models.js";
 	import logo from "$lib/assets/logo.svg";
 	import logoDark from "$lib/assets/logo-dark.svg";
@@ -221,6 +224,7 @@
 		>
 			{$_("header.newConversation")}
 		</button>
+		<LanguageSelector compact />
 		<button
 			onclick={() => (isSettingsModalOpen = true)}
 			class="hit-44 flex items-center justify-center w-9 h-9 rounded-control bg-surface border border-border text-ink-2 hover:bg-bg transition-colors"
