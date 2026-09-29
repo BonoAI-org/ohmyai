@@ -437,6 +437,60 @@
 }
 
 /* ==========================================================================
+   Mode sombre des jetons sémantiques
+   --------------------------------------------------------------------------
+   `atelier` et `paper` sont des thèmes clairs : ils ignorent la préférence
+   système, et la classe `dark` ne leur est jamais posée (voir
+   `LIGHT_ONLY_THEMES` dans `theme.svelte.js` et le script de `app.html`).
+   Ce bloc ne concerne donc que les cinq thèmes de couleur.
+
+   Ces thèmes gardaient un mode sombre par les variantes `dark:` des anciennes
+   classes. Les composants convertis n'en portent aucune : ils lisent les
+   jetons, qui n'avaient que des valeurs claires. Sur un système en sombre,
+   l'application rendait donc à moitié claire, en-tête et composeur compris.
+
+   Les valeurs passent par les échelles remappées plus haut, comme en clair :
+   chaque thème garde ses neutres et son accent, seule la place des valeurs
+   sur la rampe s'inverse.
+
+   `atelier` and `paper` are light themes and never get the `dark` class, so
+   this block only concerns the five color themes. They kept a dark mode
+   through the `dark:` variants of the old classes; converted components
+   carry none and read the tokens instead, which only had light values.
+   ========================================================================== */
+:root.dark {
+	/* Fonds : la page est le plus sombre, la carte s'en détache */
+	--color-bg: var(--color-slate-950);
+	--color-bg-raised: var(--color-slate-900);
+	--color-surface: var(--color-slate-800);
+
+	/* Bordures : assez claires pour rester lisibles sur une carte */
+	--color-border: var(--color-slate-600);
+	--color-border-soft: var(--color-slate-700);
+
+	/* Encres, dans l'ordre inverse du clair */
+	--color-ink: var(--color-slate-50);
+	--color-ink-2: var(--color-slate-200);
+	--color-ink-3: var(--color-slate-400);
+
+	/* L'accent s'éclaircit : il doit porter sur un fond sombre, et c'est
+	   maintenant le texte posé dessus qui est sombre (`text-surface`). */
+	--color-accent: var(--color-purple-400);
+	--color-accent-hover: var(--color-purple-300);
+	--color-accent-soft: var(--color-purple-950);
+
+	/* Avertissement et erreur suivent le même retournement */
+	--color-warn: var(--color-amber-400);
+	--color-warn-ink: var(--color-amber-200);
+	--color-warn-soft: var(--color-amber-950);
+	--color-warn-border: var(--color-amber-800);
+
+	--color-danger: var(--color-red-400);
+	--color-danger-soft: var(--color-red-950);
+	--color-danger-border: var(--color-red-800);
+}
+
+/* ==========================================================================
    Cible tactile
    --------------------------------------------------------------------------
    Les maquettes dessinent des contrôles de 30 à 38 px sur grand écran, alors
