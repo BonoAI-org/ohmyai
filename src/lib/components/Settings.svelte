@@ -214,7 +214,7 @@
 						/>
 						<button
 							onclick={saveToken}
-							class="mt-2 min-h-touch px-4 rounded-button bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
+							class="mt-2 min-h-touch px-4 rounded-button bg-accent text-surface text-sm font-semibold hover:bg-accent-hover transition-colors"
 						>
 							{$_('settings.save')}
 						</button>
@@ -459,7 +459,7 @@
 	<div class="flex gap-3 mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
 		<button
 			onclick={saveToken}
-			class="flex-1 min-h-touch px-4 bg-accent hover:bg-accent-hover text-white rounded-button transition-colors font-medium text-sm"
+			class="flex-1 min-h-touch px-4 bg-accent hover:bg-accent-hover text-surface rounded-button transition-colors font-medium text-sm"
 		>{$_('settings.save')}</button>
 		<button
 			onclick={() => llmStore.clearCache()}

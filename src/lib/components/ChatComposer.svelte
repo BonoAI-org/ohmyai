@@ -245,7 +245,7 @@
 					/>
 					<button
 						onclick={() => removeSelectedImage(idx)}
-						class="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full bg-danger text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+						class="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full bg-danger text-surface opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
 						aria-label={$_("chat.removeImage")}
 					>
 						<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 18 18 6" /><path d="m6 6 12 12" /></svg>
@@ -312,7 +312,7 @@
 				type="button"
 				onclick={() => llmStore.stopGeneration()}
 				aria-label={$_("chat.stop")}
-				class="ml-auto flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button bg-danger text-white hover:bg-danger/90 transition-colors touch-manipulation"
+				class="ml-auto flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button bg-danger text-surface hover:bg-danger/90 transition-colors touch-manipulation"
 			>
 				<svg class="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
 			</button>
@@ -325,7 +325,7 @@
 						(!llmStore.isSelectedModelMultimodal() ||
 							selectedImages.length === 0))}
 				aria-label={$_("chat.send")}
-				class="ml-auto flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button bg-accent text-white hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors touch-manipulation"
+				class="ml-auto flex items-center justify-center w-touch h-touch flex-shrink-0 rounded-button bg-accent text-surface hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors touch-manipulation"
 			>
 				<svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V5" /><path d="m6 11 6-6 6 6" /></svg>
 			</button>
