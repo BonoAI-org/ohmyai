@@ -177,7 +177,7 @@
 <!-- Scrim, below `lg` only: above that, the panel sits in the flow. -->
 {#if isOpen}
 	<div
-		class="lg:hidden fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm"
+		class="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
 		onclick={() => (isOpen = false)}
 		onkeydown={(e) => e.key === "Escape" && (isOpen = false)}
 		role="button"

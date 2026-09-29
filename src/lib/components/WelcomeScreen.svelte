@@ -274,7 +274,7 @@
 		{:else}
 			<button
 				onclick={() => llmStore.initEngine(true)}
-				class="h-13 rounded-button bg-accent text-white text-base font-semibold hover:bg-accent-hover transition-colors touch-manipulation"
+				class="h-13 rounded-button bg-accent text-surface text-base font-semibold hover:bg-accent-hover transition-colors touch-manipulation"
 			>
 				{$_("welcome.actions.download")}
 			</button>

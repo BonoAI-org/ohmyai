@@ -219,7 +219,7 @@
 	<div class="hidden lg:flex items-center gap-1.5 flex-shrink-0">
 		<button
 			onclick={onnew}
-			class="hit-44 h-9 px-3.5 rounded-control bg-ink text-white text-sm font-semibold hover:bg-ink-2 transition-colors touch-manipulation"
+			class="hit-44 h-9 px-3.5 rounded-control bg-ink text-bg-raised text-sm font-semibold hover:bg-ink-2 transition-colors touch-manipulation"
 			title={$_("header.startNewConversation")}
 		>
 			{$_("header.newConversation")}

@@ -72,3 +72,73 @@ describe('jetons sémantiques des thèmes', () => {
 		});
 	}
 });
+
+/** Les déclarations portées par un sélecteur donné, quel qu'il soit. */
+function declarationsForSelector(selector) {
+	let out = '';
+	let from = 0;
+	for (;;) {
+		const at = css.indexOf(selector, from);
+		if (at === -1) return out;
+		const open = css.indexOf('{', at);
+		const close = css.indexOf('}', open);
+		out += css.slice(open + 1, close);
+		from = close;
+	}
+}
+
+// Les jetons d'état, employés par les panneaux de téléchargement et les
+// messages d'erreur, retournent eux aussi en sombre.
+const REQUIRED_DARK = [
+	...REQUIRED,
+	'--color-warn',
+	'--color-warn-ink',
+	'--color-warn-soft',
+	'--color-warn-border',
+	'--color-danger',
+	'--color-danger-soft',
+	'--color-danger-border'
+];
+
+describe('mode sombre', () => {
+	test('les jetons sémantiques ont des valeurs sombres', () => {
+		const declarations = declarationsForSelector(':root.dark');
+		expect(declarations).not.toBe('');
+		const manquants = REQUIRED_DARK.filter((token) => !declarations.includes(`${token}:`));
+		expect(manquants).toEqual([]);
+	});
+
+	test('les thèmes clairs sont les mêmes dans le store et dans app.html', async () => {
+		const store = await Bun.file(new URL('./theme.svelte.js', import.meta.url)).text();
+		const html = await Bun.file(new URL('../../app.html', import.meta.url)).text();
+
+		const liste = store.match(/LIGHT_ONLY_THEMES = \[([^\]]*)\]/);
+		if (!liste) throw new Error('LIGHT_ONLY_THEMES introuvable');
+		const declares = [...liste[1].matchAll(/'([^']+)'/g)].map((m) => m[1]).sort();
+
+		// Le script anti-clignotement les écarte un par un, avant le rendu.
+		const ecartes = [...html.matchAll(/theme !== "([^"]+)"/g)].map((m) => m[1]).sort();
+
+		expect(ecartes).toEqual(declares);
+	});
+
+	test('aucun fond fort ne garde un texte blanc, qui deviendrait illisible', async () => {
+		// `bg-accent`, `bg-danger` et `bg-ink` s'éclaircissent en sombre : le
+		// texte posé dessus doit suivre le jeton inverse, pas rester blanc.
+		const composants = new Bun.Glob('*.svelte').scanSync({
+			cwd: new URL('../components/', import.meta.url).pathname
+		});
+		const fautifs = [];
+		for (const nom of composants) {
+			const source = await Bun.file(
+				new URL(`../components/${nom}`, import.meta.url)
+			).text();
+			for (const ligne of source.split('\n')) {
+				if (/bg-(accent|danger|ink)\b/.test(ligne) && /\btext-white\b/.test(ligne)) {
+					fautifs.push(`${nom} : ${ligne.trim().slice(0, 60)}`);
+				}
+			}
+		}
+		expect(fautifs).toEqual([]);
+	});
+});
