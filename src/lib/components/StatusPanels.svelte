@@ -109,5 +109,17 @@
 			<strong class="font-semibold">{$_("error.title")} :</strong>
 			{llmStore.error}
 		</p>
+		<!-- Issue proposée : un modèle plus léger, quand l’erreur en appelle un. -->
+		<!-- Offered way out: a lighter model, when the error calls for one. -->
+		{#if llmStore.errorSuggestion?.forError === llmStore.error}
+			<button
+				onclick={() => llmStore.changeModel(llmStore.errorSuggestion.modelId)}
+				class="mt-3 h-touch px-4 rounded-button bg-accent text-surface text-sm font-semibold hover:bg-accent-hover transition-colors touch-manipulation"
+			>
+				{$_("error.tryModel", {
+					values: { model: llmStore.errorSuggestion.modelName },
+				})}
+			</button>
+		{/if}
 	</div>
 {/if}
