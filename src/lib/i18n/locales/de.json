@@ -1,0 +1,322 @@
+{
+	"app": {
+		"title": "Oh my AI!",
+		"subtitle": "Lokale KI in Ihrem Browser",
+		"tagline": "Lokale KI in Ihrem Browser",
+		"description": "100 % lokaler KI-Chatbot, der per WebAssembly in Ihrem Browser läuft. Es werden keine Daten an einen Server gesendet."
+	},
+	"header": {
+		"new": "Neu",
+		"newConversation": "Neue Unterhaltung",
+		"startNewConversation": "Neue Unterhaltung beginnen",
+		"history": "Verlauf",
+		"conversationHistory": "Verlauf der Unterhaltungen",
+		"install": "App installieren",
+		"installApp": "Oh my AI! auf Ihrem Gerät installieren",
+		"selectModel": "Modell auswählen",
+		"chooseModel": "Modell wählen",
+		"untitledConversation": "Neue Unterhaltung",
+		"showHistory": "Verlauf anzeigen",
+		"hideHistory": "Verlauf ausblenden",
+		"contextUsed": "Kontext {percent} %",
+		"modelLocal": "lokal",
+		"modelOffline": "offline",
+		"modelToDownload": "Download nötig"
+	},
+	"model": {
+		"recommended": "Empfohlen",
+		"custom": "Eigene",
+		"customModels": "Eigene Modelle",
+		"addCustomModel": "Eigenes Modell hinzufügen",
+		"deleteModel": "Dieses eigene Modell löschen?",
+		"searchLabel": "Nach einem Modell suchen",
+		"searchPlaceholder": "Suchen",
+		"noResults": "Kein Modell passt",
+		"manage": "Modelle verwalten",
+		"fit": {
+			"installed": "Bereits installiert",
+			"suitable": "Geeignet",
+			"slow": "Hier langsam",
+			"incompatible": "Inkompatibel",
+			"loading": "Wird geladen"
+		}
+	},
+	"chat": {
+		"startConversation": "Beginnen Sie eine Unterhaltung",
+		"runsInBrowser": "Das Modell läuft per WebAssembly vollständig in Ihrem Browser",
+		"typePlaceholder": "Schreiben Sie oder legen Sie ein Dokument ab",
+		"send": "Nachricht senden",
+		"clear": "Unterhaltung leeren",
+		"clearConversation": "🗑️ Unterhaltung leeren",
+		"generating": "Wird generiert...",
+		"scrollToBottom": "Nach unten scrollen",
+		"contextUsed": "Kontext:",
+		"export": "Exportieren",
+		"exportMarkdown": "Unterhaltung als Markdown exportieren",
+		"composer": "Eingabebereich",
+		"yourMessage": "Ihre Nachricht",
+		"attachment": "Anhang",
+		"removeImage": "Bild entfernen",
+		"stop": "Generierung stoppen",
+		"speed": "{speed} tok/s · offline",
+		"sourceNote": "gespeicherte Notiz",
+		"sourceSimilarity": "Ähnlichkeit: {percent} %",
+		"tools": {
+			"image": "Bild",
+			"knowledgeBase": "Wissensdatenbank",
+			"knowledgeBaseCount": "Wissensdatenbank · {count} Dokumente",
+			"reasoning": "Denkmodus"
+		},
+		"help": {
+			"shortcuts": "Eingabe zum Senden · Umschalt + Eingabe für einen Zeilenumbruch",
+			"onDevice": "Alles geschieht auf diesem Gerät"
+		},
+		"drop": {
+			"empty": "Kein lesbarer Text in {name}.",
+			"failed": "{name} konnte nicht gelesen werden: {reason}"
+		},
+		"empty": {
+			"title": "Stellen Sie Ihre erste Frage.",
+			"lede": "Das Modell ist auf diesem Gerät installiert. Nichts, was Sie schreiben, verlässt diesen Browser.",
+			"suggestions": {
+				"summarize": "Ein abgelegtes Dokument zusammenfassen",
+				"rewrite": "Eine E-Mail umformulieren",
+				"describe": "Ein Bild beschreiben"
+			}
+		},
+		"roleUser": "Sie",
+		"roleAssistant": "Assistent",
+		"copy": "Kopieren",
+		"reusePrompt": "Diese Nachricht wiederverwenden",
+		"saveToMemory": "In der Wissensdatenbank speichern"
+	},
+	"loading": {
+		"loadingModel": "Modell wird geladen...",
+		"progress": "Fortschritt",
+		"modelLoaded": "Modell erfolgreich geladen!",
+		"downloadRequired": "Download erforderlich",
+		"notOnDevice": "Das ausgewählte Modell ist noch nicht auf diesem Gerät.",
+		"downloadWarning": "Der Download kann mehrere Minuten dauern und Datenvolumen verbrauchen. WLAN empfohlen.",
+		"downloadNow": "Jetzt herunterladen",
+		"downloadAnyway": "Trotzdem herunterladen",
+		"hardwareUnsupported": "Dieses Gerät scheint für dieses Modell nicht leistungsfähig genug zu sein.",
+		"hardwareRequired": "Benötigter Speicher",
+		"hardwareDetected": "Gemeldeter Speicher",
+		"hardwareGpuBuffer": "Max. GPU-Puffer",
+		"hardwareReasonMemory": "Dieses Modell benötigt ~{required} GB, der Browser meldet aber nur {detected} GB Speicher.",
+		"hardwareReasonGpuBuffer": "Die GPU kann nur {buffer} GB pro Puffer reservieren, zu wenig, um ein Modell zu laden.",
+		"hardwareReasonNoWebgpu": "WebGPU ist in diesem Browser nicht verfügbar.",
+		"hardwareMemoryCaveat": "Der Browser rundet den gemeldeten Speicher und begrenzt ihn: Der Wert kann unter dem tatsächlichen Speicher liegen.",
+		"hardwareReasonBrowserLimit": "Dieses Modell ist größer als {limit} GB: mehr, als ein Browser-Tab laden kann, unabhängig vom Speicher des Geräts.",
+		"cancel": "Download abbrechen",
+		"downloadingFiles": "Modell wird heruntergeladen"
+	},
+	"models": {
+		"webgpuTag": "WebGPU · exp.",
+		"webgpuExperimentalTitle": "Läuft über Transformers.js (ONNX Runtime Web) auf WebGPU, experimentelle Unterstützung."
+	},
+	"error": {
+		"title": "Fehler",
+		"webgpuNotAvailable": "❌ WebGPU nicht verfügbar. Ihr Browser oder Gerät unterstützt WebGPU nicht. Versuchen Sie Chrome/Edge 113+ auf dem Desktop oder aktivieren Sie WebGPU in den Browser-Flags.",
+		"browserMemory": "Dem Browser-Tab ist beim Laden dieses Modells der Speicher ausgegangen. Laden Sie die Seite neu, um den Speicher freizugeben, und wählen Sie dann ein leichteres Modell.",
+		"gpuDeviceError": "Die GPU hat beim Laden des Modells einen Fehler gemeldet ({cause}). Dieses Modell kann auf diesem Gerät nicht laufen: Wählen Sie ein leichteres Modell.",
+		"gpuDeviceLost": "Die GPU reagiert nicht mehr ({cause}). Laden Sie die Seite neu, um das Modell erneut zu starten.",
+		"gpuAllocation": "{model} ({size}) verlangt von der GPU einen größeren zusammenhängenden Speicherblock, als sie reservieren kann. Dieses Modell wird auf diesem Gerät nicht laufen.",
+		"gpuAllocationSuggest": "Ein leichteres Modell sollte passen: {model} ({size}).",
+		"gpuAllocationNoSuggest": "Kein leichteres Modell im Katalog scheint auf dieser GPU laufen zu können.",
+		"tryModel": "{model} ausprobieren"
+	},
+	"ram": {
+		"warning": "⚠️ Zu wenig RAM erkannt",
+		"insufficientMessage": "Ihr Gerät hat weniger als {min} GB RAM. KI-Modelle funktionieren möglicherweise nicht richtig oder sind sehr langsam.",
+		"tip": "💡 Tipp: Verwenden Sie ein leichtes Modell wie Phi-3.5 oder Llama-3.2-1B für eine bessere Leistung.",
+		"insufficientForInstall": "Zu wenig RAM für die Installation (mindestens {min} GB erforderlich)"
+	},
+	"pwa": {
+		"newConversation": "Neue Unterhaltung",
+		"new": "Neu",
+		"newDescription": "Neue Unterhaltung beginnen",
+		"historyShortcut": "Verlauf",
+		"historyDescription": "Verlauf der Unterhaltungen anzeigen"
+	},
+	"history": {
+		"title": "Verlauf",
+		"close": "Schließen",
+		"new": "Neu",
+		"export": "Exportieren",
+		"exportHistory": "Verlauf exportieren",
+		"import": "Importieren",
+		"importHistory": "Verlauf importieren",
+		"searchPlaceholder": "Suchen...",
+		"searching": "Suche läuft...",
+		"noConversations": "Keine gespeicherten Unterhaltungen",
+		"current": "Aktuell",
+		"messages": "Nachr.",
+		"rename": "Umbenennen",
+		"delete": "Löschen",
+		"save": "Speichern",
+		"cancel": "Abbrechen",
+		"deleteConfirm": "Diese Unterhaltung löschen?",
+		"importSuccess": "Verlauf erfolgreich importiert!\n{count} Unterhaltungen importiert",
+		"importError": "Fehler beim Importieren",
+		"conversationCount": "{count} Unterhaltung(en) gespeichert",
+		"today": "Heute",
+		"yesterday": "Gestern",
+		"minutesAgo": "vor {minutes} Min.",
+		"conversationHistory": "Verlauf der Unterhaltungen",
+		"searchInHistory": "Im Verlauf suchen",
+		"groupToday": "Heute",
+		"groupWeek": "Letzte 7 Tage",
+		"groupOlder": "Älter",
+		"noResults": "Keine Unterhaltung passt",
+		"knowledgeBase": "Wissensdatenbank",
+		"installedModels": "Installierte Modelle"
+	},
+	"settings": {
+		"title": "Einstellungen",
+		"colorTheme": "Farbschema",
+		"themeOption": "Schema {name}",
+		"themes": {
+			"atelier": "Atelier",
+			"purple": "Amethyst",
+			"blue": "Ozean",
+			"emerald": "Smaragd",
+			"rose": "Rosé",
+			"amber": "Bernstein",
+			"paper": "Papier"
+		},
+		"hfToken": "Hugging-Face-Token",
+		"hfGetToken": "Token anfordern",
+		"hfDescription": "Für den Download einiger Modelle ist ein Token erforderlich.",
+		"profileTitle": "Benutzerprofil",
+		"profileDescription": "Diese Angaben werden mit den Modellen geteilt, um die Antworten zu personalisieren.",
+		"profileName": "Name",
+		"profileNamePlaceholder": "Ihr Name...",
+		"profileRole": "Rolle",
+		"profileRolePlaceholder": "z. B. Entwicklerin, Designer, Studentin...",
+		"profileExpertise": "Fachgebiet",
+		"profileExpertisePlaceholder": "z. B. Python, React, Data Science...",
+		"profilePreferences": "Vorlieben",
+		"profilePreferencesPlaceholder": "z. B. knappe Antworten, Codebeispiele...",
+		"profileLanguage": "Bevorzugte Sprache",
+		"profileLanguagePlaceholder": "z. B. Deutsch, English...",
+		"saveProfile": "Profil speichern",
+		"profileSaved": "Profil gespeichert!",
+		"rulesTitle": "Globale Regeln",
+		"rulesDescription": "Anweisungen, die alle Modelle befolgen müssen. Werden als System-Prompt eingefügt.",
+		"rulesPlaceholder": "z. B. Antworte immer auf Deutsch. Verwende einen professionellen Ton...",
+		"saveRules": "Regeln speichern",
+		"rulesSaved": "Regeln gespeichert!",
+		"save": "Speichern",
+		"clearCache": "Cache leeren",
+		"builtBy": "Erstellt von",
+		"generationTitle": "Generierungsparameter",
+		"generationDescription": "Stellen Sie ein, wie die KI ihre Antworten generiert.",
+		"temperature": "Temperatur",
+		"temperatureHelp": "Höher = kreativer, niedriger = fokussierter",
+		"maxTokens": "Max. Tokens",
+		"maxTokensHelp": "Maximale Länge der Antwort",
+		"frequencyPenalty": "Häufigkeitsstrafe",
+		"frequencyPenaltyHelp": "Verringert Wortwiederholungen",
+		"presencePenalty": "Präsenzstrafe",
+		"presencePenaltyHelp": "Fördert neue Themen",
+		"saveGeneration": "Parameter speichern",
+		"generationSaved": "Parameter gespeichert!",
+		"language": "Sprache",
+		"sections": {
+			"appearance": "Darstellung",
+			"models": "Modelle und Zugang",
+			"advanced": "Erweitert"
+		},
+		"modelsAndAccess": "Token, Cache und installierte Modelle",
+		"installedModels": "Installierte Modelle",
+		"cacheHint": "Heruntergeladene Modelle bleiben in diesem Browser. In der Modellverwaltung können Sie sie löschen, um Speicherplatz freizugeben.",
+		"selectLanguage": "Sprache auswählen"
+	},
+	"mcp": {
+		"title": "MCP-Server",
+		"description": "Verbinden Sie MCP-Server, um der KI externe Werkzeuge zu geben.",
+		"servers": "Server",
+		"addServer": "Server hinzufügen",
+		"serverName": "Servername",
+		"serverUrl": "Server-URL",
+		"apiKey": "API-Schlüssel (optional)",
+		"testConnection": "Verbindung testen",
+		"testing": "Wird getestet...",
+		"connected": "Verbunden",
+		"disconnected": "Getrennt",
+		"error": "Verbindungsfehler",
+		"toolsFound": "{count} Werkzeug(e) gefunden",
+		"toolsAvailable": "{count} Werkzeug(e) verfügbar",
+		"noServers": "Keine MCP-Server konfiguriert",
+		"remove": "Entfernen",
+		"removeConfirm": "Diesen MCP-Server entfernen?",
+		"enable": "Aktivieren",
+		"disable": "Deaktivieren",
+		"add": "Hinzufügen",
+		"close": "Schließen",
+		"configure": "MCP-Server konfigurieren",
+		"toolCall": "Werkzeugaufruf",
+		"toolResult": "Ergebnis",
+		"toolError": "Werkzeugfehler",
+		"toolPending": "Wird ausgeführt...",
+		"requiresToolModel": "Werkzeuge erfordern ein Hermes-Modell",
+		"tools": "Werkzeuge",
+		"toolsBadge": "Werkzeuge"
+	},
+	"footer": {
+		"builtBy": "Erstellt von",
+		"sourceCode": "Quellcode"
+	},
+	"welcome": {
+		"badge": "Kein Server, kein Konto",
+		"title": "Eine KI, die vollständig auf Ihrem Gerät läuft.",
+		"lede": "Das Modell wird einmal heruntergeladen und antwortet dann offline. Ihre Unterhaltungen bleiben in diesem Browser: Nichts geht an einen Server, es gibt nichts anzulegen und nichts zu akzeptieren.",
+		"proofs": {
+			"offline": {
+				"title": "Nach der Installation offline.",
+				"body": "Das Modell lebt im Browser, nicht auf einem entfernten Server."
+			},
+			"nothingLeaves": {
+				"title": "Nichts verlässt das Gerät.",
+				"body": "Weder die Nachrichten noch die in der Wissensdatenbank abgelegten Dateien."
+			},
+			"verifiable": {
+				"title": "Überprüfbar.",
+				"body": "Quelloffen,"
+			}
+		},
+		"device": {
+			"title": "Ihr Gerät",
+			"memory": "{gb} GB Speicher",
+			"memoryUnknown": "Speicher nicht gemeldet",
+			"webgpuOk": "WebGPU ist aktiv: Die Antworten kommen schnell.",
+			"webgpuMissing": "WebGPU ist in diesem Browser nicht aktiv",
+			"webgpuConsequence": "Ohne GPU-Beschleunigung braucht ein großes Modell mehrere Minuten pro Antwort. Ein leichtes Modell bleibt angenehm.",
+			"webgpuHelp": "WebGPU in Chrome aktivieren",
+			"retention": "Das Modell bleibt für Ihre nächsten Besuche in diesem Browser. Sie können es jederzeit in den Einstellungen löschen.",
+			"webgpuChecking": "Gerät wird geprüft...",
+			"modelWontRun": "Dieses Modell wird hier nicht laufen",
+			"reasonNoF16": "Es ist in halber Genauigkeit kompiliert, die Ihre Grafikkarte diesem Browser nicht bereitstellt. Sein Code ließe sich nicht kompilieren. Wählen Sie ein Modell ohne halbe Genauigkeit.",
+			"reasonAllocation": "Es verlangt einen zusammenhängenden Grafikspeicherblock, der größer ist, als Ihr Treiber gewährt, nämlich höchstens {granted}. Wählen Sie ein leichteres Modell.",
+			"reasonOther": "Die Diagnose Ihres Geräts schließt es aus. Vergleichen Sie die Modelle, um ein passendes zu finden."
+		},
+		"model": {
+			"recommendedHere": "Hier empfohlen",
+			"estimatedTime": "≈ {minutes} Min.",
+			"storedOffline": "offline gespeichert"
+		},
+		"actions": {
+			"download": "Herunterladen und starten",
+			"compare": "Die {count} Modelle vergleichen"
+		}
+	},
+	"common": {
+		"close": "Schließen",
+		"delete": "Löschen"
+	},
+	"knowledge": {
+		"filesToImport": "Zu importierende Dateien",
+		"noResultAboveThreshold": "Kein Ergebnis über dem Schwellenwert"
+	}
+}

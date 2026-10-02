@@ -1,7 +1,7 @@
 <script>
 	/**
 	 * Composant de sélection de langue / Language selector component
-	 * Permet de basculer entre français et anglais / Allows switching between French and English
+	 * Permet de basculer entre français, anglais et allemand / Allows switching between French, English and German
 	 *
 	 * Deux points de montage : l'en-tête, en variante compacte (le code à deux
 	 * lettres), et les réglages, en variante longue (le nom de la langue).
@@ -20,6 +20,7 @@
 	const languages = {
 		fr: { name: "Français", code: "FR", flag: "🇫🇷" },
 		en: { name: "English", code: "EN", flag: "🇬🇧" },
+		de: { name: "Deutsch", code: "DE", flag: "🇩🇪" },
 	};
 
 	/**
