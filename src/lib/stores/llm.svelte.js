@@ -31,6 +31,7 @@ import {
 	importHistoryJson
 } from '$lib/llm/conversationRepo.js';
 import { estimateHardwareSupport } from '$lib/llm/hardware.js';
+import { GpuDeviceError, loadWatchingGpu } from '$lib/engines/gpuDeviceWatch.js';
 
 /**
  * Clés de persistance dans le localStorage. Regroupées ici pour qu'une
@@ -115,6 +116,10 @@ class LLMStore {
 
 	// Contrôleur d'annulation de la génération / Generation abort controller
 	_abortController = null;
+
+	// Surveillance du device WebGPU du moteur actif (voir gpuDeviceWatch.js)
+	// Watch over the active engine's WebGPU device (see gpuDeviceWatch.js)
+	_gpuWatch = null;
 
 	// Erreur éventuelle / Potential error
 	error = $state(null);
@@ -508,14 +513,18 @@ class LLMStore {
 
 					if (modelInOpfs) {
 						this.loadingProgress = t ? t('loading.loadingFromOpfs') : 'Loading from local storage...';
-						this.engine = await createWebLLMEngine(this.selectedModel, {
-							initProgressCallback: progressCallback,
-							modelCache: { cacheUrl: `/opfs/${this.selectedModel}/` }
-						});
+						this.engine = await this._loadEngineWatchingGpu(() =>
+							createWebLLMEngine(this.selectedModel, {
+								initProgressCallback: progressCallback,
+								modelCache: { cacheUrl: `/opfs/${this.selectedModel}/` }
+							})
+						);
 					} else {
-						this.engine = await createWebLLMEngine(this.selectedModel, {
-							initProgressCallback: progressCallback
-						});
+						this.engine = await this._loadEngineWatchingGpu(() =>
+							createWebLLMEngine(this.selectedModel, {
+								initProgressCallback: progressCallback
+							})
+						);
 
 						// Lance la sauvegarde en arrière-plan sans bloquer l'interface
 						(async () => {
@@ -539,6 +548,9 @@ class LLMStore {
 					}
 					opfsSuccess = true;
 				} catch (opfsError) {
+					// Un GPU défaillant n'est pas un problème d'OPFS : on le remonte.
+					// A failing GPU is not an OPFS problem: propagate it.
+					if (opfsError instanceof GpuDeviceError) throw opfsError;
 					console.warn(`OPFS caching failed for ${this.selectedModel}, falling back to standard loading. Error:`, opfsError);
 					opfsSuccess = false;
 				}
@@ -546,9 +558,11 @@ class LLMStore {
 				// Fallback si OPFS non supporté
 				const t = get(_); // Define t here for this block
 				this.loadingProgress = t ? t('loading.loadingStandard') : 'Loading model...';
-				this.engine = await createWebLLMEngine(this.selectedModel, {
-					initProgressCallback: progressCallback
-				});
+				this.engine = await this._loadEngineWatchingGpu(() =>
+					createWebLLMEngine(this.selectedModel, {
+						initProgressCallback: progressCallback
+					})
+				);
 			}
 
 			// Utilise la traduction i18n / Use i18n translation
@@ -577,7 +591,9 @@ class LLMStore {
 				// Optional: we could call this.clearCache() here, but beware of infinite loops
 			}
 
-			this.error = `❌ ${errorTitle}: ${errorMessage}`;
+			this.error = err instanceof GpuDeviceError
+				? this._gpuErrorMessage(err)
+				: `❌ ${errorTitle}: ${errorMessage}`;
 			console.error('Erreur lors du chargement du modèle / Error loading model:', err);
 			console.error('Stack trace:', err.stack);
 		} finally {
@@ -626,7 +642,7 @@ class LLMStore {
 			const t = get(_);
 			this.loadingProgress = t ? t('loading.loadingModel') : 'Loading model...';
 
-			this.engine = await TransformersEngine.create(this.selectedModel, {
+			this.engine = await this._loadEngineWatchingGpu(() => TransformersEngine.create(this.selectedModel, {
 				dtype: modelConfig?.dtype || 'q4',
 				device: 'webgpu',
 				multimodal: !!modelConfig?.multimodal,
@@ -642,7 +658,7 @@ class LLMStore {
 						? t('loading.downloadingFiles')
 						: 'Downloading the model...';
 				}
-			});
+			}));
 			this.engineType = 'transformers';
 
 			this.loadingProgress = t ? t('loading.modelLoaded') : 'Model loaded successfully!';
@@ -672,12 +688,73 @@ class LLMStore {
 			const message = err?.name === 'ModelLoadError' && err.kind === 'browser-memory'
 				? (t ? t('error.browserMemory') : 'The browser tab ran out of memory while loading this model. Reload the page and choose a lighter model.')
 				: err.message;
-			this.error = `❌ ${errorTitle}: ${message}`;
+			this.error = err instanceof GpuDeviceError
+				? this._gpuErrorMessage(err)
+				: `❌ ${errorTitle}: ${message}`;
 			console.error('Erreur chargement Transformers.js / Transformers.js loading error:', err);
 			console.error('Stack trace:', err.stack);
 		} finally {
 			this.isLoading = false;
 		}
+	}
+
+	/**
+	 * Charge un moteur en surveillant son device WebGPU. Une erreur du GPU
+	 * pendant le chargement fait échouer celui-ci, même si la bibliothèque se
+	 * déclare prête ; une perte du device ensuite décharge le moteur.
+	 * Loads an engine while watching its WebGPU device. A GPU error during
+	 * loading fails the load, even if the library declares itself ready; a
+	 * later device loss unloads the engine.
+	 * @template T
+	 * @param {() => Promise<T>} load
+	 * @returns {Promise<T>}
+	 */
+	async _loadEngineWatchingGpu(load) {
+		this._releaseGpuWatch();
+		const { result, watch } = await loadWatchingGpu(load, {
+			release: (engine) => engine?.dispose ? engine.dispose() : engine?.unload?.()
+		});
+		this._gpuWatch = watch;
+		watch.onLost((lostError) => this._onGpuDeviceLost(watch, lostError));
+		return result;
+	}
+
+	/** Cesse de surveiller le device du moteur / Stops watching the engine's device. */
+	_releaseGpuWatch() {
+		this._gpuWatch?.dispose();
+		this._gpuWatch = null;
+	}
+
+	/**
+	 * Le device du moteur actif est perdu : le moteur ne répondra plus.
+	 * The active engine's device is lost: the engine will not answer anymore.
+	 * @param {ReturnType<typeof import('$lib/engines/gpuDeviceWatch.js').watchGpuDevices>} watch
+	 * @param {GpuDeviceError} lostError
+	 */
+	_onGpuDeviceLost(watch, lostError) {
+		if (watch !== this._gpuWatch) return;
+		console.error('Device WebGPU perdu / WebGPU device lost:', lostError);
+		this._releaseGpuWatch();
+		this.engine = null;
+		this.error = this._gpuErrorMessage(lostError);
+	}
+
+	/**
+	 * Message d'erreur affichable pour un échec du GPU.
+	 * Displayable error message for a GPU failure.
+	 * @param {GpuDeviceError} err
+	 * @returns {string}
+	 */
+	_gpuErrorMessage(err) {
+		const t = get(_);
+		const title = t ? t('error.title') : 'Error';
+		const lost = err.kind === 'device-lost';
+		const key = lost ? 'error.gpuDeviceLost' : 'error.gpuDeviceError';
+		const fallback = lost
+			? `The GPU stopped responding (${err.message}). Reload the page to start the model again.`
+			: `The GPU reported an error while loading the model (${err.message}). It cannot run on this device: choose a lighter model.`;
+		const message = t ? t(key, { values: { cause: err.message } }) : fallback;
+		return `❌ ${title}: ${message}`;
 	}
 
 	/**
@@ -935,6 +1012,7 @@ class LLMStore {
 		}
 
 		// Reset engines
+		this._releaseGpuWatch();
 		this.engine = null;
 		this.engineType = 'webllm';
 
@@ -1178,6 +1256,7 @@ class LLMStore {
 					this.selectedModel = conversation.model;
 					this.saveSelectedModel();
 					// Réinitialise le moteur pour charger le bon modèle / Reset engine to load the correct model
+					this._releaseGpuWatch();
 					this.engine = null;
 					await this.initEngine();
 				}
