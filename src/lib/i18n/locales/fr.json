@@ -118,7 +118,9 @@
 	"error": {
 		"title": "Erreur",
 		"webgpuNotAvailable": "❌ WebGPU non disponible. Votre navigateur ou appareil ne supporte pas WebGPU. Essayez Chrome/Edge 113+ sur desktop ou activez WebGPU dans les flags du navigateur.",
-		"browserMemory": "L'onglet a manqué de mémoire pour charger ce modèle. Rechargez la page pour libérer la mémoire, puis choisissez un modèle plus léger."
+		"browserMemory": "L'onglet a manqué de mémoire pour charger ce modèle. Rechargez la page pour libérer la mémoire, puis choisissez un modèle plus léger.",
+		"gpuDeviceError": "Le GPU a signalé une erreur pendant le chargement du modèle ({cause}). Ce modèle ne peut pas fonctionner sur cet appareil : choisissez un modèle plus léger.",
+		"gpuDeviceLost": "Le GPU a cessé de répondre ({cause}). Rechargez la page pour relancer le modèle."
 	},
 	"ram": {
 		"warning": "⚠️ RAM insuffisante détectée",
