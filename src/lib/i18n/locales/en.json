@@ -120,7 +120,11 @@
 		"webgpuNotAvailable": "❌ WebGPU not available. Your browser or device does not support WebGPU. Try Chrome/Edge 113+ on desktop or enable WebGPU in browser flags.",
 		"browserMemory": "The browser tab ran out of memory while loading this model. Reload the page to free the memory, then choose a lighter model.",
 		"gpuDeviceError": "The GPU reported an error while loading the model ({cause}). This model cannot run on this device: choose a lighter model.",
-		"gpuDeviceLost": "The GPU stopped responding ({cause}). Reload the page to start the model again."
+		"gpuDeviceLost": "The GPU stopped responding ({cause}). Reload the page to start the model again.",
+		"gpuAllocation": "{model} ({size}) asks the GPU for a larger block of memory than it can reserve in one piece. This model will not run on this device.",
+		"gpuAllocationSuggest": "A lighter model should fit: {model} ({size}).",
+		"gpuAllocationNoSuggest": "No lighter model in the catalog seems able to run on this GPU.",
+		"tryModel": "Try {model}"
 	},
 	"ram": {
 		"warning": "⚠️ Insufficient RAM detected",

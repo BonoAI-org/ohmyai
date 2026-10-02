@@ -32,6 +32,8 @@ import {
 } from '$lib/llm/conversationRepo.js';
 import { estimateHardwareSupport } from '$lib/llm/hardware.js';
 import { GpuDeviceError, loadWatchingGpu } from '$lib/engines/gpuDeviceWatch.js';
+import { isGpuAllocationFailure, suggestLighterModel } from '$lib/llm/gpuFailure.js';
+import { probeGpuCapabilities } from '$lib/llm/gpuCapabilities.js';
 
 /**
  * Clés de persistance dans le localStorage. Regroupées ici pour qu'une
@@ -123,6 +125,12 @@ class LLMStore {
 
 	// Erreur éventuelle / Potential error
 	error = $state(null);
+
+	// Modèle proposé à la place de celui qui a échoué, rattaché au message
+	// d'erreur qu'il complète : il disparaît avec lui.
+	// Model offered instead of the one that failed, tied to the error message
+	// it completes: it goes away with it.
+	errorSuggestion = $state(null);
 	huggingFaceToken = $state(null);
 
 	// Règles globales de l'IA (System Prompt) / Global AI rules (System Prompt)
@@ -591,9 +599,8 @@ class LLMStore {
 				// Optional: we could call this.clearCache() here, but beware of infinite loops
 			}
 
-			this.error = err instanceof GpuDeviceError
-				? this._gpuErrorMessage(err)
-				: `❌ ${errorTitle}: ${errorMessage}`;
+			if (err instanceof GpuDeviceError) this._reportGpuFailure(err);
+			else this.error = `❌ ${errorTitle}: ${errorMessage}`;
 			console.error('Erreur lors du chargement du modèle / Error loading model:', err);
 			console.error('Stack trace:', err.stack);
 		} finally {
@@ -688,9 +695,8 @@ class LLMStore {
 			const message = err?.name === 'ModelLoadError' && err.kind === 'browser-memory'
 				? (t ? t('error.browserMemory') : 'The browser tab ran out of memory while loading this model. Reload the page and choose a lighter model.')
 				: err.message;
-			this.error = err instanceof GpuDeviceError
-				? this._gpuErrorMessage(err)
-				: `❌ ${errorTitle}: ${message}`;
+			if (err instanceof GpuDeviceError) this._reportGpuFailure(err);
+			else this.error = `❌ ${errorTitle}: ${message}`;
 			console.error('Erreur chargement Transformers.js / Transformers.js loading error:', err);
 			console.error('Stack trace:', err.stack);
 		} finally {
@@ -748,13 +754,81 @@ class LLMStore {
 	_gpuErrorMessage(err) {
 		const t = get(_);
 		const title = t ? t('error.title') : 'Error';
+		// Dawn ajoute la pile d'appels sous la première ligne : seule celle-ci
+		// parle à l'utilisateur.
+		// Dawn appends the call stack below the first line: only that one
+		// speaks to the user.
+		const cause = String(err.message ?? '').split('\n')[0].trim();
 		const lost = err.kind === 'device-lost';
 		const key = lost ? 'error.gpuDeviceLost' : 'error.gpuDeviceError';
 		const fallback = lost
-			? `The GPU stopped responding (${err.message}). Reload the page to start the model again.`
-			: `The GPU reported an error while loading the model (${err.message}). It cannot run on this device: choose a lighter model.`;
-		const message = t ? t(key, { values: { cause: err.message } }) : fallback;
+			? `The GPU stopped responding (${cause}). Reload the page to start the model again.`
+			: `The GPU reported an error while loading the model (${cause}). It cannot run on this device: choose a lighter model.`;
+		const message = t ? t(key, { values: { cause } }) : fallback;
 		return `❌ ${title}: ${message}`;
+	}
+
+	/**
+	 * Affiche un échec du GPU pendant le chargement. Un refus d'allocation est
+	 * dit dans sa conséquence (ce modèle ne tournera pas ici), avec le poids en
+	 * cause, puis complété par un modèle plus léger que la machine peut charger.
+	 * Displays a GPU failure during loading. A refused allocation is stated as
+	 * its consequence (this model will not run here), with the weight at stake,
+	 * then completed with a lighter model the machine can load.
+	 * @param {GpuDeviceError} err
+	 */
+	async _reportGpuFailure(err) {
+		this.errorSuggestion = null;
+		const failed = findModel(this.selectedModel, this.customModels);
+		if (!isGpuAllocationFailure(err) || !failed) {
+			this.error = this._gpuErrorMessage(err);
+			return;
+		}
+
+		const t = get(_);
+		const title = t ? t('error.title') : 'Error';
+		const values = { model: failed.name ?? failed.id, size: failed.size ?? '?' };
+		const base = t
+			? t('error.gpuAllocation', { values })
+			: `${values.model} (${values.size}) asks the GPU for a larger block of memory than it can reserve in one piece. This model will not run on this device.`;
+		const message = `❌ ${title}: ${base}`;
+		this.error = message;
+
+		// La sonde affine le choix (demi-précision, plafond mesuré) ; sans
+		// elle, l'échec seul suffit à écarter les modèles trop gros.
+		// The probe refines the choice (half precision, measured ceiling);
+		// without it, the failure alone rules out models that are too big.
+		let gpu = {};
+		try {
+			gpu = await probeGpuCapabilities();
+		} catch {
+			// Sonde au mieux / Best-effort probe.
+		}
+		// Un autre message a pu remplacer celui-ci entre-temps.
+		// Another message may have replaced this one meanwhile.
+		if (this.error !== message) return;
+
+		const suggestion = suggestLighterModel(failed, AVAILABLE_MODELS, {
+			hasWebGPU: gpu.hasWebGPU ?? null,
+			shaderF16: gpu.shaderF16 ?? null,
+			largestAllocatableBytes: gpu.largestAllocatableBytes ?? null,
+			deviceMemoryGB:
+				typeof navigator !== 'undefined' && typeof navigator.deviceMemory === 'number'
+					? navigator.deviceMemory
+					: null
+		});
+		const tail = suggestion
+			? t
+				? t('error.gpuAllocationSuggest', { values: { model: suggestion.name, size: suggestion.size } })
+				: `A lighter model should fit: ${suggestion.name} (${suggestion.size}).`
+			: t
+				? t('error.gpuAllocationNoSuggest')
+				: 'No lighter model in the catalog seems able to run on this GPU.';
+		const complete = `${message} ${tail}`;
+		this.error = complete;
+		this.errorSuggestion = suggestion
+			? { forError: complete, modelId: suggestion.id, modelName: suggestion.name }
+			: null;
 	}
 
 	/**
